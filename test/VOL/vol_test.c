@@ -861,7 +861,7 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
 
-    h5_reset();
+    /* h5_reset(); */
 
     srand((unsigned) HDtime(NULL));
 
