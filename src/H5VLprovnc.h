@@ -40,11 +40,11 @@ typedef enum ProvLevel {
 typedef struct H5VL_provenance_info_t {
     hid_t under_vol_id;         /* VOL ID for under VOL */
     void *under_vol_info;       /* VOL info for under VOL */
-    char* prov_file_path;
-    Prov_level prov_level;
-    char* prov_line_format;
-    int ds_created;
-    int ds_accessed;//ds opened
+    char* prov_file_path;   // TODO: Move into prov_helper
+    Prov_level prov_level;  // TODO: Move into prov_helper
+    char* prov_line_format; // TODO: Move into prov_helper
+//    int ds_created;         // TODO: Move into dataset_prov_info
+//    int ds_accessed;        // TODO: Move into dataset_prov_info
 } H5VL_provenance_info_t;
 
 
@@ -58,7 +58,12 @@ typedef struct ProvenanceFormat{
 
 } prov_format;
 
+typedef struct ProvenanceHelper prov_helper;
+typedef struct H5VL_prov_file_info_t file_prov_info_t;
+
+
 typedef struct ProvenanceHelper{
+    /* Provenance properties */
     char* prov_file_path;
     FILE* prov_file_handle;
     Prov_level prov_level;
@@ -68,6 +73,9 @@ typedef struct ProvenanceHelper{
     uint64_t tid;
     char proc_name[64];
     int ptr_cnt;
+    int opened_files_cnt;
+    file_prov_info_t* opened_files;//linkedlist: first node is a dummy.
+
 }prov_helper;
 
 prov_helper* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format);

@@ -14,8 +14,8 @@
  * If you do not have access to either file, you may request a copy from     *
  * help@hdfgroup.org.                                                        *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Created:		Jan 28, 2019
- *			Tonglin Li <tonglin@DOE8026939.dhcp.lbnl.us>
+ * Created:		Jan 31, 2019
+ *			Tonglin Li <tonglin@DOE8026939.local>
  *
  * Purpose:		This machine-generated source code contains
  *			information about the library build configuration

@@ -796,57 +796,40 @@ H5VL__native_file_close(void *file, hid_t H5_ATTR_UNUSED dxpl_id,
     H5F_t   *f          = (H5F_t *)file;
     hid_t   file_id     = H5I_INVALID_HID;
     herr_t  ret_value   = SUCCEED;                  /* Return value */
-    printf("%s:%d\n", __func__, __LINE__);
-    if(!f){
-        printf("%s:%d: f is NULL ======================================\n", __func__, __LINE__);
-    }
 
     FUNC_ENTER_PACKAGE
 
-    printf("%s:%d\n", __func__, __LINE__);
+
     /* This routine should only be called when a file ID's ref count drops to zero */
     HDassert(H5F_ID_EXISTS(f));
-    printf("%s:%d\n", __func__, __LINE__);
+
     /* Flush file if this is the last reference to this id and we have write
      * intent, unless it will be flushed by the "shared" file being closed.
      * This is only necessary to replicate previous behaviour, and could be
      * disabled by an option/property to improve performance.
      */
     if((H5F_NREFS(f) > 1) && (H5F_INTENT(f) & H5F_ACC_RDWR)) {
-        if(!f){
-            printf("%s:%d: f is NULL ======================================\n", __func__, __LINE__);
-        }
-        printf("%s:%d\n", __func__, __LINE__);
+
+
         /* Get the file ID corresponding to the H5F_t struct */
         if(H5I_find_id(f, H5I_FILE, &file_id) < 0 || H5I_INVALID_HID == file_id)
             HGOTO_ERROR(H5E_ATOM, H5E_CANTGET, FAIL, "invalid atom")
-            printf("%s:%d\n", __func__, __LINE__);
+
         /* Get the number of references outstanding for this file ID */
         if((nref = H5I_get_ref(file_id, FALSE)) < 0)
             HGOTO_ERROR(H5E_ATOM, H5E_CANTGET, FAIL, "can't get ID ref count")
 
-        printf("%s:%d\n", __func__, __LINE__);
-
         if(nref == 1)
             if(H5F__flush(f) < 0)
                 HGOTO_ERROR(H5E_CACHE, H5E_CANTFLUSH, FAIL, "unable to flush cache")
-
-        printf("%s:%d\n", __func__, __LINE__);
-        if(!f){
-            printf("%s:%d: f is NULL ======================================\n", __func__, __LINE__);
-        }
     } /* end if */
-    printf("%s:%d\n", __func__, __LINE__);
+
     /* Close the file */
-    if(!f){
-        printf("%s:%d: f is NULL ======================================\n", __func__, __LINE__);
-    }
-    printf("%s:%d\n", __func__, __LINE__);
+
     if(H5F__close(f) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTDEC, FAIL, "can't close file")
-    printf("%s:%d\n", __func__, __LINE__);
+
 done:
-printf("%s:%d\n", __func__, __LINE__);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL__native_file_close() */
 

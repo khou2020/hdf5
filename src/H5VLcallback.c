@@ -829,7 +829,7 @@ done:
  *-------------------------------------------------------------------------
  */
 void *
-H5VL_wrap_object(const H5VL_class_t *connector, void *wrap_ctx, void *obj)
+H5VL_wrap_object(const H5VL_class_t *connector, void *wrap_ctx, void *obj, H5I_type_t obj_type)
 {
     void *ret_value = SUCCEED;   /* Return value */
 
@@ -842,7 +842,7 @@ H5VL_wrap_object(const H5VL_class_t *connector, void *wrap_ctx, void *obj)
     /* Only wrap object if there's a wrap context */
     if(wrap_ctx) {
         /* Ask the connector to wrap the object */
-        if(NULL == (ret_value = (connector->wrap_object)(obj, wrap_ctx)))
+        if(NULL == (ret_value = (connector->wrap_object)(obj, obj_type, wrap_ctx)))
             HGOTO_ERROR(H5E_VOL, H5E_CANTGET, NULL, "can't wrap object")
     } /* end if */
     else
@@ -864,7 +864,7 @@ done:
  *---------------------------------------------------------------------------
  */
 void *
-H5VLwrap_object(void *obj, hid_t connector_id, void *wrap_ctx)
+H5VLwrap_object(void *obj, H5I_type_t obj_type, hid_t connector_id, void *wrap_ctx)
 {
     H5VL_class_t *cls;          /* VOL connector's class struct */
     void *ret_value = NULL;     /* Return value */
@@ -879,7 +879,8 @@ H5VLwrap_object(void *obj, hid_t connector_id, void *wrap_ctx)
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a VOL connector ID")
 
     /* Wrap the object */
-    if(NULL == (ret_value = H5VL_wrap_object(cls, wrap_ctx, obj)))
+//    if(NULL == (ret_value = H5VL_wrap_object(cls, wrap_ctx, obj)))
+    if(NULL == (ret_value = H5VL_wrap_object(cls, wrap_ctx, obj, obj_type)))
         HGOTO_ERROR(H5E_VOL, H5E_CANTGET, NULL, "unable to wrap object")
 
 done:

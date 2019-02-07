@@ -167,7 +167,7 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
     //printf("%s:%d\n", __func__, __LINE__);
     if(NULL == (dset = H5VL_dataset_create(vol_obj, &loc_params, name, dcpl_id, dapl_id, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL)))
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, H5I_INVALID_HID, "unable to create dataset")
-        printf("=================================== H5Dcreate2: dset =  %p\n", dset);
+        //printf("=================================== H5Dcreate2: dset =  %p\n", dset);
     /* Get an atom for the dataset */
     if((ret_value = H5VL_register(H5I_DATASET, dset, vol_obj->connector, TRUE)) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTREGISTER, H5I_INVALID_HID, "unable to atomize dataset handle")

@@ -3287,9 +3287,9 @@ H5D_flush_all(const H5F_t *f)
     HDassert(f);
 
     /* Iterate over all the open datasets */
-    printf("%s:%d\n", __func__, __LINE__);
-    if(!f)
-        printf("%s:%d: f is NULL ==========================\n", __func__, __LINE__);
+    //printf("%s:%d\n", __func__, __LINE__);
+    //if(!f)
+        //printf("%s:%d: f is NULL ==========================\n", __func__, __LINE__);
 
     if(H5I_iterate(H5I_DATASET, H5D__flush_all_cb, (void *)f, FALSE) < 0) /* Casting away const OK -QAK */
         HGOTO_ERROR(H5E_DATASET, H5E_BADITER, FAIL, "unable to flush cached dataset info")
