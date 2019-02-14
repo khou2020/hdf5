@@ -5273,10 +5273,13 @@ test_multiopen (hid_t file)
         printf("    Got %d instead of %d!\n", (int)tmp_size[0], (int)cur_size[0]);
         goto error;
     } /* end if */
-
+    printf("%s:%d\n", __func__, __LINE__);
     if(H5Dclose(dset1) < 0) goto error;
+    printf("%s:%d\n", __func__, __LINE__);
     if(H5Dclose(dset2) < 0) goto error;
+    printf("%s:%d\n", __func__, __LINE__);
     if(H5Sclose(space) < 0) goto error;
+    printf("%s:%d\n", __func__, __LINE__);
     if(H5Pclose(dcpl) < 0) goto error;
 
     PASSED();
@@ -13364,7 +13367,7 @@ main(void)
             nerrors += (test_huge_chunks(my_fapl) < 0        ? 1 : 0);
             nerrors += (test_chunk_cache(my_fapl) < 0        ? 1 : 0);
             nerrors += (test_big_chunks_bypass_cache(my_fapl) < 0   ? 1 : 0);
-            nerrors += (test_chunk_fast(envval, my_fapl) < 0    ? 1 : 0);  //long running
+            nerrors += (test_chunk_fast(envval, my_fapl) < 0    ? 1 : 0);  //very long running
             nerrors += (test_reopen_chunk_fast(my_fapl) < 0        ? 1 : 0);
             nerrors += (test_chunk_fast_bug1(my_fapl) < 0           ? 1 : 0);
             nerrors += (test_chunk_expand(my_fapl) < 0        ? 1 : 0);
