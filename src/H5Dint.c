@@ -1843,7 +1843,11 @@ H5D_close(H5D_t *dataset)
     FUNC_ENTER_NOAPI(FAIL)
 
     /* check args */
-    HDassert(dataset && dataset->oloc.file && dataset->shared);
+    printf("dataset = %p", dataset);
+	printf("%s:%d: dataset = %p\n", __func__, __LINE__, dataset );
+	printf("%s:%d: dataset->oloc.file = %p\n", __func__, __LINE__, dataset->oloc.file );
+	printf("%s:%d: dataset->shared = %p\n", __func__, __LINE__, dataset->shared);
+		HDassert(dataset && dataset->oloc.file && dataset->shared);
     HDassert(dataset->shared->fo_count > 0);
 
     /* Dump debugging info */

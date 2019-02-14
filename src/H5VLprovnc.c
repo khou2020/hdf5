@@ -111,6 +111,7 @@ typedef struct H5VL_prov_file_info_t {//assigned when a file is closed, serves t
     int ref_cnt;
     void* mpi_comm;
     dataset_prov_info_t* opened_datasets;
+    int opened_datasets_cnt;
     int grp_created;
     int grp_accessed;
     int ds_created;
@@ -121,6 +122,7 @@ typedef struct H5VL_prov_file_info_t {//assigned when a file is closed, serves t
 
 typedef struct H5VL_prov_dataset_info_t {
     prov_helper* prov_helper; //pointer shared among all layers, one per process.
+    haddr_t native_addr;
     char* dset_name;
     char* file_name;//parent structure
     H5T_class_t dt_class;//data type class
@@ -138,14 +140,18 @@ typedef struct H5VL_prov_dataset_info_t {
     int dataset_write_cnt;
     //H5VL_provenance_info_t* shared_file_info;
     int access_cnt;
+    int ref_cnt;
+    file_prov_info_t* parent_file_info;
+    dataset_prov_info_t* next;
 } dataset_prov_info_t;
 
 void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type, hid_t dxpl_id, void **req, ...);
-dataset_prov_info_t* new_fill_ds_prov_info(H5VL_provenance_t* dset, char* ds_name, hid_t dapl_id, hid_t dxpl_id, void **req);//fill the data structure
+dataset_prov_info_t* new_ds_prov_info(void* under_obj, hid_t vol_id, haddr_t native_addr, file_prov_info_t* file_info, char* ds_name, hid_t dapl_id, hid_t dxpl_id, void **req);//fill the data structure
 
 typedef struct H5VL_prov_group_info_t {
     prov_helper* prov_helper; //pointer shared among all layers, one per process.
     int func_cnt;//stats
+    file_prov_info_t* root_file_info;//a group is a direct or indirect children of a file.
     int group_get_cnt;
     int group_specific_cnt;
 } group_prov_info_t;
@@ -198,8 +204,8 @@ static herr_t H5VL_provenance_attr_optional(void *obj, hid_t dxpl_id, void **req
 static herr_t H5VL_provenance_attr_close(void *attr, hid_t dxpl_id, void **req);
 
 /* Dataset callbacks */
-static void *H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req);
-static void *H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t dapl_id, hid_t dxpl_id, void **req);
+static void *H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const char *ds_name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req);
+static void *H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params, const char *ds_name, hid_t dapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                                     hid_t file_space_id, hid_t plist_id, void *buf, void **req);
 static herr_t H5VL_provenance_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t plist_id, const void *buf, void **req);
@@ -353,22 +359,30 @@ static hid_t prov_connector_id_global = H5I_INVALID_HID;
 
 datatype_prov_info_t* new_datatype_info(void){
     datatype_prov_info_t* info = calloc(1, sizeof(datatype_prov_info_t));
+    info->prov_helper = PROV_HELPER;
     return info;
 }
 
 dataset_prov_info_t * new_dataset_info(void){
     dataset_prov_info_t* info = calloc(1, sizeof(dataset_prov_info_t));
+    info->prov_helper = PROV_HELPER;
     return info;
 }
 
-group_prov_info_t * new_group_info(void){
+group_prov_info_t * new_group_info(file_prov_info_t* root_file){
     group_prov_info_t* info = calloc(1, sizeof(group_prov_info_t));
+    info->root_file_info = root_file;
+    info->prov_helper = PROV_HELPER;
+
     return info;
 }
-
+void group_info_free(group_prov_info_t* info){
+    free(info);
+}
 file_prov_info_t* new_file_info(char* fname) {
     file_prov_info_t* info = calloc(1, sizeof(file_prov_info_t));
     info->file_name = strdup(fname);
+    info->prov_helper = PROV_HELPER;
     return info;
 }
 
@@ -386,9 +400,11 @@ void dataset_info_free(dataset_prov_info_t* info){
     if(!info)
         return;
 
-    if(info->dset_name){
+    if(info->file_name)
+        free(info->file_name);
+
+    if(info->dset_name)
         free(info->dset_name);
-    }
 
     free(info);
 }
@@ -398,7 +414,8 @@ void dataset_stats_prov_write(dataset_prov_info_t* ds_info){
         printf("dataset_stats_prov_write(): ds_info is NULL.\n");
         return;
     }
-    printf("Dataset name = %s,\ndata type class = %d, data space class = %d, data space size = %llu, data type size =%llu.\n", ds_info->dset_name, ds_info->dt_class, ds_info->ds_class,  ds_info->dset_space_size, ds_info->dset_type_size);
+    printf("Dataset name = %s,\ndata type class = %d, data space class = %d, data space size = %llu, data type size =%llu.\n",
+            ds_info->dset_name, ds_info->dt_class, ds_info->ds_class,  ds_info->dset_space_size, ds_info->dset_type_size);
     printf("Dataset is %d dimensions.\n", ds_info->dimension_cnt);
     printf("Dataset is read %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_read_cnt, ds_info->total_bytes_read, ds_info->total_read_time);
     printf("Dataset is written %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_write_cnt, ds_info->total_bytes_written, ds_info->total_write_time);
@@ -465,6 +482,7 @@ prov_helper* prov_helper_init( char* file_path, Prov_level prov_level, char* pro
     return new_helper;
 }
 
+//problematic!!! May cause weird memory corruption issues.
 void prov_helper_teardown(prov_helper* helper){
     if(helper){// not null
         if(helper->prov_level == File_only | helper->prov_level ==File_and_print){//no file
@@ -481,7 +499,7 @@ void prov_helper_teardown(prov_helper* helper){
 }
 
 void file_ds_created(file_prov_info_t* info){
-    //assert(info);
+    assert(info);
     if(info)
         info->ds_created++;
 }
@@ -489,7 +507,7 @@ void file_ds_created(file_prov_info_t* info){
 //counting how many times datasets are opened in a file.
 //Called by a DS
 void file_ds_accessed(file_prov_info_t* info){
-    //assert(info);
+    assert(info);
     if(info)
         info->ds_accessed++;
 }
@@ -548,6 +566,7 @@ int rm_file_node(prov_helper* helper, char* file_name){
     }
     file_prov_info_t* cur = helper->opened_files;
     file_prov_info_t* last = cur;
+    int index = 0;
     while(cur){
         if(!strcmp(cur->file_name, file_name)){//node found
             cur->ref_cnt--;
@@ -555,7 +574,17 @@ int rm_file_node(prov_helper* helper, char* file_name){
                 return helper->opened_files_cnt;
             else{//cur->next->ref_cnt == 0, remove file node & maybe print file stats (heppens when close a file)
                 //file_prov_info_t* t = cur; //to remove
-                printf("%s:%d, cur->ref_cnt = %d, helper->opened_files = %p, cur = %p, cur->next = %p, last->next = %p\n", __func__, __LINE__, cur->ref_cnt, helper->opened_files, cur, cur->next, last->next);
+                printf("%s:%d, cur->ref_cnt = %d, helper->opened_files = %p, "
+                        "cur = %p, cur->next = %p, last->next = %p\n",
+                        __func__, __LINE__, cur->ref_cnt, helper->opened_files, cur, cur->next, last->next);
+
+                if(0 == index){//first node is the target
+                    helper->opened_files = helper->opened_files->next;
+                    file_info_free(cur);
+                    helper->opened_files_cnt--;
+                    return helper->opened_files_cnt;
+                }
+
                 last->next = cur->next;
 
                 file_info_free(cur);
@@ -571,11 +600,158 @@ int rm_file_node(prov_helper* helper, char* file_name){
         }
         last = cur;
         cur = cur->next;
-
+        index++;
     }
     //node not found.
     printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, helper->opened_files);
     return helper->opened_files_cnt;
+}
+
+dataset_prov_info_t* add_dataset_node(H5VL_provenance_t* dset, haddr_t native_addr,
+        file_prov_info_t* file_info, char* ds_name, hid_t dapl_id, hid_t dxpl_id, void** req){
+    assert(dset);
+    assert(dset->under_object);
+    assert(file_info);
+    //assert(new_node);
+    dataset_prov_info_t* new_node;
+//    new_ds_prov_info(dset, native_addr, file_info, ds_name, dapl_id, dxpl_id, req);
+    printf("%s:%d, file_info->opened_datasets_cnt = %d, file_info->file_name = [%s], nnative_addr = [%d]\n",
+            __func__, __LINE__, file_info->opened_datasets_cnt, file_info->file_name, native_addr);
+
+    if(!file_info->opened_datasets){//empty linked list, no opened file.
+        new_node = new_ds_prov_info(dset->under_object, dset->under_vol_id,
+                native_addr, file_info, ds_name, dapl_id, dxpl_id, req);
+        file_info->opened_datasets_cnt = 0;
+        new_node->ref_cnt = 1;
+        file_info->opened_datasets = new_node;
+        file_info->opened_datasets_cnt++;
+        printf("%s:%d, new node added as the first node. name = [%s], returned new_node = %p, new_node->next = %p, file_info->opened_datasets_cnt = %d\n",
+                __func__, __LINE__, new_node->dset_name, new_node, new_node->next, file_info->opened_datasets_cnt);
+        return new_node;
+    } else {
+        dataset_prov_info_t* cur = file_info->opened_datasets;
+        dataset_prov_info_t* last = cur;
+//        if(cur){
+//            printf("%s:%d, head node file_info->opened_datasets_cnt = %d, cur = %p, cur->ref_cnt = %d, cur->next = %p\n",
+//                    __func__, __LINE__, file_info->opened_datasets_cnt, cur, cur->ref_cnt, cur->next);
+//            printf("%s:%d: cur->dset_name = [%s]\n",
+//                    __func__, __LINE__,  cur->dset_name);
+//        }
+        int i = 0;
+
+        while (cur) {
+//            printf("%s:%d, file_info->opened_datasets = %p, node No.%d, cur = %p, opened_datasets_cnt = %d\n",
+//                    __func__, __LINE__, file_info->opened_datasets, i, cur, file_info->opened_datasets_cnt);
+//            printf("%s:%d: cur->dset_name = %p\n",
+//                    __func__, __LINE__, cur->dset_name);
+            printf("%s:%d,: cur->native_addr = [%p], native_addr = %d\n",
+                    __func__, __LINE__, cur->native_addr, native_addr);
+            if (cur->native_addr == native_addr) {
+                //attempt to open an already opened file.
+
+                cur->ref_cnt++;
+                printf("%s:%d, attempted to open an already opened dataset. name = [%s], pointer = %p, now ref_cnt = %d\n",
+                                        __func__, __LINE__, cur->dset_name, cur, cur->ref_cnt);
+                return cur;
+            }
+            i++;
+            last = cur;
+            cur = cur->next;
+        }
+        new_node = new_ds_prov_info(dset->under_object, dset->under_vol_id, native_addr, file_info, ds_name, dapl_id, dxpl_id, req);
+        last->next = new_node;
+        file_info->opened_datasets_cnt++;
+        printf("%s:%d, new node added to the tail. name = [%s], pointer = %p, ref_cnt = %d, file_info->opened_datasets_cnt = %d\n",
+                __func__, __LINE__, new_node->dset_name, new_node, new_node->ref_cnt, file_info->opened_datasets_cnt);
+
+        return new_node;
+    }
+}
+
+//need a dumy node to make it simpler
+int rm_dataset_node(file_prov_info_t* file_info, haddr_t native_addr){
+    assert(file_info);
+    printf("%s:%d, before removal: file_info = %p\n", __func__, __LINE__, file_info);
+
+//    printf("%s:%d, before removal: "
+//            "file_info->opened_datasets = %p, file_info->opened_datasets_cnt = %d, "
+//            "\n",
+//            __func__, __LINE__,
+//            file_info->opened_datasets, file_info->opened_datasets_cnt
+//            );
+    if(!file_info->opened_datasets){//no node found
+        //file_info->opened_datasets_cnt = 0;
+        return file_info->opened_datasets_cnt;//no fopen files.
+    }
+
+    dataset_prov_info_t* cur = file_info->opened_datasets;
+
+    dataset_prov_info_t* last = cur;
+    int index = 0;
+    while(cur){
+        printf("%s:%d: while(): cur = %p, cur->next = %p, "
+                "cur->dset_name = [%s], cur->ref_cnt = %d, index = %d\n",
+                __func__, __LINE__,
+                cur,
+                cur->next,
+                cur->dset_name, cur->ref_cnt, index);//strcmp(cur->dset_name, dset_name)
+        if(cur->native_addr == native_addr){//node found
+            printf("%s:%d:  found match: cur->dset_name = [%s], cur->ref_cnt = %d\n",
+                    __func__, __LINE__, cur->dset_name, cur->ref_cnt);
+            cur->ref_cnt--;
+            if(cur->ref_cnt > 0){
+                printf("%s:%d:  still have refs: cur->dset_name = [%s], cur->ref_cnt = %d\n",
+                        __func__, __LINE__, cur->dset_name, cur->ref_cnt);
+                return cur->ref_cnt;
+            }
+            else{//cur->next->ref_cnt == 0, remove file node & maybe print file stats (heppens when close a file)
+                //file_prov_info_t* t = cur; //to remove
+                printf("%s:%d, REMOVE NODE: cur->ref_cnt = %d, file_info->opened_datasets = %p, cur = %p, cur->next = %p, last->next = %p\n", __func__, __LINE__, cur->ref_cnt, file_info->opened_datasets, cur, cur->next, last->next);
+
+                //special case: first node is the target, ==cur
+                if(0 == index){
+
+                    file_info->opened_datasets = file_info->opened_datasets->next;
+                    dataset_info_free(cur);
+                    file_info->opened_datasets_cnt--;
+                    printf("%s:%d, REMOVE NODE: file_info = %p, file_info->file_name = [%s], file_info->opened_datasets = %p\n",
+                            __func__, __LINE__, file_info, file_info->file_name, file_info->opened_datasets);
+                    //return file_info->opened_datasets_cnt;
+                    return 0;//ref_cnt
+                }
+
+                last->next = cur->next;
+
+                dataset_info_free(cur);
+                file_info->opened_datasets_cnt--;
+                printf("%s:%d, file_info->opened_datasets_cnt = %d\n",
+                        __func__, __LINE__, file_info->opened_datasets_cnt);
+
+                if(file_info->opened_datasets_cnt == 0){
+                    file_info->opened_datasets = NULL;
+                } else {
+                    printf("%s:%d, file_info->opened_datasets = %p,"
+                            " file_info->opened_datasets->dset_name = [%p],"
+                            " file_info->opened_datasets->file_name = [%p]\n"
+                            ,
+                            __func__, __LINE__, file_info->opened_datasets
+                             ,file_info->opened_datasets->dset_name
+                             ,file_info->opened_datasets->file_name
+                            );
+                    //printf("file_info->opened_datasets->file_name = [%s]\n", file_info->opened_datasets->file_name);
+                }
+
+                printf("%s:%d, after removal: file_info->opened_datasets = %p, file_info->opened_datasets_cnt = %d\n", __func__, __LINE__, file_info->opened_datasets, file_info->opened_datasets_cnt);
+                return 0;//file_info->opened_datasets_cnt;
+            }
+        }
+        last = cur;
+        cur = cur->next;
+        index++;
+    }
+    //node not found.
+    printf("%s:%d, after removal: file_info->opened_datasets = %p, file_info->opened_datasets_cnt = %d\n", __func__, __LINE__, file_info->opened_datasets, file_info->opened_datasets_cnt);
+    return -1;
 }
 
 void ptr_cnt_increment(prov_helper* helper){
@@ -600,7 +776,7 @@ void ptr_cnt_decrement(prov_helper* helper){
     //printf("%s:%d, helper->ptr_cnt = %d\n", __func__, __LINE__, helper->ptr_cnt);
     helper->ptr_cnt--;
     //mutex unlock
-    if(helper->ptr_cnt == 0);//
+    if(helper->ptr_cnt == 0);// do nothing for now.
         //prov_helper_teardown(helper);loggin is not decided yet.
 }
 
@@ -620,23 +796,32 @@ unsigned long get_time_usec() {
     return 1000000 * tp.tv_sec + tp.tv_usec;
 }
 
-dataset_prov_info_t* new_fill_ds_prov_info(H5VL_provenance_t* dset, char* ds_name, hid_t dapl_id, hid_t dxpl_id, void **req){
-    assert(dset);
+dataset_prov_info_t* new_ds_prov_info(void* under_object, hid_t vol_id, haddr_t native_addr,
+        file_prov_info_t* file_info, char* ds_name, hid_t dapl_id, hid_t dxpl_id, void **req){
+    assert(under_object);
+    assert(file_info);
     hid_t dcpl_id = -1;
     hid_t dt_id = -1;
     hid_t ds_id = -1;
 
     dataset_prov_info_t* ds_info = calloc(1, sizeof(dataset_prov_info_t));
-    ds_info->prov_helper = dset->prov_helper;
-    dataset_get_wrapper(dset->under_object, dset->under_vol_id, H5VL_DATASET_GET_DCPL, dxpl_id, req, &dcpl_id);
+    ds_info->prov_helper = PROV_HELPER;
+    ds_info->parent_file_info = file_info;
+    ds_info->native_addr = native_addr;
+    ds_info->next = NULL;
+    dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_DCPL, dxpl_id, req, &dcpl_id);
+//    printf("file_info->file_name = [%s], ->ref_cnt = %d, p_helper = %p, PROV_HELPER->opened_files->file_name = %s, file_cnt = %d\n",
+//            file_info->file_name, file_info->ref_cnt, file_info->prov_helper, PROV_HELPER->opened_files->file_name, PROV_HELPER->opened_files_cnt);
+    if(file_info)
+        ds_info->file_name = strdup(file_info->file_name);
 
     ds_info->dset_name = strdup(ds_name);
 
-    dataset_get_wrapper(dset->under_object, dset->under_vol_id, H5VL_DATASET_GET_TYPE, dxpl_id, req, &dt_id);
+    dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_TYPE, dxpl_id, req, &dt_id);
     ds_info->dt_class = H5Tget_class(dt_id);
     ds_info->dset_type_size = H5Tget_size(dt_id);
 
-    dataset_get_wrapper(dset->under_object, dset->under_vol_id, H5VL_DATASET_GET_SPACE, dxpl_id, req, &ds_id);
+    dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_SPACE, dxpl_id, req, &ds_id);
 
     ds_info->ds_class = H5Sget_simple_extent_type(ds_id);
 
@@ -646,10 +831,30 @@ dataset_prov_info_t* new_fill_ds_prov_info(H5VL_provenance_t* dset, char* ds_nam
         ds_info->dset_space_size = H5Sget_simple_extent_npoints(ds_id);
     }
     ds_info->layout = H5Pget_layout(dcpl_id);
-    dset->generic_prov_info = ds_info;
+
     return ds_info;
 }
 
+herr_t get_native_addr(void* obj, hid_t vol_id, hid_t dxpl_id, void **req, ...){
+    herr_t r = -1;
+    va_list args;
+
+    va_start(args, req);//add an new arg after req
+    int got_info = H5VLobject_optional(obj, vol_id, dxpl_id, req, args);
+
+    if(got_info < 0){
+        printf("%s:%d: H5VL_object_optional() failed to get obj into. ret = %d \n", __func__, __LINE__, got_info);
+        return -1;
+    }
+    return r;
+}
+
+H5VL_loc_params_t _new_loc_pram(){
+    H5VL_loc_params_t loc_params_new;
+    loc_params_new.type = H5VL_OBJECT_BY_SELF;
+    loc_params_new.obj_type = H5I_DATASET;
+    return loc_params_new;
+}
 
 void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type,
         hid_t dxpl_id, void **req, ...){
@@ -762,18 +967,26 @@ H5VL_provenance_new_obj(void *under_obj, hid_t under_vol_id, prov_helper* helper
 static herr_t
 H5VL_provenance_free_obj(H5VL_provenance_t *obj)
 {
-    printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, PROV_HELPER->opened_files);
+    printf("%s:%d, helper->opened_files = %p, opened_filed_cnt = %d\n",
+            __func__, __LINE__, PROV_HELPER->opened_files, PROV_HELPER->opened_files_cnt);
     ptr_cnt_decrement(PROV_HELPER);
-    printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, PROV_HELPER->opened_files);
+    printf("%s:%d \n", __func__, __LINE__);
     //obj->prov_helper = NULL;
     //obj->shared_file_info = NULL;//skip this field so it can be used later.
     H5Idec_ref(obj->under_vol_id);
 
-    printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, PROV_HELPER->opened_files);
-    obj->prov_helper = NULL;
+    printf("%s:%d \n", __func__, __LINE__);
+
+    //printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, PROV_HELPER->opened_files);
+    //obj->prov_helper = NULL;
+
+    printf("%s:%d: obj = %p \n", __func__, __LINE__, obj);
+
     free(obj);//changed value of PROV_HELPER->opened_files
-    printf("%s:%d, helper->opened_files = %p\n", __func__, __LINE__, PROV_HELPER->opened_files);
-    return 0;
+
+    printf("%s:%d, after free(obj), obj = %p, helper->opened_files = %p\n",
+            __func__, __LINE__, obj, PROV_HELPER->opened_files);
+
 } /* end H5VL__provenance_free_obj() */
 
 
@@ -1656,30 +1869,72 @@ H5VL_provenance_attr_close(void *attr, hid_t dxpl_id, void **req)
  */
 static void *
 H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
-    const char *name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req) 
+    const char *ds_name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
     unsigned long start = get_time_usec();
     H5VL_provenance_t *dset;
     H5VL_provenance_t *o = (H5VL_provenance_t *)obj;
+    file_prov_info_t* root_file_info;
     void *under;
-    printf("%s:%d, o->generic_prov_info = %p\n", __func__, __LINE__, o->generic_prov_info);
-    //printf("%s:%d\n", __func__, __LINE__);
+
+    printf("%s:%d\n", __func__, __LINE__);
+
+//    if(0 == strcmp(ds_name, ".")){
+//        dset = (H5VL_provenance_t *)obj;
+//        dset->generic_prov_info = new_ds_prov_info(dset, NULL, ds_name, dapl_id, dxpl_id, req);
+//        file_info = ((dataset_prov_info_t*) (dset->generic_prov_info))->parent_file_info;
+//        add_dataset_node(file_info, dset->generic_prov_info);
+//        return (void*)dset;
+//    }
+
+    if(o->my_type == H5I_FILE){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = (file_prov_info_t*)o->generic_prov_info;
+        printf("%s:%d: root_file_info = %p, file_name = %p\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else if(o->my_type == H5I_GROUP){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = ((group_prov_info_t*)o->generic_prov_info)->root_file_info;
+        printf("%s:%d: root_file_info = %p, file_name = %p\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else{//error
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        return NULL;
+    }
+
+
+    printf("%s:%d, in_obj = %p, root_file_info = %p, root_file_info->file_name = [%s]\n",
+            __func__, __LINE__, obj, root_file_info, root_file_info->file_name);
+
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL DATASET Create\n");
 #endif
 
-    under = H5VLdataset_create(o->under_object, loc_params, o->under_vol_id, name, dcpl_id,  dapl_id, dxpl_id, req);
+    under = H5VLdataset_create(o->under_object, loc_params, o->under_vol_id, ds_name, dcpl_id,  dapl_id, dxpl_id, req);
     //if(!under)
         //printf("%s:%d: under is null.\n", __func__, __LINE__);
+
+    printf("%s:%d\n", __func__, __LINE__);
+
     if(under) {
         dset = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
-
+        printf("%s:%d\n", __func__, __LINE__);
         /* Check for async request */
         if(req && *req)
             *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
-        dset->generic_prov_info = new_fill_ds_prov_info(dset, name, dapl_id, dxpl_id, req);
+        printf("%s:%d\n", __func__, __LINE__);
 
-        file_ds_created((file_prov_info_t*)(o->generic_prov_info));
+
+        H5VL_loc_params_t p = _new_loc_pram();
+        H5O_info_t oinfo;
+        get_native_addr(under, o->under_vol_id,
+                dxpl_id, NULL, H5VL_NATIVE_OBJECT_GET_INFO, &p, &oinfo, H5O_INFO_BASIC);
+        haddr_t native_addr = oinfo.addr;
+        //haddr_t native_addr = -1;
+        printf("%s:%d\n", __func__, __LINE__);
+        dset->generic_prov_info = add_dataset_node(dset, native_addr, root_file_info, ds_name, dapl_id, dxpl_id, req);
+        dset->my_type = H5I_DATASET;
+        //new_ds_prov_info(dset, native_addr, file_info, ds_name, dapl_id, dxpl_id, req);
+
+        file_ds_created(root_file_info);
     } /* end if */
     else
         dset = NULL;
@@ -1688,6 +1943,7 @@ H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
     if(o)
         prov_write(o->prov_helper, __func__, get_time_usec() - start);
 
+    printf("%s:%d: Return dset = %p\n", __func__, __LINE__, dset);
     return (void *)dset;
 } /* end H5VL_provenance_dataset_create() */
 
@@ -1747,14 +2003,17 @@ _prov_dataset_ctx_setup(void *new_under, void* obj_upper){
 
 static void *
 H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params,
-    const char *name, hid_t dapl_id, hid_t dxpl_id, void **req)
+    const char *ds_name, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
     unsigned long start = get_time_usec();
+    void *under;
     H5VL_provenance_t *dset;
     H5VL_provenance_t *o = (H5VL_provenance_t *)obj;
-    void *under;
-    printf("%s:%d, o->generic_prov_info = %p\n", __func__, __LINE__, o->generic_prov_info);
-    printf("%s:%d: file_name = %s\n", __func__, __LINE__, ((file_prov_info_t*)(o->generic_prov_info))->file_name);
+    file_prov_info_t* root_file_info = NULL;
+
+
+    printf("%s:%d, obj = %p, o->generic_prov_info = %p\n", __func__, __LINE__, o, o->generic_prov_info);
+
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL DATASET Open\n");
@@ -1765,18 +2024,82 @@ H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params,
     hid_t ds_id = -1;
     printf("%s:%d\n", __func__, __LINE__);
     //printf("\n%s:%d:o->shared_file_info = %p, dset = %p, o->under_vol_id = %llx, o->prov_helper = %p\n", __func__, __LINE__, o->shared_file_info, dset, o->under_vol_id, o->prov_helper);
-    under = H5VLdataset_open(o->under_object, loc_params, o->under_vol_id, name, dapl_id, dxpl_id, req);
+    under = H5VLdataset_open(o->under_object, loc_params, o->under_vol_id, ds_name, dapl_id, dxpl_id, req);
     printf("%s:%d: under = %p\n", __func__, __LINE__, under);
     //assert(under);
 
-    if (under) {
-        dset = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
-        /* Check for async request */
-        if (req && *req)
-            *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
+    if(o->my_type == H5I_FILE){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = (file_prov_info_t*)o->generic_prov_info;
+        printf("%s:%d: root_file_info = %p, file_name = %p\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else if(o->my_type == H5I_GROUP){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = ((group_prov_info_t*)o->generic_prov_info)->root_file_info;
+        printf("%s:%d: root_file_info = %p, file_name = %p\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else{//error
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        return NULL;
+    }
 
-        dset->generic_prov_info = new_fill_ds_prov_info(dset, name, dapl_id, dxpl_id, req);
-        file_ds_accessed((file_prov_info_t*)(o->generic_prov_info));
+    //TODO: opening ds with different names (from groups)
+    //  - need to id the ds: uuid of ds:
+    // H5Oget_info(): metadata:  H5O_info_t->addr
+
+
+    //dataset_get_wrapper()
+    //H5Oget_info2();
+
+
+    if (under) {
+         //get_native_addr(obj, loc_params);
+
+//        if(0 == strcmp(ds_name, ".")){//open same dataset
+//            file_info = ((dataset_prov_info_t*)(o->generic_prov_info))->parent_file_info;
+
+//            dset = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);//(H5VL_provenance_t *)obj;
+//            //= H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
+//            dataset_prov_info_t* dset_info = (dataset_prov_info_t*) (o->generic_prov_info);
+//
+//
+//            char* real_ds_name = dset_info->dset_name;
+//            dataset_prov_info_t* new_info_node =
+//                    new_ds_prov_info(dset, native_addr, file_info, real_ds_name, dapl_id, dxpl_id, req);
+//
+//            printf("%s:%d, file_info = %p, ds_name = [%s], real_ds_name = [%s],"
+//                    " file_info->file_name = [%s], dset_info->file_name = [%s]\n",
+//                    __func__, __LINE__, file_info, ds_name, real_ds_name,
+//                    file_info->file_name, dset_info->file_name);
+//
+//
+//
+//            dataset_prov_info_t* ret_dataset_info = add_dataset_node(file_info, new_info_node);//use this.
+//            dset->generic_prov_info = ret_dataset_info;//update ds info
+
+        //}
+        //else{//non".": only work for file obj for now. TODO:
+
+            if(0 == strcmp(ds_name, "."))//open same dataset
+                root_file_info = ((dataset_prov_info_t*)(o->generic_prov_info))->parent_file_info;
+            else
+                root_file_info = (file_prov_info_t*)(o->generic_prov_info);
+
+            dset = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
+            /* Check for async request */
+            if (req && *req)
+                *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
+
+
+            H5VL_loc_params_t p = _new_loc_pram();
+            H5O_info_t oinfo;
+            get_native_addr(under, o->under_vol_id,
+                    dxpl_id, NULL, H5VL_NATIVE_OBJECT_GET_INFO, &p, &oinfo, H5O_INFO_BASIC);
+            haddr_t native_addr = oinfo.addr;
+
+            dset->generic_prov_info = add_dataset_node(dset, native_addr, root_file_info, ds_name, dapl_id, dxpl_id, req);
+            dset->my_type = H5I_DATASET;
+//        }
+        file_ds_accessed(root_file_info);
+
     } /* end if */
     else
         dset = NULL;
@@ -1785,8 +2108,9 @@ H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params,
         if(dset)
             prov_write(dset->prov_helper, __func__, get_time_usec() - start);
     }
-
     return (void *)dset;
+
+
 } /* end H5VL_provenance_dataset_open() */
 
 
@@ -2009,32 +2333,60 @@ H5VL_provenance_dataset_close(void *dset, hid_t dxpl_id, void **req)
 {
     unsigned long start = get_time_usec();
     H5VL_provenance_t *o = (H5VL_provenance_t *)dset;
+    printf("%s:%d: dset obj = %p, obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, dset, o->my_type);
+    printf("%s:%d: obj->generic_prov_info = %p\n", __func__, __LINE__, o->generic_prov_info);
     herr_t ret_value;
+    dataset_prov_info_t* dset_info = (dataset_prov_info_t*)o->generic_prov_info;
 
-    //printf("\n%s:%d: start: o = %p, o->shared_file_info = %p, o->prov_info = %p, o->prov_helper = %p\n", __func__, __LINE__, o, o->shared_file_info, o->generic_prov_info, o->prov_helper);
+    file_prov_info_t* file_info = dset_info->parent_file_info;
+    char* ds_name = dset_info->dset_name;
+    printf("%s:%d: dset_info = %p, ds_name = [%s]\n",  __func__, __LINE__, dset_info, ds_name);
+//    printf("%s:%d: file_info = %p, dset_info = %p,\n"
+//            " file_info->opened_datasets = %p, \n"
+//            " file_info->opened_datasets_cnt = %d,\n"
+//            " dset_info->ref_cnt = %d,\n"
+//            " \n,"
+//            " dset_info->file_name = %p\n",
+//            __func__, __LINE__, file_info, dset_info,
+//            file_info->opened_datasets,
+//            file_info->opened_datasets_cnt,
+//            dset_info->ref_cnt,
+//
+//            dset_info->file_name);
+//    printf("%s:%d: file_info->file_name = [%s], dset_info->file_name = %s,  dset_info->ref_cnt =%d\n",
+//            __func__, __LINE__,
+//            file_info->file_name,
+//            dset_info->file_name,
+//
+//            dset_info->ref_cnt);
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL DATASET Close\n");
 #endif
 
 
-
     ret_value = H5VLdataset_close(o->under_object, o->under_vol_id, dxpl_id, req);
-    //printf("\n%s:%d: check: o->shared_file_info = %p\n", __func__, __LINE__, o->shared_file_info);
+    printf("%s:%d: file_info = %p, dset_info->parent_file_info = %p, ret = %d\n",
+            __func__, __LINE__, file_info, dset_info->parent_file_info, ret_value);
     /* Check for async request */
     if(req && *req)
         *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
 
     /* Release our wrapper, if underlying dataset was closed */
-
+    //printf("%s:%d: file_info = %p, dset_info->parent_file_info = %p\n", __func__, __LINE__, file_info, dset_info->parent_file_info);
     if(ret_value >= 0){
         if(o){
-            dataset_stats_prov_write(o->generic_prov_info);//output stats
+            //printf("%s:%d: file_info = %p, dset_info->parent_file_info = %p\n", __func__, __LINE__, file_info, dset_info->parent_file_info);
+
+            dataset_stats_prov_write(dset_info);//output stats
+            //printf("%s:%d: file_info = %p, dset_info->parent_file_info = %p\n", __func__, __LINE__, file_info, dset_info->parent_file_info);
+
             prov_write(o->prov_helper, __func__, get_time_usec() - start);
-            dataset_info_free(o->generic_prov_info);
-            //printf("\n%s:%d: check: o->shared_file_info = %p\n", __func__, __LINE__, o->shared_file_info);
+            printf("%s:%d: file_info = %p, dset_info = %p, dset_info->ds_name = %p\n", __func__, __LINE__, file_info, dset_info, dset_info->dset_name);
+            int ref_cnt = rm_dataset_node(file_info, dset_info->native_addr);
+            printf("%s:%d: After rm_dataset_node: ref_cnt = %d\n",  __func__, __LINE__, ref_cnt);
             H5VL_provenance_free_obj(o);
         }
-        //printf("\n%s:%d: check: o->shared_file_info = %p\n", __func__, __LINE__, o->shared_file_info);
+
 
         //printf("\n%s:%d: check: o->shared_file_info = %p\n", __func__, __LINE__, o->shared_file_info);
     }
@@ -2327,6 +2679,7 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
         printf("%s:%d\n", __func__, __LINE__);
         file = H5VL_provenance_new_obj(under, info->under_vol_id, PROV_HELPER);
         printf("%s:%d, before add new node: PROV_HELPER->opened_files = %p, PROV_HELPER->opened_files_cnt = %d\n", __func__, __LINE__, PROV_HELPER->opened_files, PROV_HELPER->opened_files_cnt);
+        file->my_type = H5I_FILE;
         file->generic_prov_info = add_file_node(PROV_HELPER, name);
         printf("%s:%d, file->generic_prov_info = %p\n", __func__, __LINE__, file->generic_prov_info);
         /* Check for async request */
@@ -2395,6 +2748,7 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
         //printf("%s:%d: &file->prov_helper->ptr_cnt = %p\n", __func__, __LINE__, &(file->prov_helper->ptr_cnt));
         //printf("%s:%d:file->prov_helper->ptr_cnt = %d\n", __func__, __LINE__, file->prov_helper->ptr_cnt);
         file->generic_prov_info = add_file_node(PROV_HELPER, name);
+        file->my_type = H5I_FILE;
         //file->generic_prov_info = new_file_info(name);
 
         //file->shared_file_info = calloc(1, sizeof(H5VL_provenance_info_t));
@@ -2690,6 +3044,21 @@ H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params,
     unsigned long start = get_time_usec();
     H5VL_provenance_t *group;
     H5VL_provenance_t *o = (H5VL_provenance_t *)obj;
+    file_prov_info_t* root_file_info;
+
+    if(o->my_type == H5I_FILE){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = (file_prov_info_t*)o->generic_prov_info;
+        printf("%s:%d: root_file_info = %p, file_name = %s\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else if(o->my_type == H5I_GROUP){
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        root_file_info = ((group_prov_info_t*)o->generic_prov_info)->root_file_info;
+        printf("%s:%d: root_file_info = %p, file_name = %s\n", __func__, __LINE__, root_file_info, root_file_info->file_name);
+    }else{//error
+        printf("%s:%d: obj type = %d. (1 for file, 2 for group)\n", __func__, __LINE__, o->my_type);
+        return NULL;
+    }
+
     void *under;
 
 #ifdef ENABLE_PROVNC_LOGGING
@@ -2699,7 +3068,8 @@ H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params,
     under = H5VLgroup_create(o->under_object, loc_params, o->under_vol_id, name, gcpl_id,  gapl_id, dxpl_id, req);
     if(under) {
         group = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
-        group->generic_prov_info = new_group_info();
+        group->my_type = H5I_GROUP;
+        group->generic_prov_info = new_group_info(root_file_info);
         /* Check for async request */
         if(req && *req)
             *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
@@ -2731,6 +3101,16 @@ H5VL_provenance_group_open(void *obj, const H5VL_loc_params_t *loc_params,
     H5VL_provenance_t *group;
     H5VL_provenance_t *o = (H5VL_provenance_t *)obj;
     void *under;
+    file_prov_info_t* file_info;
+
+    if(o->my_type == H5I_FILE){
+        file_info = (file_prov_info_t*)o->generic_prov_info;
+
+     }else if(o->my_type == H5I_GROUP){
+        file_info = ((group_prov_info_t*)o->generic_prov_info)->root_file_info;
+     }else{//error
+         return NULL;
+     }
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL GROUP Open\n");
@@ -2739,7 +3119,8 @@ H5VL_provenance_group_open(void *obj, const H5VL_loc_params_t *loc_params,
     under = H5VLgroup_open(o->under_object, loc_params, o->under_vol_id, name, gapl_id, dxpl_id, req);
     if(under) {
         group = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
-        group->generic_prov_info = new_group_info();
+        group->generic_prov_info = new_group_info(file_info);
+        group->my_type = H5I_GROUP;
         /* Check for async request */
         if(req && *req)
             *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
