@@ -2030,7 +2030,8 @@ error:
 /*
  * Cleanup temporary test files
  */
-void cleanup_files(void)
+static void
+cleanup_files(void)
 {
     HDremove(FILE_CREATE_TEST_FILENAME);
     HDremove(FILE_CREATE_EXCL_FILE_NAME);

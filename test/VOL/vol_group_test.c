@@ -691,6 +691,7 @@ test_group_property_lists(void)
         goto error;
     }
 
+#ifdef TMP
     if (H5Pclose(gcpl_id1) < 0)
         TEST_ERROR
 
@@ -742,6 +743,7 @@ test_group_property_lists(void)
         TEST_ERROR
     if (H5Pclose(gcpl_id2) < 0)
         TEST_ERROR
+#endif
 
     /* Now see if we can still retrieve copies of the property lists upon opening
      * (instead of creating) a group. If they were reconstructed properly upon file
@@ -1369,6 +1371,17 @@ error:
     return 1;
 }
 
+/*
+ * Cleanup temporary test files
+ */
+static void
+cleanup_files(void)
+{
+    HDremove(GROUP_FLUSH_FILENAME);
+    HDremove(GROUP_REFRESH_FILENAME);
+    HDremove(GROUP_INFO_FILENAME);
+}
+
 int
 vol_group_test(void)
 {
@@ -1386,6 +1399,8 @@ vol_group_test(void)
     }
 
     HDprintf("\n");
+
+    cleanup_files();
 
 done:
     return nerrors;
