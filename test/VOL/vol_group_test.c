@@ -885,6 +885,7 @@ test_get_group_info(void)
         goto error;
     }
 
+    /* Retrieve information about the root group */
     if (H5Gget_info(group_id, &group_info) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info\n");
@@ -904,6 +905,7 @@ test_get_group_info(void)
 
     TESTING_2("retrieval of group info with H5Gget_info_by_name")
 
+    /* Retrieve information about the root group */
     if (H5Gget_info_by_name(file_id, "/", &group_info, H5P_DEFAULT) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info by name\n");
@@ -920,6 +922,7 @@ test_get_group_info(void)
 
     TESTING_2("retrieval of group info with H5Gget_info_by_idx")
 
+    /* Retrieve information about the first group under the root group */
     if (H5Gget_info_by_idx(file_id, "/", H5_INDEX_NAME, H5_ITER_INC, 0, &group_info, H5P_DEFAULT) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info by index\n");
@@ -1301,14 +1304,14 @@ test_refresh_group(void)
 
     if ((file_id = H5Fcreate(GROUP_REFRESH_FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, fapl_id)) < 0) {
         H5_FAILED();
-        HDprintf("    couldn't create file '%s'\n", GROUP_FLUSH_FILENAME);
+        HDprintf("    couldn't create file '%s'\n", GROUP_REFRESH_FILENAME);
         goto error;
     }
 
     /* Create the group under the root group of the file */
     if ((group_id = H5Gcreate2(file_id, GROUP_REFRESH_GNAME, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
         H5_FAILED();
-        HDprintf("    couldn't create group '%s'\n", GROUP_FLUSH_GNAME);
+        HDprintf("    couldn't create group '%s'\n", GROUP_REFRESH_GNAME);
         goto error;
     }
 
