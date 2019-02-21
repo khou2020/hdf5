@@ -691,7 +691,6 @@ test_group_property_lists(void)
         goto error;
     }
 
-#ifdef TMP
     if (H5Pclose(gcpl_id1) < 0)
         TEST_ERROR
 
@@ -743,7 +742,6 @@ test_group_property_lists(void)
         TEST_ERROR
     if (H5Pclose(gcpl_id2) < 0)
         TEST_ERROR
-#endif
 
     /* Now see if we can still retrieve copies of the property lists upon opening
      * (instead of creating) a group. If they were reconstructed properly upon file
