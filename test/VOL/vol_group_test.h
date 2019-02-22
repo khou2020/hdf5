@@ -40,13 +40,12 @@ int vol_group_test(void);
 #define GROUP_PROPERTY_LIST_TEST_GROUP_NAME2 "property_list_test_group2"
 #define GROUP_PROPERTY_LIST_TEST_DUMMY_VAL   100
 
-#define GROUP_FLUSH_FILENAME "group_flush.h5"
+#define GROUP_FOR_INFO "group_info"
+
 #define GROUP_FLUSH_GNAME "group_for_flush"
 
-#define GROUP_REFRESH_FILENAME "group_refresh.h5"
 #define GROUP_REFRESH_GNAME "group_for_refresh"
 
-#define GROUP_INFO_FILENAME "group_info.h5"
 #define NAME_BUF_SIZE 32
 #define GROUP_NUMB 16
 

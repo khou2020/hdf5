@@ -849,7 +849,7 @@ test_get_group_info(void)
 {
     H5G_info_t 	group_info;
     hid_t      	file_id = H5I_INVALID_HID, fapl_id = H5I_INVALID_HID;
-    hid_t      	group_id = H5I_INVALID_HID;
+    hid_t      	parent_group_id = H5I_INVALID_HID, group_id = H5I_INVALID_HID;
     char        group_name[NAME_BUF_SIZE];
     unsigned    i;
 
@@ -860,16 +860,22 @@ test_get_group_info(void)
     if ((fapl_id = h5_fileaccess()) < 0)
         TEST_ERROR
 
-    if ((file_id = H5Fcreate(GROUP_INFO_FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, fapl_id)) < 0) {
+    if ((file_id = H5Fopen(vol_test_filename, H5F_ACC_RDWR, fapl_id)) < 0) {
         H5_FAILED();
-        HDprintf("    couldn't create file '%s'\n", GROUP_FLUSH_FILENAME);
+        HDprintf("    couldn't open file '%s'\n", vol_test_filename);
         goto error;
     }
 
-    /* Create multiple groups under the root group of the file */
+    if ((parent_group_id = H5Gcreate2(file_id, GROUP_FOR_INFO, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
+        H5_FAILED();
+        HDprintf("    couldn't create group '%s'\n", group_name);
+        goto error;
+    }
+
+    /* Create multiple groups under the parent group */
     for(i = 0; i < GROUP_NUMB; i++) {
         sprintf(group_name, "group %02u", i);
-        if ((group_id = H5Gcreate2(file_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
+        if ((group_id = H5Gcreate2(parent_group_id, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
             H5_FAILED();
             HDprintf("    couldn't create group '%s'\n", group_name);
             goto error;
@@ -879,14 +885,8 @@ test_get_group_info(void)
             TEST_ERROR
     }
 
-    if ((group_id = H5Gopen2(file_id, "/", H5P_DEFAULT)) < 0) {
-        H5_FAILED();
-        HDprintf("    couldn't open root group\n");
-        goto error;
-    }
-
-    /* Retrieve information about the root group */
-    if (H5Gget_info(group_id, &group_info) < 0) {
+    /* Retrieve information about the parent group */
+    if (H5Gget_info(parent_group_id, &group_info) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info\n");
         goto error;
@@ -898,15 +898,15 @@ test_get_group_info(void)
         goto error;
     }
 
-    if (H5Gclose(group_id) < 0)
+    if (H5Gclose(parent_group_id) < 0)
         TEST_ERROR
 
     PASSED();
 
     TESTING_2("retrieval of group info with H5Gget_info_by_name")
 
-    /* Retrieve information about the root group */
-    if (H5Gget_info_by_name(file_id, "/", &group_info, H5P_DEFAULT) < 0) {
+    /* Retrieve information about the parent group */
+    if (H5Gget_info_by_name(file_id, GROUP_FOR_INFO, &group_info, H5P_DEFAULT) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info by name\n");
         goto error;
@@ -922,8 +922,8 @@ test_get_group_info(void)
 
     TESTING_2("retrieval of group info with H5Gget_info_by_idx")
 
-    /* Retrieve information about the first group under the root group */
-    if (H5Gget_info_by_idx(file_id, "/", H5_INDEX_NAME, H5_ITER_INC, 0, &group_info, H5P_DEFAULT) < 0) {
+    /* Retrieve information about the first group under the parent group */
+    if (H5Gget_info_by_idx(file_id, GROUP_FOR_INFO, H5_INDEX_NAME, H5_ITER_INC, 0, &group_info, H5P_DEFAULT) < 0) {
         H5_FAILED();
         HDprintf("    couldn't get group info by index\n");
         goto error;
@@ -946,6 +946,7 @@ test_get_group_info(void)
 
 error:
     H5E_BEGIN_TRY {
+        H5Gclose(parent_group_id);
         H5Gclose(group_id);
         H5Pclose(fapl_id);
         H5Fclose(file_id);
@@ -1218,9 +1219,9 @@ test_flush_group(void)
     if ((fapl_id = h5_fileaccess()) < 0)
         TEST_ERROR
 
-    if ((file_id = H5Fcreate(GROUP_FLUSH_FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, fapl_id)) < 0) {
+    if ((file_id = H5Fopen(vol_test_filename, H5F_ACC_RDWR, fapl_id)) < 0) {
         H5_FAILED();
-        HDprintf("    couldn't create file '%s'\n", GROUP_FLUSH_FILENAME);
+        HDprintf("    couldn't open file '%s'\n", vol_test_filename);
         goto error;
     }
 
@@ -1302,9 +1303,9 @@ test_refresh_group(void)
     if ((fapl_id = h5_fileaccess()) < 0)
         TEST_ERROR
 
-    if ((file_id = H5Fcreate(GROUP_REFRESH_FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, fapl_id)) < 0) {
+    if ((file_id = H5Fopen(vol_test_filename, H5F_ACC_RDWR, fapl_id)) < 0) {
         H5_FAILED();
-        HDprintf("    couldn't create file '%s'\n", GROUP_REFRESH_FILENAME);
+        HDprintf("    couldn't open file '%s'\n", vol_test_filename);
         goto error;
     }
 
@@ -1372,17 +1373,6 @@ error:
     return 1;
 }
 
-/*
- * Cleanup temporary test files
- */
-static void
-cleanup_files(void)
-{
-    HDremove(GROUP_FLUSH_FILENAME);
-    HDremove(GROUP_REFRESH_FILENAME);
-    HDremove(GROUP_INFO_FILENAME);
-}
-
 int
 vol_group_test(void)
 {
@@ -1400,8 +1390,6 @@ vol_group_test(void)
     }
 
     HDprintf("\n");
-
-    cleanup_files();
 
 done:
     return nerrors;
