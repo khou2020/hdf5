@@ -3154,7 +3154,7 @@ test_dataset_property_lists(void)
 
 error:
     H5E_BEGIN_TRY {
-        HDfree(tmp_prefix);
+        if (tmp_prefix) HDfree(tmp_prefix);
         H5Pclose(dcpl_id1);
         H5Pclose(dcpl_id2);
         H5Pclose(dapl_id1);
