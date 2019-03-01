@@ -166,6 +166,7 @@ H5_init_library(void)
     H5_debug_g.pkg[H5_PKG_HG].name = "hg";
     H5_debug_g.pkg[H5_PKG_HL].name = "hl";
     H5_debug_g.pkg[H5_PKG_I].name = "i";
+    H5_debug_g.pkg[H5_PKG_M].name = "m";
     H5_debug_g.pkg[H5_PKG_MF].name = "mf";
     H5_debug_g.pkg[H5_PKG_MM].name = "mm";
     H5_debug_g.pkg[H5_PKG_O].name = "o";
@@ -308,6 +309,7 @@ H5_term_library(void)
         pending += DOWN(A_top);
         pending += DOWN(D_top);
         pending += DOWN(G_top);
+        pending += DOWN(M_top);
         pending += DOWN(R_top);
         pending += DOWN(S_top);
         pending += DOWN(T_top);
@@ -333,6 +335,7 @@ H5_term_library(void)
             pending += DOWN(A);
             pending += DOWN(D);
             pending += DOWN(G);
+            pending += DOWN(M);
             pending += DOWN(R);
             pending += DOWN(S);
             pending += DOWN(T);

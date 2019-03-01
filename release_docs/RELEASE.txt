@@ -122,6 +122,11 @@ New Features
 
     Library:
     --------
+    - Add new API H5M for map objects.  Currently not supported by native
+      library, can be supported by VOL connectors.
+
+      (NAF - 2019/03/01)
+
     - Allow pre-generated H5Tinit.c and H5make_libsettings.c to be used.
 
       Rather than always running H5detect and generating H5Tinit.c and
