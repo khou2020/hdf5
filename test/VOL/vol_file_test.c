@@ -151,16 +151,6 @@ test_create_file_invalid_params(void)
     TESTING_2("H5Fcreate with invalid flags");
 
     H5E_BEGIN_TRY {
-        file_id = H5Fcreate(FILE_CREATE_INVALID_PARAMS_FILE_NAME, H5F_ACC_RDONLY, H5P_DEFAULT, fapl_id);
-    } H5E_END_TRY;
-
-    if (file_id >= 0) {
-        H5_FAILED();
-        HDprintf("    file was created with invalid flag H5F_ACC_RDONLY!\n");
-        goto error;
-    }
-
-    H5E_BEGIN_TRY {
         file_id = H5Fcreate(FILE_CREATE_INVALID_PARAMS_FILE_NAME, H5F_ACC_RDWR, H5P_DEFAULT, fapl_id);
     } H5E_END_TRY;
 
@@ -2030,7 +2020,8 @@ error:
 /*
  * Cleanup temporary test files
  */
-void cleanup_files(void)
+static void
+cleanup_files(void)
 {
     HDremove(FILE_CREATE_TEST_FILENAME);
     HDremove(FILE_CREATE_EXCL_FILE_NAME);

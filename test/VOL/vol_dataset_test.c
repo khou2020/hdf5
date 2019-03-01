@@ -30,6 +30,7 @@ static int test_create_dataset_compound_types(void);
 static int test_create_dataset_enum_types(void);
 static int test_create_dataset_array_types(void);
 static int test_create_dataset_creation_properties(void);
+static int test_create_many_dataset(void);
 static int test_open_dataset(void);
 static int test_open_dataset_invalid_params(void);
 static int test_close_dataset_invalid_params(void);
@@ -92,6 +93,7 @@ static int (*dataset_tests[])(void) = {
         test_create_dataset_enum_types,
         test_create_dataset_array_types,
         test_create_dataset_creation_properties,
+        test_create_many_dataset,
         test_open_dataset,
         test_open_dataset_invalid_params,
         test_close_dataset_invalid_params,
@@ -2117,6 +2119,101 @@ error:
         H5Tclose(dset_dtype);
         H5Dclose(dset_id);
         H5Pclose(dcpl_id);
+        H5Gclose(group_id);
+        H5Gclose(container_group);
+        H5Pclose(fapl_id);
+        H5Fclose(file_id);
+    } H5E_END_TRY;
+
+    return 1;
+}
+
+/*
+ * A test to create many small datasets (100,000)
+ */
+static int
+test_create_many_dataset(void)
+{
+    hid_t   file_id = H5I_INVALID_HID, fapl_id = H5I_INVALID_HID;
+    hid_t   container_group = H5I_INVALID_HID, group_id = H5I_INVALID_HID;
+    hid_t   dset_id = H5I_INVALID_HID;
+    hid_t   dataspace_id = H5I_INVALID_HID;
+    char    dset_name[DSET_NAME_BUF_SIZE];
+    unsigned char    data;
+    unsigned int     i;
+
+    TESTING("creating many datasets")
+
+    if ((fapl_id = h5_fileaccess()) < 0)
+        TEST_ERROR
+
+    if ((file_id = H5Fopen(vol_test_filename, H5F_ACC_RDWR, fapl_id)) < 0) {
+        H5_FAILED();
+        HDprintf("    couldn't open file '%s'\n", vol_test_filename);
+        goto error;
+    }
+
+    if ((container_group = H5Gopen2(file_id, DATASET_TEST_GROUP_NAME, H5P_DEFAULT)) < 0) {
+        H5_FAILED();
+        HDprintf("    couldn't open group '%s'\n", DATASET_TEST_GROUP_NAME);
+        goto error;
+    }
+
+    if ((group_id = H5Gcreate2(container_group, DATASET_MANY_CREATE_GROUP_NAME, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
+        H5_FAILED();
+        HDprintf("    couldn't create container group '%s'\n", DATASET_MANY_CREATE_GROUP_NAME);
+        goto error;
+    }
+
+    if ((dataspace_id = H5Screate(H5S_SCALAR)) < 0) {
+        H5_FAILED();
+        HDprintf("    couldn't create scalar data space\n");
+        goto error;
+    }
+
+    for (i = 0; i < DATASET_NUMB; i++) {
+        sprintf(dset_name, "dset_%02u", i);
+        data = i % 256;
+
+        if ((dset_id = H5Dcreate2(group_id, dset_name, H5T_NATIVE_UCHAR, dataspace_id,
+                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
+            H5_FAILED();
+            HDprintf("    couldn't create dataset '%s'\n", dset_name);
+            goto error;
+        }
+
+        if (H5Dwrite(dset_id, H5T_NATIVE_UCHAR, H5S_ALL, H5S_ALL, H5P_DEFAULT, &data) < 0) {
+            H5_FAILED();
+            HDprintf("    couldn't write to dataset '%s'\n", dset_name);
+            goto error;
+        }
+
+        if (H5Dclose(dset_id) < 0) {
+            H5_FAILED();
+            HDprintf("    couldn't close dataset '%s'\n", dset_name);
+            goto error;
+        }
+    }
+
+    if (H5Sclose(dataspace_id) < 0)
+        TEST_ERROR
+    if (H5Gclose(group_id) < 0)
+        TEST_ERROR
+    if (H5Gclose(container_group) < 0)
+        TEST_ERROR
+    if (H5Pclose(fapl_id) < 0)
+        TEST_ERROR
+    if (H5Fclose(file_id) < 0)
+        TEST_ERROR
+
+    PASSED();
+
+    return 0;
+
+error:
+    H5E_BEGIN_TRY {
+        H5Dclose(dset_id);
+        H5Sclose(dataspace_id);
         H5Gclose(group_id);
         H5Gclose(container_group);
         H5Pclose(fapl_id);
