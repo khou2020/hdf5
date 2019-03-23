@@ -1274,7 +1274,7 @@ h5_set_info_object(void)
     int    ret_value=0;
 
     /* handle any MPI INFO hints via $HDF5_MPI_INFO */
-    if ((envp = getenv("HDF5_MPI_INFO")) != NULL){
+    if ((envp = HDgetenv("HDF5_MPI_INFO")) != NULL){
         char *next, *valp;
 
         valp = envp = next = HDstrdup(envp);
@@ -1336,7 +1336,7 @@ h5_set_info_object(void)
 
                 /* actually set the darned thing */
                 if (MPI_SUCCESS != MPI_Info_set(h5_io_info_g, namep, valp)) {
-                    printf("MPI_Info_set failed\n");
+                    HDprintf("MPI_Info_set failed\n");
                     ret_value = -1;
                 }
             }
@@ -1512,9 +1512,9 @@ print_func(const char *format, ...)
   va_list arglist;
   int ret_value;
 
-  va_start(arglist, format);
+  HDva_start(arglist, format);
   ret_value = vprintf(format, arglist);
-  va_end(arglist);
+  HDva_end(arglist);
   return ret_value;
 }
 
@@ -1599,7 +1599,7 @@ getenv_all(MPI_Comm comm, int root, const char* name)
     int len;
     static char* env = NULL;
 
-    assert(name);
+    HDassert(name);
 
     MPI_Initialized(&mpi_initialized);
     MPI_Finalized(&mpi_finalized);
@@ -1607,7 +1607,7 @@ getenv_all(MPI_Comm comm, int root, const char* name)
     if(mpi_initialized && !mpi_finalized) {
         MPI_Comm_rank(comm, &mpi_rank);
         MPI_Comm_size(comm, &mpi_size);
-        assert(root < mpi_size);
+        HDassert(root < mpi_size);
 
         /* The root task does the getenv call
          * and sends the result to the other tasks */
@@ -1941,6 +1941,42 @@ static herr_t dummy_vfd_read(H5FD_t H5_ATTR_UNUSED *_file, H5FD_mem_t H5_ATTR_UN
 static herr_t dummy_vfd_write(H5FD_t *_file, H5FD_mem_t type, hid_t fapl_id, haddr_t addr, size_t size, const void *buf);
 static herr_t dummy_vfd_write(H5FD_t H5_ATTR_UNUSED *_file, H5FD_mem_t H5_ATTR_UNUSED type, hid_t H5_ATTR_UNUSED fapl_id, haddr_t H5_ATTR_UNUSED addr, size_t H5_ATTR_UNUSED size, const void H5_ATTR_UNUSED *buf) { return FAIL; }
 
+/* Dummy VFD with the minimum parameters to make a VFD that can be registered */
+static const H5FD_class_t H5FD_dummy_g = {
+    "dummy",                    /* name         */
+    1,                          /* maxaddr      */
+    H5F_CLOSE_WEAK,             /* fc_degree    */
+    NULL,                       /* terminate    */
+    NULL,                       /* sb_size      */
+    NULL,                       /* sb_encode    */
+    NULL,                       /* sb_decode    */
+    0,                          /* fapl_size    */
+    NULL,                       /* fapl_get     */
+    NULL,                       /* fapl_copy    */
+    NULL,                       /* fapl_free    */
+    0,                          /* dxpl_size    */
+    NULL,                       /* dxpl_copy    */
+    NULL,                       /* dxpl_free    */
+    dummy_vfd_open,             /* open         */
+    dummy_vfd_close,            /* close        */
+    NULL,                       /* cmp          */
+    NULL,                       /* query        */
+    NULL,                       /* get_type_map */
+    NULL,                       /* alloc        */
+    NULL,                       /* free         */
+    dummy_vfd_get_eoa,          /* get_eoa      */
+    dummy_vfd_set_eoa,          /* set_eoa      */
+    dummy_vfd_get_eof,          /* get_eof      */
+    NULL,                       /* get_handle   */
+    dummy_vfd_read,             /* read         */
+    dummy_vfd_write,            /* write        */
+    NULL,                       /* flush        */
+    NULL,                       /* truncate     */
+    NULL,                       /* lock         */
+    NULL,                       /* unlock       */
+    H5FD_FLMAP_DICHOTOMY	/* fl_map       */
+};
+
 
 /*-------------------------------------------------------------------------
  * Function:    h5_get_dummy_vfd_class()
@@ -1968,21 +2004,11 @@ h5_get_dummy_vfd_class(void)
     H5FD_class_t *vfd_class = NULL;     /* Dummy VFD that will be returned */
 
     /* Create the class and initialize everything to zero/NULL */
-    if(NULL == (vfd_class = (H5FD_class_t *)HDcalloc((size_t)1, sizeof(H5FD_class_t))))
+    if(NULL == (vfd_class = (H5FD_class_t *)HDmalloc(sizeof(H5FD_class_t))))
         TEST_ERROR;
 
-    /* Fill in the minimum parameters to make a VFD that
-     * can be registered.
-     */
-    vfd_class->name = "dummy";
-    vfd_class->maxaddr = 1;
-    vfd_class->open = dummy_vfd_open;
-    vfd_class->close = dummy_vfd_close;
-    vfd_class->get_eoa = dummy_vfd_get_eoa;
-    vfd_class->set_eoa = dummy_vfd_set_eoa;
-    vfd_class->get_eof = dummy_vfd_get_eof;
-    vfd_class->read = dummy_vfd_read;
-    vfd_class->write = dummy_vfd_write;
+    /* Copy the dummy VFD */
+    HDmemcpy(vfd_class, &H5FD_dummy_g, sizeof(H5FD_class_t));
 
     return vfd_class;
 
