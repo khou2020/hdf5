@@ -40,9 +40,9 @@ typedef enum ProvLevel {
 typedef struct H5VL_provenance_info_t {
     hid_t under_vol_id;         /* VOL ID for under VOL */
     void *under_vol_info;       /* VOL info for under VOL */
-    char* prov_file_path;   // TODO: Move into prov_helper
-    Prov_level prov_level;  // TODO: Move into prov_helper
-    char* prov_line_format; // TODO: Move into prov_helper
+    char* prov_file_path;   // TODO: Move into prov_helper_t
+    Prov_level prov_level;  // TODO: Move into prov_helper_t
+    char* prov_line_format; // TODO: Move into prov_helper_t
 //    int ds_created;         // TODO: Move into dataset_prov_info
 //    int ds_accessed;        // TODO: Move into dataset_prov_info
 } H5VL_provenance_info_t;
@@ -53,16 +53,16 @@ typedef enum ProvenanceOutputDST{
     BINARY,
     CSV
 }prov_out_dst;
+
 typedef struct ProvenanceFormat{
     prov_out_dst dst_format;
 
 } prov_format;
 
-typedef struct ProvenanceHelper prov_helper;
 typedef struct H5VL_prov_file_info_t file_prov_info_t;
+typedef struct H5VL_prov_datatype_info_t datatype_prov_info_t;
 
-
-typedef struct ProvenanceHelper{
+typedef struct ProvenanceHelper {
     /* Provenance properties */
     char* prov_file_path;
     FILE* prov_file_handle;
@@ -74,16 +74,13 @@ typedef struct ProvenanceHelper{
     char proc_name[64];
     int ptr_cnt;
     int opened_files_cnt;
-    file_prov_info_t* opened_files;//linkedlist: first node is a dummy.
+    file_prov_info_t* opened_files;//linkedlist,
+    int opened_dtypes_cnt;
+    datatype_prov_info_t* opened_dtypes;
+} prov_helper_t;
 
-}prov_helper;
-
-prov_helper* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format);
-int prov_write(prov_helper* helper_in, const char* msg, unsigned long duration);
-int prov_init();
-
-
-
+prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format);
+int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration);
 
 #ifdef __cplusplus
 extern "C" {

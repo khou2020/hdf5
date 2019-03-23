@@ -62,18 +62,20 @@ int main(int argc, char* argv[]) {
     dataset_id = H5Dopen2(file_id, "/dset", H5P_DEFAULT);
     printf("9\n");
     /* Write the dataset. */
-    status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                      dset_data);
+    status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, dset_data);
     printf("10\n");
-    status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                     dset_data);
+    status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, dset_data);
     printf("11\n");
 //    /* Close the dataset. */
-//    printf("12\n");
+    status = H5Dclose(dataset_id);
+    printf("12\n");
     H5Pclose(fapl);
-//    printf("13\n");
+    printf("13\n");
     H5Fclose(file_id);
+
     printf("14\n");
+
     printf("HDF5 provenance VOL test done.\n");
+
     return 0;
 }
