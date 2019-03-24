@@ -799,7 +799,6 @@ H5VL__native_file_close(void *file, hid_t H5_ATTR_UNUSED dxpl_id,
 
     FUNC_ENTER_PACKAGE
 
-
     /* This routine should only be called when a file ID's ref count drops to zero */
     HDassert(H5F_ID_EXISTS(f));
 
@@ -809,8 +808,6 @@ H5VL__native_file_close(void *file, hid_t H5_ATTR_UNUSED dxpl_id,
      * disabled by an option/property to improve performance.
      */
     if((H5F_NREFS(f) > 1) && (H5F_INTENT(f) & H5F_ACC_RDWR)) {
-
-
         /* Get the file ID corresponding to the H5F_t struct */
         if(H5I_find_id(f, H5I_FILE, &file_id) < 0 || H5I_INVALID_HID == file_id)
             HGOTO_ERROR(H5E_ATOM, H5E_CANTGET, FAIL, "invalid atom")
@@ -818,14 +815,12 @@ H5VL__native_file_close(void *file, hid_t H5_ATTR_UNUSED dxpl_id,
         /* Get the number of references outstanding for this file ID */
         if((nref = H5I_get_ref(file_id, FALSE)) < 0)
             HGOTO_ERROR(H5E_ATOM, H5E_CANTGET, FAIL, "can't get ID ref count")
-
         if(nref == 1)
             if(H5F__flush(f) < 0)
                 HGOTO_ERROR(H5E_CACHE, H5E_CANTFLUSH, FAIL, "unable to flush cache")
     } /* end if */
 
     /* Close the file */
-
     if(H5F__close(f) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTDEC, FAIL, "can't close file")
 

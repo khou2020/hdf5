@@ -104,11 +104,11 @@ H5TEST_DLLVAR MPI_Info h5_io_info_g;         /* MPI INFO object for IO */
 #define TESTING(WHAT)  {printf("Testing %-62s",WHAT); fflush(stdout);}
 #define TESTING_2(WHAT)  {printf("  Testing %-60s",WHAT); fflush(stdout);}
 #define PASSED()  {puts(" PASSED");fflush(stdout);}
-#define H5_FAILED()  {printf("Searching FAILED:%s:%d\n", __func__, __LINE__);puts("*FAILED*");fflush(stdout);}
+#define H5_FAILED()  {puts("*FAILED*");fflush(stdout);}
 #define H5_WARNING()  {puts("*WARNING*");fflush(stdout);}
 #define SKIPPED()  {puts(" -SKIP-");fflush(stdout);}
 #define PUTS_ERROR(s)   {puts(s); AT(); goto error;}
-#define TEST_ERROR      {printf("TEST_ERROR:%s:%d\n", __func__, __LINE__);H5_FAILED(); AT(); goto error;}
+#define TEST_ERROR      {H5_FAILED(); AT(); goto error;}
 #define STACK_ERROR     {H5Eprint2(H5E_DEFAULT, stdout); goto error;}
 #define FAIL_STACK_ERROR {H5_FAILED(); AT(); H5Eprint2(H5E_DEFAULT, stdout); \
     goto error;}

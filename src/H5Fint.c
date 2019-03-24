@@ -1169,28 +1169,22 @@ H5F__dest(H5F_t *f, hbool_t flush)
     HDassert(f->shared);
 
     if(1 == f->shared->nrefs) {
-
         int actype;                         /* metadata cache type (enum value) */
 
         /* Flush at this point since the file will be closed (phase 1).
          * Only try to flush the file if it was opened with write access, and if
          * the caller requested a flush.
          */
-
-        if((H5F_ACC_RDWR & H5F_INTENT(f)) && flush){
-
-            if(H5F__flush_phase1(f) < 0){
-
+        if((H5F_ACC_RDWR & H5F_INTENT(f)) && flush)
+            if(H5F__flush_phase1(f) < 0)
                 /* Push error, but keep going*/
                 HDONE_ERROR(H5E_FILE, H5E_CANTFLUSH, FAIL, "unable to flush cached data (phase 1)")
-            }
-        }
+
         /* Notify the metadata cache that the file is about to be closed.
          * This allows the cache to set up for creating a metadata cache
          * image if this has been requested.
          */
-
-                if(H5AC_prep_for_file_close(f) < 0)
+        if(H5AC_prep_for_file_close(f) < 0)
             /* Push error, but keep going */
             HDONE_ERROR(H5E_FILE, H5E_CANTFLUSH, FAIL, "metadata cache prep for close failed")
 
@@ -1198,7 +1192,6 @@ H5F__dest(H5F_t *f, hbool_t flush)
          * Only try to flush the file if it was opened with write access, and if
          * the caller requested a flush.
          */
-
         if((H5F_ACC_RDWR & H5F_INTENT(f)) && flush)
             if(H5F__flush_phase2(f, TRUE) < 0)
                 /* Push error, but keep going */
@@ -1406,7 +1399,6 @@ H5F__dest(H5F_t *f, hbool_t flush)
 
     }
     else if(f->shared->nrefs > 0) {
-
         /*
          * There are other references to the shared part of the file.
          * Only decrement the reference count.
@@ -2003,9 +1995,7 @@ H5F__close(H5F_t *f)
     /* Perform checks for "semi" file close degree here, since closing the
      * file is not allowed if there are objects still open.
      */
-
     if(f->shared->fc_degree == H5F_CLOSE_SEMI) {
-
         unsigned nopen_files = 0;       /* Number of open files in file/mount hierarchy */
         unsigned nopen_objs = 0;        /* Number of open objects in file/mount hierarchy */
 
@@ -2018,7 +2008,6 @@ H5F__close(H5F_t *f)
          * without decrementing the file ID's reference count and triggering
          * a "real" attempt at closing the file.
          */
-
         if(nopen_files == 1 && nopen_objs > 0)
             HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "can't close file, there are objects still open")
     }
@@ -2071,7 +2060,6 @@ H5F_try_close(H5F_t *f, hbool_t *was_closed /*out*/)
 
     /* Check if this file is already in the process of closing */
     if(f->closing) {
-
         if(was_closed)
             *was_closed = TRUE;
         HGOTO_DONE(SUCCEED)
@@ -2091,9 +2079,7 @@ H5F_try_close(H5F_t *f, hbool_t *was_closed /*out*/)
      *  H5F_CLOSE_STRONG:    if there are still objects open, close them
      *            first, then close file.
      */
-
     switch(f->shared->fc_degree) {
-
         case H5F_CLOSE_WEAK:
             /*
              * If file or object IDS are still open then delay deletion of
@@ -2203,7 +2189,6 @@ H5F_try_close(H5F_t *f, hbool_t *was_closed /*out*/)
      * shared H5F_file_t struct. If the reference count for the H5F_file_t
      * struct reaches zero then destroy it also.
      */
-
     if(H5F__dest(f, TRUE) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "problems closing file")
 

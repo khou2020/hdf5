@@ -110,17 +110,17 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
     H5VL_loc_params_t   loc_params;
     H5P_genplist_t     *plist = NULL;                       /* Property list pointer */
     hid_t               ret_value = H5I_INVALID_HID;        /* Return value */
-    //printf("%s:%d\n", __func__, __LINE__);
+
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE7("i", "i*siiiii", loc_id, name, type_id, space_id, lcpl_id, dcpl_id,
              dapl_id);
-    //printf("%s:%d\n", __func__, __LINE__);
+
     /* Check arguments */
     if(!name)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, H5I_INVALID_HID, "name parameter cannot be NULL")
     if(!*name)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, H5I_INVALID_HID, "name parameter cannot be an empty string")
-    //printf("%s:%d\n", __func__, __LINE__);
+
     /* Get link creation property list */
     if(H5P_DEFAULT == lcpl_id)
         lcpl_id = H5P_LINK_CREATE_DEFAULT;
@@ -128,7 +128,6 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
         if(TRUE != H5P_isa_class(lcpl_id, H5P_LINK_CREATE))
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "lcpl_id is not a link creation property list")
 
-    //printf("%s:%d\n", __func__, __LINE__);
     /* Get dataset creation property list */
     if(H5P_DEFAULT == dcpl_id)
         dcpl_id = H5P_DATASET_CREATE_DEFAULT;
@@ -137,20 +136,17 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "dcpl_id is not a dataset create property list ID")
 
     /* Verify access property list and set up collective metadata if appropriate */
-    //printf("%s:%d\n", __func__, __LINE__);
     if(H5CX_set_apl(&dapl_id, H5P_CLS_DACC, loc_id, TRUE) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTSET, H5I_INVALID_HID, "can't set access property list info")
 
     /* Get the property list structure for the dcpl */
-    //printf("%s:%d\n", __func__, __LINE__);
     if(NULL == (plist = (H5P_genplist_t *)H5I_object(dcpl_id)))
         HGOTO_ERROR(H5E_ATOM, H5E_BADATOM, H5I_INVALID_HID, "can't find object for ID")
-    //printf("%s:%d\n", __func__, __LINE__);
+
     /* Get the location object */
     if(NULL == (vol_obj = (H5VL_object_t *)H5I_object(loc_id)))
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "invalid location identifier")
 
-    //printf("%s:%d\n", __func__, __LINE__);
     /* Set creation properties */
     if(H5P_set(plist, H5VL_PROP_DSET_TYPE_ID, &type_id) < 0)
         HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for datatype id")
@@ -164,21 +160,18 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
     loc_params.obj_type     = H5I_get_type(loc_id);
 
     /* Create the dataset */
-    //printf("%s:%d\n", __func__, __LINE__);
     if(NULL == (dset = H5VL_dataset_create(vol_obj, &loc_params, name, dcpl_id, dapl_id, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL)))
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, H5I_INVALID_HID, "unable to create dataset")
-        //printf("=================================== H5Dcreate2: dset =  %p\n", dset);
+
     /* Get an atom for the dataset */
     if((ret_value = H5VL_register(H5I_DATASET, dset, vol_obj->connector, TRUE)) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTREGISTER, H5I_INVALID_HID, "unable to atomize dataset handle")
-    //printf("%s:%d\n", __func__, __LINE__);
+
 done:
-    if(H5I_INVALID_HID == ret_value){
-        //printf("%s:%d\n", __func__, __LINE__);
-        if(dset && H5VL_dataset_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0){
+    if(H5I_INVALID_HID == ret_value)
+        if(dset && H5VL_dataset_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release dataset")
-        }
-    }
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dcreate2() */
 

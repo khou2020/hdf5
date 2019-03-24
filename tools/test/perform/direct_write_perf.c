@@ -62,7 +62,7 @@ const char *FILENAME[] = {
 #define FUNC __func__
 #define AT()     printf ("   at %s:%d in %s()...\n",        \
         __FILE__, __LINE__, FUNC);
-#define H5_FAILED()  {puts(tmp_str);puts("*FAILED*");fflush(stdout);}
+#define H5_FAILED()  {puts("*FAILED*");fflush(stdout);}
 #define TEST_ERROR      {H5_FAILED(); AT(); goto error;}
 #define TESTING(WHAT)  {printf("Testing %-62s",WHAT); fflush(stdout);}
 #define PASSED()  {puts(" PASSED");fflush(stdout);}
