@@ -350,7 +350,7 @@ done:
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release map")
 
     FUNC_LEAVE_API(ret_value)
-} /* end H5Dcreate_anon() */
+} /* end H5Mcreate_anon() */
 
 
 /*------------------------------------------------------------------------
