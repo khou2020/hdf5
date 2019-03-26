@@ -268,7 +268,7 @@ set (H5_TESTS
     cache_logging
     cork
     swmr
-    vol
+    vol_test
 )
 
 macro (ADD_H5_EXE file)

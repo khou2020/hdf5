@@ -61,7 +61,7 @@ TEST_PROG= testhdf5 \
            flush1 flush2 app_ref enum set_extent ttsafe enc_dec_plist \
            enc_dec_plist_cross_platform getname vfd ntypes dangle dtransform \
            reserved cross_read freespace mf vds file_image unregister \
-           cache_logging cork swmr vol
+           cache_logging cork swmr vol_test
 
 # List programs to be built when testing here.
 # error_test and err_compat are built at the same time as the other tests, but executed by testerror.sh.
@@ -225,5 +225,7 @@ use_disable_mdc_flushes_SOURCES=use_disable_mdc_flushes.c
 DISTCLEANFILES=testerror.sh testlibinfo.sh testcheck_version.sh testlinks_env.sh test_filter_plugin.sh \
     testswmr.sh testvdsswmr.sh test_usecases.sh testflushrefresh.sh testabort_fail.sh \
 	test_vol_plugin.sh
+
+SUBDIRS = . VOL
 
 include $(top_srcdir)/config/conclude.am

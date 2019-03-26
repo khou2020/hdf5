@@ -295,6 +295,75 @@ done:
 
 
 /*-------------------------------------------------------------------------
+ * Function:    H5Sselect_get_seq_list
+ *
+ * Purpose: Retrieves the next sequence of offset/length pairs for an
+ *              iterator on a dataspace
+ *
+ * Return:  Non-negative on success/Negative on failure
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5Sselect_get_seq_list(hid_t space_id, unsigned flags, H5S_sel_iter_t *sel_iter,
+    size_t maxseq, size_t maxbytes, size_t *nseq, size_t *nbytes,
+    hsize_t *off, size_t *len)
+{
+    H5S_t  *space = NULL;
+    herr_t  ret_value = FAIL;
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE9("e", "iIu*xzz*z*z*h*z", space_id, flags, sel_iter, maxseq, maxbytes,
+             nseq, nbytes, off, len);
+
+    if (NULL == (space = H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "not a dataspace")
+
+    ret_value = H5S_SELECT_GET_SEQ_LIST(space, flags, sel_iter, maxseq, maxbytes, nseq, nbytes, off, len);
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_get_seq_list() */
+
+
+/*-------------------------------------------------------------------------
+ * Function:	H5S_select_get_seq_list
+ *
+ * Purpose:	Retrieves the next sequence of offset/length pairs for an
+ *              iterator on a dataspace
+ *
+ * Return:	Non-negative on success/Negative on failure
+ *
+ * Programmer:	Quincey Koziol
+ *		Tuesday, May 18, 2004
+ *
+ * Note: This routine participates in the "Inlining C function pointers"
+ *      pattern, don't call it directly, use the appropriate macro
+ *      defined in H5Sprivate.h.
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5S_select_get_seq_list(const H5S_t *space, unsigned flags,
+    H5S_sel_iter_t *iter, size_t maxseq, size_t maxbytes,
+    size_t *nseq, size_t *nbytes, hsize_t *off, size_t *len)
+{
+    herr_t ret_value = FAIL;    /* Return value */
+
+    FUNC_ENTER_NOAPI_NOINIT
+
+    HDassert(space);
+
+    /* Call the selection type's get_seq_list function */
+    if((ret_value = (*space->select.type->get_seq_list)(space, flags, iter, maxseq, maxbytes, nseq, nbytes, off, len)) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "unable to get selection sequence list")
+
+done:
+    FUNC_LEAVE_NOAPI(ret_value)
+}   /* end H5S_select_get_seq_list() */
+
+
+/*-------------------------------------------------------------------------
  * Function:	H5S_select_serial_size
  *
  * Purpose:	Determines the number of bytes required to store the current
@@ -1094,6 +1163,45 @@ H5S_select_project_simple(const H5S_t *space, H5S_t *new_space, hsize_t *offset)
 
 /*--------------------------------------------------------------------------
  NAME
+    H5Sselect_iter_init
+ PURPOSE
+    Initializes iteration information for a selection.
+ USAGE
+    H5S_sel_iter_t * H5Sselect_iter_init(space_id, elmt_size)
+        hid_t space_id          IN: Dataspace ID containing the selection to
+                                    iterate over
+        size_t elmt_size        IN: Size of elements in the selection
+ RETURNS
+     Non-NULL on success, NULL on failure.
+ DESCRIPTION
+    Initialize the selection iterator object to point to the first element
+    in the dataspace's selection.
+--------------------------------------------------------------------------*/
+H5S_sel_iter_t *
+H5Sselect_iter_init(hid_t space_id, size_t elmt_size)
+{
+    H5S_t  *space = NULL;
+    H5S_sel_iter_t *ret_value = NULL;
+
+    FUNC_ENTER_API(NULL)
+    H5TRACE2("*x", "iz", space_id, elmt_size);
+
+    if (NULL == (space = H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, NULL, "not a dataspace")
+
+    if (NULL == (ret_value = H5MM_malloc(sizeof(*ret_value))))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTALLOC, NULL, "unable to allocate space for ")
+
+    if (H5S_select_iter_init(ret_value, space, elmt_size) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTINIT, NULL, "unable to initialize dataspace selection iterator")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_iter_init() */
+
+
+/*--------------------------------------------------------------------------
+ NAME
     H5S_select_iter_init
  PURPOSE
     Initializes iteration information for a selection.
@@ -1428,11 +1536,50 @@ done:
 
 /*--------------------------------------------------------------------------
  NAME
+    H5Sselect_iter_release
+ PURPOSE
+    Release a selection iterator's resources.
+ USAGE
+    herr_t H5Sselect_iter_release(sel_iter)
+        H5S_sel_iter_t *sel_iter; IN: Selection iterator to release
+ RETURNS
+    Non-negative on success, negative on failure
+ DESCRIPTION
+    Releases the resources for a dataspace selection iterator.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+herr_t
+H5Sselect_iter_release(H5S_sel_iter_t *sel_iter)
+{
+    herr_t ret_value = SUCCEED; /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE1("e", "*x", sel_iter);
+
+    /* Check args */
+    HDassert(sel_iter);
+
+    /* Call selection type-specific release routine */
+    if (H5S_SELECT_ITER_RELEASE(sel_iter) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTRELEASE, FAIL, "unable to release dataspace selection iterator's resources")
+
+done:
+    H5MM_xfree(sel_iter);
+
+    FUNC_LEAVE_API(ret_value)
+} /* H5Sselect_iter_release() */
+
+
+/*--------------------------------------------------------------------------
+ NAME
     H5S_select_iter_release
  PURPOSE
     Release a selection iterator's resources.
  USAGE
-    hssize_t H5S_select_iter_release(sel_iter)
+    herr_t H5S_select_iter_release(sel_iter)
         H5S_sel_iter_t *sel_iter; IN: Selection iterator to query
  RETURNS
     The number of elements in selection on success, 0 on failure

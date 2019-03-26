@@ -387,6 +387,13 @@ H5_DLL herr_t H5FDunlock(H5FD_t *file);
 /* Allows querying a VFD ID for features before the file is opened */
 H5_DLL herr_t H5FDdriver_query(hid_t driver_id, unsigned long *flags/*out*/);
 
+/* The following have been temporarily added to support the DAOS VOL plugin */
+#ifdef H5_HAVE_PARALLEL
+H5_DLL herr_t H5FDmpi_comm_info_dup(MPI_Comm comm, MPI_Info info,
+                MPI_Comm *comm_new, MPI_Info *info_new);
+H5_DLL herr_t H5FDmpi_comm_info_free(MPI_Comm *comm, MPI_Info *info);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
