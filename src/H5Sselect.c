@@ -327,43 +327,6 @@ done:
 
 
 /*-------------------------------------------------------------------------
- * Function:	H5S_select_get_seq_list
- *
- * Purpose:	Retrieves the next sequence of offset/length pairs for an
- *              iterator on a dataspace
- *
- * Return:	Non-negative on success/Negative on failure
- *
- * Programmer:	Quincey Koziol
- *		Tuesday, May 18, 2004
- *
- * Note: This routine participates in the "Inlining C function pointers"
- *      pattern, don't call it directly, use the appropriate macro
- *      defined in H5Sprivate.h.
- *
- *-------------------------------------------------------------------------
- */
-herr_t
-H5S_select_get_seq_list(const H5S_t *space, unsigned flags,
-    H5S_sel_iter_t *iter, size_t maxseq, size_t maxbytes,
-    size_t *nseq, size_t *nbytes, hsize_t *off, size_t *len)
-{
-    herr_t ret_value = FAIL;    /* Return value */
-
-    FUNC_ENTER_NOAPI_NOINIT
-
-    HDassert(space);
-
-    /* Call the selection type's get_seq_list function */
-    if((ret_value = (*space->select.type->get_seq_list)(space, flags, iter, maxseq, maxbytes, nseq, nbytes, off, len)) < 0)
-        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "unable to get selection sequence list")
-
-done:
-    FUNC_LEAVE_NOAPI(ret_value)
-}   /* end H5S_select_get_seq_list() */
-
-
-/*-------------------------------------------------------------------------
  * Function:	H5S_select_serial_size
  *
  * Purpose:	Determines the number of bytes required to store the current
