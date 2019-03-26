@@ -53,8 +53,17 @@
 /* Group creation property names */
 #define H5VL_PROP_GRP_LCPL_ID               "group_lcpl_id"
 
+/* Map creation property names */
+#define H5VL_PROP_MAP_KEY_TYPE_ID           "map_key_type"
+#define H5VL_PROP_MAP_VAL_TYPE_ID           "map_value_type"
+#define H5VL_PROP_MAP_LCPL_ID               "map_lcpl_id"
+
 /* Default VOL connector value */
 #define H5VL_VOL_DEFAULT                    0
+
+/* Maximum value library will use for the first variable argument (int type) in
+ * the top level "optional" VOL callback */
+#define H5VL_MAX_OPTIONAL_OP_ID             65535
 
 
 /*******************/
@@ -545,6 +554,9 @@ H5_DLL herr_t H5VLrequest_cancel(void *req, hid_t connector_id);
 H5_DLL herr_t H5VLrequest_specific(void *req, hid_t connector_id, H5VL_request_specific_t specific_type, va_list arguments);
 H5_DLL herr_t H5VLrequest_optional(void *req, hid_t connector_id, va_list arguments);
 H5_DLL herr_t H5VLrequest_free(void *req, hid_t connector_id);
+
+/* Public wrapper for generic optional callbacks */
+H5_DLL herr_t H5VLoptional(void *obj, hid_t connector_id, hid_t dxpl_id, void **req, va_list arguments);
 
 #ifdef __cplusplus
 }
