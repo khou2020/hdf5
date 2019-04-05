@@ -56,6 +56,7 @@
 #define va_copy(D,S)      ((D) = (S))
 #endif
 
+#define STAT_FUNC_CNT 32 //maximum possible function number
 /************/
 /* Typedefs */
 /************/
@@ -403,7 +404,9 @@ void _fake_obj_free(H5VL_provenance_t* obj);
 H5VL_provenance_t* _obj_wrap_under(void* under, H5VL_provenance_t* upper_o,
         const char *name, H5I_type_t type, hid_t dxpl_id, void** req);
 H5VL_provenance_t* _file_open_common(void* under, hid_t vol_id, const char* name);
-
+void _dic_init(void);
+void _dic_print(void);
+void _dic_free(void);
 datatype_prov_info_t* new_datatype_info(void){
     datatype_prov_info_t* info = (datatype_prov_info_t *)calloc(1, sizeof(datatype_prov_info_t));
     info->prov_helper = PROV_HELPER;
@@ -460,41 +463,41 @@ void dataset_info_free(dataset_prov_info_t* info){
 
 void dataset_stats_prov_write(const dataset_prov_info_t* ds_info){
     if(!ds_info){
-        printf("dataset_stats_prov_write(): ds_info is NULL.\n");
+//        printf("dataset_stats_prov_write(): ds_info is NULL.\n");
         return;
     }
-    printf("Dataset name = %s,\ndata type class = %d, data space class = %d, data space size = %llu, data type size =%zu.\n",
-            ds_info->dset_name, ds_info->dt_class, ds_info->ds_class,  (unsigned long long)ds_info->dset_space_size, ds_info->dset_type_size);
-    printf("Dataset is %u dimensions.\n", ds_info->dimension_cnt);
-    printf("Dataset is read %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_read_cnt, ds_info->total_bytes_read, ds_info->total_read_time);
-    printf("Dataset is written %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_write_cnt, ds_info->total_bytes_written, ds_info->total_write_time);
+//    printf("Dataset name = %s,\ndata type class = %d, data space class = %d, data space size = %llu, data type size =%zu.\n",
+//            ds_info->dset_name, ds_info->dt_class, ds_info->ds_class,  (unsigned long long)ds_info->dset_space_size, ds_info->dset_type_size);
+//    printf("Dataset is %u dimensions.\n", ds_info->dimension_cnt);
+//    printf("Dataset is read %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_read_cnt, ds_info->total_bytes_read, ds_info->total_read_time);
+//    printf("Dataset is written %d time, %llu bytes in total, costs %llu us.\n", ds_info->dataset_write_cnt, ds_info->total_bytes_written, ds_info->total_write_time);
 }
 
 //not file_prov_info_t!
 void file_stats_prov_write(const file_prov_info_t* file_info) {
     if(!file_info){
-        printf("file_stats_prov_write(): ds_info is NULL.\n");
+ //       printf("file_stats_prov_write(): ds_info is NULL.\n");
         return;
     }
 
-    printf("H5 file closed, %d datasets are created, %d datasets are accessed.\n", file_info->ds_created, file_info->ds_accessed);
+    //printf("H5 file closed, %d datasets are created, %d datasets are accessed.\n", file_info->ds_created, file_info->ds_accessed);
 
 }
 
 void datatype_stats_prov_write(const datatype_prov_info_t* dt_info) {
     if(!dt_info){
-        printf("datatype_stats_prov_write(): ds_info is NULL.\n");
+        //printf("datatype_stats_prov_write(): ds_info is NULL.\n");
         return;
     }
-    printf("Datatype name = %s, commited %d times, datatype get is called %d times.\n", dt_info->dtype_name, dt_info->datatype_commit_cnt, dt_info->datatype_get_cnt);
+    //printf("Datatype name = %s, commited %d times, datatype get is called %d times.\n", dt_info->dtype_name, dt_info->datatype_commit_cnt, dt_info->datatype_get_cnt);
 }
 
 void group_stats_prov_write(const group_prov_info_t* grp_info) {
     if(!grp_info){
-        printf("group_stats_prov_write(): grp_info is NULL.\n");
+        //printf("group_stats_prov_write(): grp_info is NULL.\n");
         return;
     }
-    printf("group_stats_prov_write() is yet to be implemented.\n");
+    //printf("group_stats_prov_write() is yet to be implemented.\n");
 }
 
 prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format){
@@ -523,6 +526,7 @@ prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* p
         new_helper->prov_file_handle = fopen(new_helper->prov_file_path, "a");
     }
 
+    _dic_init();
     return new_helper;
 }
 
@@ -539,6 +543,7 @@ void prov_helper_teardown(prov_helper_t* helper){
             free(helper->prov_line_format);
 
         free(helper);
+        _dic_free();
     }
 }
 
@@ -1088,6 +1093,46 @@ void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_typ
     H5VLdataset_get(dset, driver_id, get_type, dxpl_id, req, args);
 }
 
+
+//shorten function id: use hash value
+char* FUNC_DIC[STAT_FUNC_CNT];
+
+void _dic_init(void){
+    for(int i = 0; i < STAT_FUNC_CNT; i++){
+        FUNC_DIC[i] = NULL;
+    }
+}
+
+unsigned int genHash(const char *msg) {
+    unsigned int hash = 0;
+    unsigned int c; //int c;
+    while (c = (*msg++)) {
+        hash = c + (hash << 6) + (hash << 16) - hash;
+    }
+    unsigned int func_index = hash % STAT_FUNC_CNT;
+    if(!FUNC_DIC[func_index]) {
+        FUNC_DIC[func_index] = strdup(msg);
+        printf("test hash dic: index = %d, msg = %s\n", func_index, FUNC_DIC[func_index]);
+    }
+    return func_index;
+}
+
+void _dic_free(void){
+    for(int i = 0; i < STAT_FUNC_CNT; i++){
+        if(FUNC_DIC[i]){
+            free(FUNC_DIC[i]);
+        }
+    }
+}
+
+void _dic_print(){
+    for(int i = 0; i < STAT_FUNC_CNT; i++){
+        if(FUNC_DIC[i]){
+            printf("%d %s\n", i, FUNC_DIC[i]);
+        }
+    }
+}
+
 int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration){
     const char* base = "H5VL_provenance_";
     size_t base_len;
@@ -1116,7 +1161,8 @@ int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration
         }
     }
 
-    sprintf(pline, "[%s][User:%s][PID:%d][TID:%llu][Func:%s][%luus]\n", time, helper_in->user_name, helper_in->pid, helper_in->tid, msg + trim_offset, duration);
+    //sprintf(pline, "[%s][User:%s][PID:%d][TID:%llu][Func:%s][%luus]\n", time, helper_in->user_name, helper_in->pid, helper_in->tid, msg + trim_offset, duration);
+    sprintf(pline, "%u %lu\n",  genHash(msg), duration);//assume less than 64 functions
 
     switch(helper_in->prov_level){
         case File_only:
@@ -3191,7 +3237,7 @@ H5VL_provenance_file_close(void *file, hid_t dxpl_id, void **req)
     /* Release our wrapper, if underlying file was closed */
     if(ret_value >= 0){
         if(!o->generic_prov_info){//from fake upper_o, no need to remove linkedlist
-printf("%s:%d: generic_prov_info is NULL: created from a fake upper_o. \n", __func__, __LINE__);
+            //printf("%s:%d: generic_prov_info is NULL: created from a fake upper_o. \n", __func__, __LINE__);
         }else{
             char* fname = ((file_prov_info_t*)(o->generic_prov_info))->file_name;
 
@@ -3453,7 +3499,7 @@ H5VL_provenance_group_close(void *grp, hid_t dxpl_id, void **req)
         *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
 
     /* Release our wrapper, if underlying file was closed */
-    printf("%s:%d\n", __func__, __LINE__);
+    //printf("%s:%d\n", __func__, __LINE__);
     if(ret_value >= 0){
         group_prov_info_t* grp_info;
         file_prov_info_t* root_file;
