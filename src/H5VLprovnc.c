@@ -1362,7 +1362,7 @@ H5VL_provenance_new_obj(void *under_obj, hid_t under_vol_id, prov_helper_t* help
 {
     H5VL_provenance_t *new_obj;
 
-    assert(under_obj);
+    assert(under_vol_id);
     assert(helper);
 
     new_obj = (H5VL_provenance_t *)calloc(1, sizeof(H5VL_provenance_t));
