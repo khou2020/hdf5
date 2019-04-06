@@ -384,11 +384,11 @@ int rm_dtype_node(prov_helper_t* helper, haddr_t native_addr);
 file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name, unsigned long file_no);
 group_prov_info_t* add_grp_node(file_prov_info_t* root_file, haddr_t native_addr);
 int rm_grp_node(file_prov_info_t* root_file, haddr_t native_addr);
-int rm_file_node(prov_helper_t* helper, char* file_name);
+int rm_file_node(prov_helper_t* helper, unsigned long file_no);
 file_prov_info_t* _search_home_file(unsigned long obj_file_no);
 dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no, H5VL_provenance_t* dset, haddr_t native_addr,
         file_prov_info_t* file_info_in, const char* ds_name, hid_t dxpl_id, void** req);
-int rm_dataset_node(file_prov_info_t* file_info, haddr_t native_addr);
+int rm_dataset_node(prov_helper_t *helper, dataset_prov_info_t *dset_info);
 void ptr_cnt_increment(prov_helper_t* helper);
 void ptr_cnt_decrement(prov_helper_t* helper);
 void get_time_str(char *str_out);
@@ -404,9 +404,11 @@ void _fake_obj_free(H5VL_provenance_t* obj);
 H5VL_provenance_t* _obj_wrap_under(void* under, H5VL_provenance_t* upper_o,
         const char *name, H5I_type_t type, hid_t dxpl_id, void** req);
 H5VL_provenance_t* _file_open_common(void* under, hid_t vol_id, const char* name);
+unsigned int genHash(const char *msg);
 void _dic_init(void);
 void _dic_print(void);
 void _dic_free(void);
+
 datatype_prov_info_t* new_datatype_info(void){
     datatype_prov_info_t* info = (datatype_prov_info_t *)calloc(1, sizeof(datatype_prov_info_t));
     info->prov_helper = PROV_HELPER;
@@ -642,7 +644,9 @@ int rm_dtype_node(prov_helper_t* helper, haddr_t native_addr){
     return helper->opened_dtypes_cnt;
 }
 
-file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name, unsigned long file_no){
+file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name,
+    unsigned long file_no)
+{
     file_prov_info_t* new_node;
 
     assert(helper);
@@ -652,39 +656,30 @@ file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name, un
     }
 
     if(!helper->opened_files){//empty linked list, no opened file.
-        helper->opened_files_cnt = 0;
-        new_node = (file_prov_info_t *)calloc(1, sizeof(file_prov_info_t));
-        new_node->file_name = strdup(file_name);
-        new_node->ref_cnt = 1;
-        new_node->file_no = file_no;
-        helper->opened_files = new_node;
-        helper->opened_files_cnt++;
+        assert(helper->opened_files_cnt == 0);
     } else {
         file_prov_info_t* cur;
-        file_prov_info_t* last;
 
         cur = helper->opened_files;
-        last = cur;
         while (cur) {
-            if (!strcmp(cur->file_name, file_name)) {//attempt to open an already opened file.
-                if(cur->file_no == 0)
-                    cur->file_no = file_no;
-
+            assert(cur->file_no);
+            if (cur->file_no == file_no) {//attempt to open an already opened file.
                 cur->ref_cnt++;
 
                 return cur;
             }
-            last = cur;
             cur = cur->next;
         }
-
-        new_node = (file_prov_info_t *)calloc(1, sizeof(file_prov_info_t));
-        new_node->file_name = strdup(file_name);
-        new_node->ref_cnt = 1;
-        new_node->file_no = file_no;
-        last->next = new_node;
-        helper->opened_files_cnt++;
     }
+
+    new_node = (file_prov_info_t *)calloc(1, sizeof(file_prov_info_t));
+    new_node->file_name = strdup(file_name);
+    new_node->ref_cnt = 1;
+    new_node->file_no = file_no;
+
+    new_node->next = helper->opened_files;
+    helper->opened_files = new_node;
+    helper->opened_files_cnt++;
 
     return new_node;
 }
@@ -775,52 +770,41 @@ int rm_grp_node(file_prov_info_t* root_file, haddr_t native_addr){
 }
 
 //need a dumy node to make it simpler
-int rm_file_node(prov_helper_t* helper, char* file_name){
+int rm_file_node(prov_helper_t* helper, unsigned long file_no)
+{
     file_prov_info_t* cur;
     file_prov_info_t* last;
-    int index;
 
     assert(helper);
-    assert(file_name);
-
-    if(!helper->opened_files){//no node found
-        return helper->opened_files_cnt;//no fopen files.
-    }
+    assert(helper->opened_files);
+    assert(helper->opened_files_cnt);
+    assert(file_no);
 
     cur = helper->opened_files;
     last = cur;
-    index = 0;
     while(cur){
-        if(!strcmp(cur->file_name, file_name)){//node found
+        if(cur->file_no == file_no) {//node found
             cur->ref_cnt--;
-            if(cur->ref_cnt > 0){//not to remove
-                return helper->opened_files_cnt;
-            }
-            else { //cur->next->ref_cnt == 0, remove file node & maybe print file stats (heppens when close a file)
-                if(0 == index){//first node is the target
-                    helper->opened_files = helper->opened_files->next;
-                    file_info_free(cur);
-                    helper->opened_files_cnt--;
-                    return helper->opened_files_cnt;
-                }
 
-                last->next = cur->next;
+            if(cur->ref_cnt == 0){ //cur->ref_cnt == 0, remove file node & maybe print file stats (heppens when close a file)
+                if(cur == helper->opened_files) //first node is the target
+                    helper->opened_files = helper->opened_files->next;
+                else
+                    last->next = cur->next;
 
                 file_info_free(cur);
-                helper->opened_files_cnt--;
-                if(helper->opened_files_cnt == 0){
-                    helper->opened_files = NULL;
-                }
 
-                return helper->opened_files_cnt;
+                helper->opened_files_cnt--;
+                if(helper->opened_files_cnt == 0)
+                    assert(helper->opened_files == NULL);
             }
+
+            break;
         }
         last = cur;
         cur = cur->next;
-        index++;
     }
 
-    //node not found.
     return helper->opened_files_cnt;
 }
 
@@ -846,7 +830,7 @@ file_prov_info_t* _search_home_file(unsigned long obj_file_no){
 dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no, H5VL_provenance_t* dset, haddr_t native_addr,
         file_prov_info_t* file_info_in, const char* ds_name, hid_t dxpl_id, void** req){
     file_prov_info_t* file_info;
-    dataset_prov_info_t* new_node;
+    dataset_prov_info_t* cur;
 
     assert(dset);
     assert(dset->under_object);
@@ -868,89 +852,78 @@ dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no, H5VL_provenance
     }else{//local
         file_info = file_info_in;
     }
+fprintf(stderr, "%s:%u - file_info = %p\n", __func__, __LINE__, file_info);
+fprintf(stderr, "%s:%u - file_info->opened_datasets = %u\n", __func__, __LINE__, (unsigned)file_info->opened_datasets);
+fprintf(stderr, "%s:%u - file_info->ref_cnt = %u\n", __func__, __LINE__, (unsigned)file_info->ref_cnt);
 
-    if(!file_info->opened_datasets){//empty linked list, no opened file.
-        new_node = new_ds_prov_info(dset->under_object, dset->under_vol_id,
-                native_addr, file_info, ds_name, dxpl_id, req);
-        file_info->opened_datasets_cnt = 0;
-        new_node->ref_cnt = 1;
-        file_info->opened_datasets = new_node;
-        file_info->opened_datasets_cnt++;
-
-        return new_node;
-    } else {
-        dataset_prov_info_t* cur;
-        dataset_prov_info_t* last;
-        int i;
-
-        cur = file_info->opened_datasets;
-        last = cur;
-        i = 0;
-        while (cur) {
-            if (cur->native_addr == native_addr) {
-                //attempt to open an already opened file.
-
-                cur->ref_cnt++;
-                return cur;
-            }
-            i++;
-            last = cur;
-            cur = cur->next;
-        }
-
-        new_node = new_ds_prov_info(dset->under_object, dset->under_vol_id, native_addr, file_info, ds_name, dxpl_id, req);
-        last->next = new_node;
-        file_info->opened_datasets_cnt++;
-
-        return new_node;
+    // Find dataset in linked list of opened datasets
+    cur = file_info->opened_datasets;
+    while (cur) {
+        if (cur->native_addr == native_addr)
+            break;
+        cur = cur->next;
     }
+
+    if(cur)
+        cur->ref_cnt++;
+    else {
+        cur = new_ds_prov_info(dset->under_object, dset->under_vol_id, native_addr, file_info, ds_name, dxpl_id, req);
+        cur->ref_cnt = 1;
+
+        cur->next = file_info->opened_datasets;
+        file_info->opened_datasets = cur;
+        file_info->opened_datasets_cnt++;
+    }
+
+    // Increment refcount on file info
+    file_info->ref_cnt++;
+
+    return cur;
 }
 
 //need a dumy node to make it simpler
-int rm_dataset_node(file_prov_info_t* file_info, haddr_t native_addr){
+int rm_dataset_node(prov_helper_t *helper, dataset_prov_info_t *dset_info)
+{
+    file_prov_info_t* file_info;
     dataset_prov_info_t* ds_cur;
     dataset_prov_info_t* last;
-    int index;
 
+    // Decrement refcount
+    dset_info->ref_cnt--;
+
+    // If refcount still >0, leave now
+    if(dset_info->ref_cnt > 0)
+        return dset_info->ref_cnt;
+
+    // Refcount == 0, remove dataset from file info
+
+    file_info = dset_info->root_file_info;
     assert(file_info);
-
-    if(!file_info->opened_datasets){//no node found
-        return file_info->opened_datasets_cnt;//no fopen files.
-    }
+    assert(file_info->opened_datasets);
 
     ds_cur = file_info->opened_datasets;
     last = ds_cur;
-    index = 0;
     while(ds_cur){
-        if(ds_cur->native_addr == native_addr){//node found
-            ds_cur->ref_cnt--;
-            if(ds_cur->ref_cnt > 0){
-                return ds_cur->ref_cnt;
-            }
-            else{//cur->next->ref_cnt == 0, remove file node & maybe print file stats (heppens when close a file)
-
-                //special case: first node is the target, ==cur
-                if(0 == index){
-                    file_info->opened_datasets = file_info->opened_datasets->next;
-                    dataset_info_free(ds_cur);
-                    file_info->opened_datasets_cnt--;
-                    return 0;//ref_cnt
-                }
+        if(ds_cur->native_addr == dset_info->native_addr){//node found
+            //special case: first node is the target, ==cur
+            if(ds_cur == file_info->opened_datasets)
+                file_info->opened_datasets = file_info->opened_datasets->next;
+            else
                 last->next = ds_cur->next;
 
-                dataset_info_free(ds_cur);
-                file_info->opened_datasets_cnt--;
+            dataset_info_free(ds_cur);
 
-                if(file_info->opened_datasets_cnt == 0){
-                    file_info->opened_datasets = NULL;
-                } else {
-                }
-                return 0;//file_info->opened_datasets_cnt;
-            }
+            file_info->opened_datasets_cnt--;
+            if(file_info->opened_datasets_cnt == 0)
+                assert(file_info->opened_datasets == NULL);
+
+            // Decrement refcount on file info
+            rm_file_node(helper, file_info->file_no);
+
+            return 0;
         }
         last = ds_cur;
         ds_cur = ds_cur->next;
-        index++;
     }
 
     //node not found.
@@ -1083,9 +1056,6 @@ void get_native_file_no(unsigned long* file_num_out, const H5VL_provenance_t* fi
     H5VLgroup_close(root_grp, file_obj->under_vol_id, H5P_DEFAULT, NULL);//file_obj->under_object
 }
 
-
-
-
 void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type,
         hid_t dxpl_id, void **req, ...){
     va_list args;
@@ -1093,6 +1063,10 @@ void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_typ
     H5VLdataset_get(dset, driver_id, get_type, dxpl_id, req, args);
 }
 
+void prov_all_closed(void)
+{
+    assert(0 == PROV_HELPER->opened_files_cnt);
+}
 
 //shorten function id: use hash value
 char* FUNC_DIC[STAT_FUNC_CNT];
@@ -1106,10 +1080,12 @@ void _dic_init(void){
 unsigned int genHash(const char *msg) {
     unsigned int hash = 0;
     unsigned int c; //int c;
-    while (c = (*msg++)) {
+    unsigned int func_index;
+
+    while (0 != (c = (unsigned int)(*msg++))) {
         hash = c + (hash << 6) + (hash << 16) - hash;
     }
-    unsigned int func_index = hash % STAT_FUNC_CNT;
+    func_index = hash % STAT_FUNC_CNT;
     if(!FUNC_DIC[func_index]) {
         FUNC_DIC[func_index] = strdup(msg);
         printf("test hash dic: index = %d, msg = %s\n", func_index, FUNC_DIC[func_index]);
@@ -1125,7 +1101,7 @@ void _dic_free(void){
     }
 }
 
-void _dic_print(){
+void _dic_print(void){
     for(int i = 0; i < STAT_FUNC_CNT; i++){
         if(FUNC_DIC[i]){
             printf("%d %s\n", i, FUNC_DIC[i]);
@@ -2255,6 +2231,7 @@ H5VL_provenance_t* _obj_wrap_under(void* under, H5VL_provenance_t* upper_o,
                  return NULL;
              }
         }
+fprintf(stderr, "%s:%u - root_file_info = %p\n", __func__, __LINE__, root_file_info);
 
         obj = H5VL_provenance_new_obj(under, upper_o->under_vol_id, upper_o->prov_helper);
 
@@ -2588,15 +2565,14 @@ H5VL_provenance_dataset_close(void *dset, hid_t dxpl_id, void **req)
     /* Release our wrapper, if underlying dataset was closed */
     if(ret_value >= 0){
         dataset_prov_info_t* dset_info;
-        file_prov_info_t* file_info;
 
         dset_info = (dataset_prov_info_t*)o->generic_prov_info;
-        file_info = dset_info->root_file_info;
+        assert(dset_info);
 
         dataset_stats_prov_write(dset_info);//output stats
-
         prov_write(o->prov_helper, __func__, get_time_usec() - start);
-        rm_dataset_node(file_info, dset_info->native_addr);
+
+        rm_dataset_node(o->prov_helper, dset_info);
 
         H5VL_provenance_free_obj(o);
     }
@@ -2922,6 +2898,8 @@ H5VL_provenance_t* _file_open_common(void* under, hid_t vol_id, const char* name
     file->my_type = H5I_FILE;
     get_native_file_no(&file_no, file);
     file->generic_prov_info = add_file_node(PROV_HELPER, name, file_no);
+fprintf(stderr, "%s:%u - file = %p\n", __func__, __LINE__, file);
+fprintf(stderr, "%s:%u - file->generic_prov_info = %p\n", __func__, __LINE__, file->generic_prov_info);
 
     return file;
 }
@@ -2963,6 +2941,7 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     start = get_time_usec();
     /* Open the file with the underlying VOL connector */
     under = H5VLfile_open(name, flags, under_fapl_id, dxpl_id, req);
+fprintf(stderr, "%s:%u - under = %p\n", __func__, __LINE__, under);
 
     if(!PROV_HELPER)
         PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
@@ -3237,12 +3216,10 @@ H5VL_provenance_file_close(void *file, hid_t dxpl_id, void **req)
     /* Release our wrapper, if underlying file was closed */
     if(ret_value >= 0){
         if(!o->generic_prov_info){//from fake upper_o, no need to remove linkedlist
-            //printf("%s:%d: generic_prov_info is NULL: created from a fake upper_o. \n", __func__, __LINE__);
+printf("%s:%d: generic_prov_info is NULL: created from a fake upper_o. \n", __func__, __LINE__);
         }else{
-            char* fname = ((file_prov_info_t*)(o->generic_prov_info))->file_name;
-
             if(o->generic_prov_info)
-                rm_file_node(PROV_HELPER, fname);
+                rm_file_node(PROV_HELPER, ((file_prov_info_t*)(o->generic_prov_info))->file_no);
 
             H5VL_provenance_free_obj(o);
         }
