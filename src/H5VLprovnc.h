@@ -60,7 +60,6 @@ typedef struct ProvenanceFormat{
 } prov_format;
 
 typedef struct H5VL_prov_file_info_t file_prov_info_t;
-typedef struct H5VL_prov_datatype_info_t datatype_prov_info_t;
 
 typedef struct ProvenanceHelper {
     /* Provenance properties */
@@ -75,8 +74,6 @@ typedef struct ProvenanceHelper {
     int ptr_cnt;
     int opened_files_cnt;
     file_prov_info_t* opened_files;//linkedlist,
-    int opened_dtypes_cnt;
-    datatype_prov_info_t* opened_dtypes;
 } prov_helper_t;
 
 prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format);
