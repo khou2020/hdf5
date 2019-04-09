@@ -1408,11 +1408,6 @@ herr_t attr_get_wrapper(void *obj, hid_t vol_id, H5VL_attr_get_t get_type,
     return(ret_value);
 }
 
-void prov_verify_file_count(int open_file_cnt)
-{
-    assert(open_file_cnt == PROV_HELPER->opened_files_cnt);
-}
-
 //shorten function id: use hash value
 char* FUNC_DIC[STAT_FUNC_MOD];
 
