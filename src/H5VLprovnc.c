@@ -57,6 +57,7 @@
 #endif
 
 #define STAT_FUNC_CNT 32 //maximum possible function number
+
 /************/
 /* Typedefs */
 /************/
@@ -91,6 +92,7 @@ typedef struct H5VL_provenance_wrap_ctx_t {
 typedef struct H5VL_prov_dataset_info_t dataset_prov_info_t;
 typedef struct H5VL_prov_group_info_t group_prov_info_t;
 typedef struct H5VL_prov_datatype_info_t datatype_prov_info_t;
+typedef struct H5VL_prov_attribute_info_t attribute_prov_info_t;
 
 struct H5VL_prov_file_info_t {//assigned when a file is closed, serves to store stats (copied from shared_file_info)
     prov_helper_t* prov_helper; //pointer shared among all layers, one per process.
@@ -105,6 +107,8 @@ struct H5VL_prov_file_info_t {//assigned when a file is closed, serves to store 
     group_prov_info_t *opened_grps;
     int opened_dtypes_cnt;
     datatype_prov_info_t *opened_dtypes;
+    int opened_attrs_cnt;
+    attribute_prov_info_t *opened_attrs;
 
     /* Statistics */
     int ds_created;
@@ -175,6 +179,18 @@ struct H5VL_prov_datatype_info_t {
     int datatype_get_cnt;
 
     datatype_prov_info_t *next;
+};
+
+struct H5VL_prov_attribute_info_t {
+    prov_helper_t *prov_helper; //pointer shared among all layers, one per process.
+    file_prov_info_t *root_file_info;//a group is a direct or indirect children of a file.
+    haddr_t native_addr;
+    char *attr_name;
+    int ref_cnt;
+
+    int func_cnt;//stats
+
+    attribute_prov_info_t *next;
 };
 
 
@@ -376,32 +392,44 @@ static const H5VL_class_t H5VL_provenance_cls = {
 static hid_t prov_connector_id_global = H5I_INVALID_HID;
 
 /* Local routine prototypes */
-void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type, hid_t dxpl_id, void **req, ...);
+void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type,
+    hid_t dxpl_id, void **req, ...);
+herr_t object_get_wrapper(void *obj, const H5VL_loc_params_t *loc_params,
+    hid_t vol_id, H5VL_object_get_t get_type, hid_t dxpl_id, void **req, ...);
+herr_t attr_get_wrapper(void *obj, hid_t vol_id, H5VL_attr_get_t get_type,
+    hid_t dxpl_id, void **req, ...);
 datatype_prov_info_t *new_dtype_info(file_prov_info_t* root_file,
     const char *name, haddr_t addr);
 dataset_prov_info_t *new_dataset_info(file_prov_info_t *root_file,
     const char *name, haddr_t addr);
 group_prov_info_t *new_group_info(file_prov_info_t *root_file,
     const char *name, haddr_t addr);
+attribute_prov_info_t *new_attribute_info(file_prov_info_t *root_file,
+    const char *name, haddr_t addr);
 file_prov_info_t *new_file_info(const char* fname, unsigned long file_no);
 void dtype_info_free(datatype_prov_info_t* info);
 void file_info_free(file_prov_info_t* info);
 void group_info_free(group_prov_info_t* info);
 void dataset_info_free(dataset_prov_info_t* info);
+void attribute_info_free(attribute_prov_info_t *info);
 void dataset_stats_prov_write(const dataset_prov_info_t* ds_info);
 void file_stats_prov_write(const file_prov_info_t* file_info);
 void datatype_stats_prov_write(const datatype_prov_info_t* dt_info);
 void group_stats_prov_write(const group_prov_info_t* grp_info);
+void attribute_stats_prov_write(const attribute_prov_info_t *attr_info);
 void prov_helper_teardown(prov_helper_t* helper);
 void file_ds_created(file_prov_info_t* info);
 void file_ds_accessed(file_prov_info_t* info);
 datatype_prov_info_t *add_dtype_node(file_prov_info_t *file_info,
     const char *obj_name, haddr_t native_addr);
 int rm_dtype_node(prov_helper_t *helper, datatype_prov_info_t *dtype_info);
-file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name, unsigned long file_no);
 group_prov_info_t *add_grp_node(file_prov_info_t *root_file,
     const char *obj_name, haddr_t native_addr);
 int rm_grp_node(prov_helper_t *helper, group_prov_info_t *grp_info);
+attribute_prov_info_t *add_attr_node(file_prov_info_t *root_file,
+    const char *obj_name, haddr_t native_addr);
+int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info);
+file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name, unsigned long file_no);
 int rm_file_node(prov_helper_t* helper, unsigned long file_no);
 file_prov_info_t* _search_home_file(unsigned long obj_file_no);
 dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no, H5VL_provenance_t* dset, haddr_t native_addr,
@@ -460,6 +488,17 @@ group_prov_info_t *new_group_info(file_prov_info_t *root_file,
     return info;
 }
 
+attribute_prov_info_t *new_attribute_info(file_prov_info_t *root_file,
+    const char *name, haddr_t addr)
+{
+    attribute_prov_info_t* info = (attribute_prov_info_t *)calloc(1, sizeof(attribute_prov_info_t));
+    info->prov_helper = PROV_HELPER;
+    info->root_file_info = root_file;
+    info->attr_name = name ? strdup(name) : NULL;
+    info->native_addr = addr;
+    return info;
+}
+
 file_prov_info_t* new_file_info(const char* fname, unsigned long file_no) {
     file_prov_info_t* info = (file_prov_info_t *)calloc(1, sizeof(file_prov_info_t));
     info->file_name = fname ? strdup(fname) : NULL;
@@ -489,6 +528,12 @@ void group_info_free(group_prov_info_t* info){
 void dataset_info_free(dataset_prov_info_t* info){
     if(info->dset_name)
         free(info->dset_name);
+    free(info);
+}
+
+void attribute_info_free(attribute_prov_info_t* info){
+    if(info->attr_name)
+        free(info->attr_name);
     free(info);
 }
 
@@ -529,6 +574,14 @@ void group_stats_prov_write(const group_prov_info_t* grp_info) {
         return;
     }
     //printf("group_stats_prov_write() is yet to be implemented.\n");
+}
+
+void attribute_stats_prov_write(const attribute_prov_info_t *attr_info) {
+    if(!attr_info){
+        //printf("attribute_stats_prov_write(): attr_info is NULL.\n");
+        return;
+    }
+    //printf("attribute_stats_prov_write() is yet to be implemented.\n");
 }
 
 prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format){
@@ -675,43 +728,6 @@ int rm_dtype_node(prov_helper_t *helper, datatype_prov_info_t *dtype_info)
     return -1;
 }
 
-file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name,
-    unsigned long file_no)
-{
-    file_prov_info_t* cur;
-
-    assert(helper);
-
-    if(!helper->opened_files) //empty linked list, no opened file.
-        assert(helper->opened_files_cnt == 0);
-
-    // Search for file in list of currently opened ones
-    cur = helper->opened_files;
-    while (cur) {
-        assert(cur->file_no);
-
-        if (cur->file_no == file_no)
-            break;
-
-        cur = cur->next;
-    }
-
-    if(!cur) {
-        // Allocate and initialize new file node
-        cur = new_file_info(file_name, file_no);
-
-        // Add to linked list
-        cur->next = helper->opened_files;
-        helper->opened_files = cur;
-        helper->opened_files_cnt++;
-    }
-
-    // Increment refcount on file node
-    cur->ref_cnt++;
-
-    return cur;
-}
-
 group_prov_info_t *add_grp_node(file_prov_info_t *file_info,
     const char *obj_name, haddr_t native_addr)
 {
@@ -797,6 +813,128 @@ int rm_grp_node(prov_helper_t *helper, group_prov_info_t *grp_info)
     return -1;
 }
 
+attribute_prov_info_t *add_attr_node(file_prov_info_t *file_info,
+    const char *obj_name, haddr_t native_addr)
+{
+    attribute_prov_info_t *cur;
+
+    assert(file_info);
+    assert(native_addr);
+
+    // Find attribute in linked list of opened attributes
+    cur = file_info->opened_attrs;
+    while (cur) {
+        if (cur->native_addr == native_addr && 0 == strcmp(cur->attr_name, obj_name))
+            break;
+        cur = cur->next;
+    }
+
+    if(!cur) {
+        // Allocate and initialize new attribute node
+        cur = new_attribute_info(file_info, obj_name, native_addr);
+
+        // Increment refcount on file info
+        file_info->ref_cnt++;
+
+        // Add to linked list
+        cur->next = file_info->opened_attrs;
+        file_info->opened_attrs = cur;
+        file_info->opened_attrs_cnt++;
+    }
+
+    // Increment refcount on attribute
+    cur->ref_cnt++;
+
+    return cur;
+}
+
+int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info)
+{
+    file_prov_info_t *file_info;
+    attribute_prov_info_t *cur;
+    attribute_prov_info_t *last;
+
+    // Decrement refcount
+    attr_info->ref_cnt--;
+
+    // If refcount still >0, leave now
+    if(attr_info->ref_cnt > 0)
+        return attr_info->ref_cnt;
+
+    // Refcount == 0, remove attribute from file info
+
+    file_info = attr_info->root_file_info;
+    assert(file_info);
+    assert(file_info->opened_attrs);
+
+    cur = file_info->opened_attrs;
+    last = cur;
+    while(cur) {
+        assert(cur->native_addr && cur->native_addr != HADDR_UNDEF);
+        if(cur->native_addr == attr_info->native_addr && 0 == strcmp(cur->attr_name, attr_info->attr_name)) { //node found
+            //special case: first node is the target, ==cur
+            if(cur == file_info->opened_attrs)
+                file_info->opened_attrs = file_info->opened_attrs->next;
+            else
+                last->next = cur->next;
+
+            attribute_info_free(cur);
+
+            file_info->opened_attrs_cnt--;
+            if(file_info->opened_attrs_cnt == 0)
+                assert(file_info->opened_attrs == NULL);
+
+            // Decrement refcount on file info
+            rm_file_node(helper, file_info->file_no);
+
+            return 0;
+        }
+
+        last = cur;
+        cur = cur->next;
+    }
+
+    //node not found.
+    return -1;
+}
+
+file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name,
+    unsigned long file_no)
+{
+    file_prov_info_t* cur;
+
+    assert(helper);
+
+    if(!helper->opened_files) //empty linked list, no opened file.
+        assert(helper->opened_files_cnt == 0);
+
+    // Search for file in list of currently opened ones
+    cur = helper->opened_files;
+    while (cur) {
+        assert(cur->file_no);
+
+        if (cur->file_no == file_no)
+            break;
+
+        cur = cur->next;
+    }
+
+    if(!cur) {
+        // Allocate and initialize new file node
+        cur = new_file_info(file_name, file_no);
+
+        // Add to linked list
+        cur->next = helper->opened_files;
+        helper->opened_files = cur;
+        helper->opened_files_cnt++;
+    }
+
+    // Increment refcount on file node
+    cur->ref_cnt++;
+
+    return cur;
+}
+
 //need a dumy node to make it simpler
 int rm_file_node(prov_helper_t* helper, unsigned long file_no)
 {
@@ -822,6 +960,7 @@ int rm_file_node(prov_helper_t* helper, unsigned long file_no)
                 assert(0 == cur->opened_datasets_cnt);
                 assert(0 == cur->opened_grps_cnt);
                 assert(0 == cur->opened_dtypes_cnt);
+                assert(0 == cur->opened_attrs_cnt);
 
                 // Unlink from list of opened files
                 if(cur == helper->opened_files) //first node is the target
@@ -1001,54 +1140,49 @@ H5VL_provenance_t* _obj_wrap_under(void* under, H5VL_provenance_t* upper_o,
 {
     H5VL_provenance_t *obj;
     file_prov_info_t* root_file_info = NULL;
-    H5I_type_t upper_o_type;
 
-    upper_o_type = upper_o->my_type;
     if (under) {
         H5VL_loc_params_t p;
         H5O_info_t oinfo;
         haddr_t native_addr;
         unsigned long file_no;
 
-        if (target_obj_name != NULL && 0 == strcmp(target_obj_name, ".")) {   //open same dataset.  // "."  case
-            //open from types
-            switch(upper_o_type){
-                case H5I_DATASET:
-                    root_file_info = ((dataset_prov_info_t*) (upper_o->generic_prov_info))->root_file_info;
-                    break;
+        //open from types
+        switch(upper_o->my_type) {
+            case H5I_DATASET:
+                root_file_info = ((dataset_prov_info_t*) (upper_o->generic_prov_info))->root_file_info;
+                break;
 
-                case H5I_GROUP:
-                    root_file_info = ((group_prov_info_t*)(upper_o->generic_prov_info))->root_file_info;
-                    break;
+            case H5I_GROUP:
+                root_file_info = ((group_prov_info_t*)(upper_o->generic_prov_info))->root_file_info;
+                break;
 
-                case H5I_DATATYPE:
-                    root_file_info = ((datatype_prov_info_t*)(upper_o->generic_prov_info))->root_file_info;
-                    break;
+            case H5I_DATATYPE:
+                root_file_info = ((datatype_prov_info_t*)(upper_o->generic_prov_info))->root_file_info;
+                break;
 
-                case H5I_FILE:
-                case H5I_ATTR:
-                case H5I_UNINIT:
-                case H5I_BADID:
-                case H5I_DATASPACE:
-                case H5I_VFL:
-                case H5I_VOL:
-                case H5I_GENPROP_CLS:
-                case H5I_GENPROP_LST:
-                case H5I_ERROR_CLASS:
-                case H5I_ERROR_MSG:
-                case H5I_ERROR_STACK:
-                case H5I_NTYPES:
-                default:
-                    break;
-            }
-        } else {// non-. cases, parent obj's type: where it's opened, file or group.
-            if(upper_o_type == H5I_FILE){//
-                 root_file_info = (file_prov_info_t*)upper_o->generic_prov_info;
-             }else if(upper_o_type == H5I_GROUP){
-                 root_file_info = ((group_prov_info_t*)upper_o->generic_prov_info)->root_file_info;
-             }else{//error
-                 return NULL;
-             }
+            case H5I_ATTR:
+                root_file_info = ((attribute_prov_info_t*)(upper_o->generic_prov_info))->root_file_info;
+                break;
+
+            case H5I_FILE:
+                root_file_info = (file_prov_info_t*)upper_o->generic_prov_info;
+                break;
+
+            case H5I_UNINIT:
+            case H5I_BADID:
+            case H5I_DATASPACE:
+            case H5I_VFL:
+            case H5I_VOL:
+            case H5I_GENPROP_CLS:
+            case H5I_GENPROP_LST:
+            case H5I_ERROR_CLASS:
+            case H5I_ERROR_MSG:
+            case H5I_ERROR_STACK:
+            case H5I_NTYPES:
+            default:
+                root_file_info = NULL;  // Error
+                break;
         }
         assert(root_file_info);
 
@@ -1083,12 +1217,16 @@ H5VL_provenance_t* _obj_wrap_under(void* under, H5VL_provenance_t* upper_o,
                 obj->my_type = H5I_FILE;
                 break;
 
-            case H5I_DATATYPE: //need a linked list for opened data types.
+            case H5I_DATATYPE:
                 obj->generic_prov_info = add_dtype_node(root_file_info, target_obj_name, native_addr);
                 obj->my_type = H5I_DATATYPE;
                 break;
 
             case H5I_ATTR:
+                obj->generic_prov_info = add_attr_node(root_file_info, target_obj_name, native_addr);
+                obj->my_type = H5I_ATTR;
+                break;
+
             case H5I_UNINIT:
             case H5I_BADID:
             case H5I_DATASPACE:
@@ -1171,6 +1309,7 @@ dataset_prov_info_t* new_ds_prov_info(void* under_object, hid_t vol_id, haddr_t 
     dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_TYPE, dxpl_id, req, &dt_id);
     ds_info->dt_class = H5Tget_class(dt_id);
     ds_info->dset_type_size = H5Tget_size(dt_id);
+    H5Tclose(dt_id);
 
     dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_SPACE, dxpl_id, req, &ds_id);
     ds_info->ds_class = H5Sget_simple_extent_type(ds_id);
@@ -1179,9 +1318,11 @@ dataset_prov_info_t* new_ds_prov_info(void* under_object, hid_t vol_id, haddr_t 
         H5Sget_simple_extent_dims(ds_id, ds_info->dimensions, NULL);
         ds_info->dset_space_size = (hsize_t)H5Sget_simple_extent_npoints(ds_id);
     }
+    H5Sclose(ds_id);
 
     dataset_get_wrapper(under_object, vol_id, H5VL_DATASET_GET_DCPL, dxpl_id, req, &dcpl_id);
     ds_info->layout = H5Pget_layout(dcpl_id);
+    H5Pclose(dcpl_id);
 
     return ds_info;
 }
@@ -1243,6 +1384,28 @@ void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_typ
     va_list args;
     va_start(args, req);
     H5VLdataset_get(dset, driver_id, get_type, dxpl_id, req, args);
+}
+
+herr_t object_get_wrapper(void *obj, const H5VL_loc_params_t *loc_params,
+    hid_t vol_id, H5VL_object_get_t get_type, hid_t dxpl_id, void **req, ...)
+{
+    va_list args;
+    herr_t ret_value;
+
+    va_start(args, req);
+    ret_value = H5VLobject_get(obj, loc_params, vol_id, get_type, dxpl_id, req, args);
+    return(ret_value);
+}
+
+herr_t attr_get_wrapper(void *obj, hid_t vol_id, H5VL_attr_get_t get_type,
+    hid_t dxpl_id, void **req, ...)
+{
+    va_list args;
+    herr_t ret_value;
+
+    va_start(args, req);
+    ret_value = H5VLattr_get(obj, vol_id, get_type, dxpl_id, req, args);
+    return(ret_value);
 }
 
 void prov_verify_file_count(int open_file_cnt)
@@ -1392,10 +1555,17 @@ H5VL_provenance_new_obj(void *under_obj, hid_t under_vol_id, prov_helper_t* help
 static herr_t
 H5VL_provenance_free_obj(H5VL_provenance_t *obj)
 {
+    hid_t err_id;
+
     assert(obj);
 
     ptr_cnt_decrement(PROV_HELPER);
+
+    err_id = H5Eget_current_stack();
+
     H5Idec_ref(obj->under_vol_id);
+
+    H5Eset_current_stack(err_id);
 
     free(obj);
 
@@ -1479,8 +1649,9 @@ H5VL_provenance_term(void)
     printf("------- PASS THROUGH VOL TERM\n");
 #endif
 
-    /* Sanity check */
-    assert(NULL == PROV_HELPER);
+    // Release resources, etc.
+    prov_helper_teardown(PROV_HELPER);
+    PROV_HELPER = NULL;
 
     /* Reset VOL ID */
     prov_connector_id_global = H5I_INVALID_HID;
@@ -1598,6 +1769,7 @@ static herr_t
 H5VL_provenance_info_free(void *_info)
 {
     H5VL_provenance_info_t *info = (H5VL_provenance_info_t *)_info;
+    hid_t err_id;
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL INFO Free\n");
@@ -1607,10 +1779,14 @@ H5VL_provenance_info_free(void *_info)
     if(info->under_vol_info)
         H5VLfree_connector_info(info->under_vol_id, info->under_vol_info);
 
+    err_id = H5Eget_current_stack();
+
     H5Idec_ref(info->under_vol_id);
 
+    H5Eset_current_stack(err_id);
+
     /* Free pass through info object itself */
-    //free(info);
+    free(info);
 
     return 0;
 } /* end H5VL_provenance_info_free() */
@@ -1837,11 +2013,13 @@ H5VL_provenance_get_wrap_ctx(const void *obj, void **wrap_ctx)
             break;
 
         case H5I_DATATYPE:
-            //need to feed type_id here
             new_wrap_ctx->root_file_info = ((datatype_prov_info_t*)(o->generic_prov_info))->root_file_info;
             break;
 
         case H5I_ATTR:
+            new_wrap_ctx->root_file_info = ((attribute_prov_info_t*)(o->generic_prov_info))->root_file_info;
+            break;
+
         case H5I_UNINIT:
         case H5I_BADID:
         case H5I_DATASPACE:
@@ -1933,15 +2111,20 @@ static herr_t
 H5VL_provenance_free_wrap_ctx(void *_wrap_ctx)
 {
     H5VL_provenance_wrap_ctx_t *wrap_ctx = (H5VL_provenance_wrap_ctx_t *)_wrap_ctx;
+    hid_t err_id;
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL WRAP CTX Free\n");
 #endif
 
+    err_id = H5Eget_current_stack();
+
     /* Release underlying VOL ID and wrap context */
     if(wrap_ctx->under_wrap_ctx)
         H5VLfree_wrap_ctx(wrap_ctx->under_wrap_ctx, wrap_ctx->under_vol_id);
     H5Idec_ref(wrap_ctx->under_vol_id);
+
+    H5Eset_current_stack(err_id);
 
     /* Free pass through wrap context object itself */
     free(wrap_ctx);
@@ -1974,13 +2157,9 @@ H5VL_provenance_attr_create(void *obj, const H5VL_loc_params_t *loc_params,
 #endif
 
     under = H5VLattr_create(o->under_object, loc_params, o->under_vol_id, name, acpl_id, aapl_id, dxpl_id, req);
-    if(under) {
-        attr = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
 
-        /* Check for async request */
-        if(req && *req)
-            *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
-    } /* end if */
+    if(under)
+        attr = _obj_wrap_under(under, o, name, H5I_ATTR, dxpl_id, req);
     else
         attr = NULL;
 
@@ -2015,13 +2194,34 @@ H5VL_provenance_attr_open(void *obj, const H5VL_loc_params_t *loc_params,
 #endif
 
     under = H5VLattr_open(o->under_object, loc_params, o->under_vol_id, name, aapl_id, dxpl_id, req);
-    if(under) {
-        attr = H5VL_provenance_new_obj(under, o->under_vol_id, o->prov_helper);
 
-        /* Check for async request */
-        if(req && *req)
-            *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
-    } /* end if */
+    if(under) {
+        char *attr_name = NULL;
+
+        if(NULL == name) {
+            herr_t ret_value;
+            ssize_t size_ret = 0;
+            H5VL_loc_params_t attr_loc_param;
+
+            _new_loc_pram(H5I_ATTR, &attr_loc_param);
+            size_ret = 0;
+            ret_value = attr_get_wrapper(under, o->under_vol_id, H5VL_ATTR_GET_NAME, dxpl_id, req, &attr_loc_param, 0, NULL, &size_ret);
+            if(ret_value >= 0 && size_ret > 0) {
+                size_t buf_len = (size_t)(size_ret + 1);
+
+                attr_name = (char *)malloc(buf_len);
+                size_ret = 0;
+                ret_value = attr_get_wrapper(under, o->under_vol_id, H5VL_ATTR_GET_NAME, dxpl_id, req, &attr_loc_param, buf_len, attr_name, &size_ret);
+                if(ret_value >= 0)
+                    name = attr_name;
+            }
+        }
+
+        attr = _obj_wrap_under(under, o, name, H5I_ATTR, dxpl_id, req);
+
+        if(attr_name)
+            free(attr_name);
+    }
     else
         attr = NULL;
 
@@ -2238,8 +2438,18 @@ H5VL_provenance_attr_close(void *attr, hid_t dxpl_id, void **req)
         prov_write(o->prov_helper, __func__, get_time_usec() - start);
 
     /* Release our wrapper, if underlying attribute was closed */
-    if(ret_value >= 0)
+    if(ret_value >= 0) {
+        attribute_prov_info_t *attr_info;
+
+        attr_info = (attribute_prov_info_t *)o->generic_prov_info;
+
+        prov_write(o->prov_helper, __func__, get_time_usec() - start);
+        attribute_stats_prov_write(attr_info);
+
+        rm_attr_node(o->prov_helper, attr_info);
+
         H5VL_provenance_free_obj(o);
+    }
 
     return ret_value;
 } /* end H5VL_provenance_attr_close() */
@@ -3390,7 +3600,7 @@ H5VL_provenance_group_close(void *grp, hid_t dxpl_id, void **req)
     if(req && *req)
         *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
 
-    /* Release our wrapper, if underlying file was closed */
+    /* Release our wrapper, if underlying group was closed */
     if(ret_value >= 0){
         group_prov_info_t* grp_info;
 
