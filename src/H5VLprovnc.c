@@ -194,7 +194,7 @@ struct H5VL_prov_attribute_info_t {
 };
 
 
-prov_helper_t* PROV_HELPER;
+static prov_helper_t* PROV_HELPER = NULL;
 
 //======================================= statistics =======================================
 
@@ -1650,6 +1650,7 @@ H5VL_provenance_init(hid_t vipl_id)
 static herr_t
 H5VL_provenance_term(void)
 {
+fprintf(stderr, "%s:%u\n", __func__, __LINE__);
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL TERM\n");
@@ -1966,14 +1967,6 @@ H5VL_provenance_get_object(const void *obj)
     printf("------- PASS THROUGH VOL Get object\n");
 #endif
 
-    if(!o){
-        printf("H5VLget_object() get a NULL o as a parameter.");
-    }
-
-    if(!(o->under_object)){
-        printf("H5VLget_object() get a NULL o->under_object as a parameter.");
-    }
-
     ret = H5VLget_object(o->under_object, o->under_vol_id);
 
     return ret;
@@ -2040,14 +2033,6 @@ H5VL_provenance_get_wrap_ctx(const void *obj, void **wrap_ctx)
         default:
             printf("%s:%d: unexpected type: my_type = %d\n", __func__, __LINE__, (int)o->my_type);
             break;
-    }
-
-    if(new_wrap_ctx->root_file_info){
-//        printf("%s:%d: file->rec_cnt = %d, file_name = %s\n",
-//                __func__, __LINE__, new_wrap_ctx->root_file_info->ref_cnt,
-//                new_wrap_ctx->root_file_info->file_name);
-    }else{
-        printf("%s:%d: new_wrap_ctx->root_file_info is NULL. \n", __func__, __LINE__);
     }
 
     /* Increment reference count on underlying VOL ID, and copy the VOL info */
@@ -3130,9 +3115,7 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     } /* end if */
     else
         file = NULL;
-//    printf("%s:%d\n", __func__, __LINE__);
-//    printf("Print from H5VL_provenance_file_open: ---------------- %d:[%s]: [%lu]\n ", __LINE__, __func__, get_time_usec() - start);
-//    printf("%s:%d\n", __func__, __LINE__);
+
     if(file)
         prov_write(file->prov_helper, __func__, get_time_usec() - start);
 
@@ -3469,7 +3452,6 @@ H5VL_provenance_group_open(void *obj, const H5VL_loc_params_t *loc_params,
     else
         group = NULL;
 
-    printf("H5VL_provenance_group_open: ---------------- %s: %lu\n ", __func__, get_time_usec() - start);
     if(o)
         prov_write(o->prov_helper, __func__, get_time_usec() - start);
 
