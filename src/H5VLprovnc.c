@@ -56,7 +56,7 @@
 #define va_copy(D,S)      ((D) = (S))
 #endif
 
-#define STAT_FUNC_CNT 32 //maximum possible function number
+#define STAT_FUNC_MOD 167 //a reasonably big size to avoid collision.
 
 /************/
 /* Typedefs */
@@ -1414,32 +1414,36 @@ void prov_verify_file_count(int open_file_cnt)
 }
 
 //shorten function id: use hash value
-char* FUNC_DIC[STAT_FUNC_CNT];
+char* FUNC_DIC[STAT_FUNC_MOD];
 
 void _dic_init(void){
-    for(int i = 0; i < STAT_FUNC_CNT; i++){
+    for(int i = 0; i < STAT_FUNC_MOD; i++){
         FUNC_DIC[i] = NULL;
     }
 }
 
 unsigned int genHash(const char *msg) {
-    unsigned int hash = 0;
-    unsigned int c; //int c;
+    unsigned long hash = 0;
+    unsigned long c;
     unsigned int func_index;
+    const char* tmp = msg;
 
-    while (0 != (c = (unsigned int)(*msg++))) {
+    while (0 != (c = (unsigned long)(*msg++))) {//SDBM hash
         hash = c + (hash << 6) + (hash << 16) - hash;
     }
-    func_index = hash % STAT_FUNC_CNT;
+
+    msg = tmp;//restore string head address
+    func_index = (unsigned int)(hash % STAT_FUNC_MOD);
     if(!FUNC_DIC[func_index]) {
         FUNC_DIC[func_index] = strdup(msg);
-        printf("test hash dic: index = %d, msg = %s\n", func_index, FUNC_DIC[func_index]);
+        //printf("received msg = %s, hash index = %d, result msg = %s\n", msg, func_index, FUNC_DIC[func_index]);
     }
+
     return func_index;
 }
 
 void _dic_free(void){
-    for(int i = 0; i < STAT_FUNC_CNT; i++){
+    for(int i = 0; i < STAT_FUNC_MOD; i++){
         if(FUNC_DIC[i]){
             free(FUNC_DIC[i]);
         }
@@ -1447,7 +1451,7 @@ void _dic_free(void){
 }
 
 void _dic_print(void){
-    for(int i = 0; i < STAT_FUNC_CNT; i++){
+    for(int i = 0; i < STAT_FUNC_MOD; i++){
         if(FUNC_DIC[i]){
             printf("%d %s\n", i, FUNC_DIC[i]);
         }
@@ -1455,6 +1459,8 @@ void _dic_print(void){
 }
 
 int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration){
+//    assert(strcmp(msg, "root_file_info"));
+
     const char* base = "H5VL_provenance_";
     size_t base_len;
     size_t msg_len;
@@ -1477,7 +1483,7 @@ int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration
     }
 
     sprintf(pline, "%u %lu\n",  genHash(msg), duration);//assume less than 64 functions
-
+    //printf("Func name:[%s], hash index = [%u], overhead = [%lu]\n",  msg, genHash(msg), duration);
     switch(helper_in->prov_level){
         case File_only:
             fputs(pline, helper_in->prov_file_handle);
@@ -3124,7 +3130,9 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     } /* end if */
     else
         file = NULL;
-
+//    printf("%s:%d\n", __func__, __LINE__);
+//    printf("Print from H5VL_provenance_file_open: ---------------- %d:[%s]: [%lu]\n ", __LINE__, __func__, get_time_usec() - start);
+//    printf("%s:%d\n", __func__, __LINE__);
     if(file)
         prov_write(file->prov_helper, __func__, get_time_usec() - start);
 
@@ -3461,6 +3469,7 @@ H5VL_provenance_group_open(void *obj, const H5VL_loc_params_t *loc_params,
     else
         group = NULL;
 
+    printf("H5VL_provenance_group_open: ---------------- %s: %lu\n ", __func__, get_time_usec() - start);
     if(o)
         prov_write(o->prov_helper, __func__, get_time_usec() - start);
 
