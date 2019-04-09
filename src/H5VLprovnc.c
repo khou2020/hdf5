@@ -1650,7 +1650,6 @@ H5VL_provenance_init(hid_t vipl_id)
 static herr_t
 H5VL_provenance_term(void)
 {
-fprintf(stderr, "%s:%u\n", __func__, __LINE__);
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL TERM\n");
