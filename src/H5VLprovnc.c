@@ -392,6 +392,8 @@ static const H5VL_class_t H5VL_provenance_cls = {
 static hid_t prov_connector_id_global = H5I_INVALID_HID;
 
 /* Local routine prototypes */
+void file_get_wrapper(void *file, hid_t driver_id, H5VL_file_get_t get_type,
+    hid_t dxpl_id, void **req, ...);
 void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type,
     hid_t dxpl_id, void **req, ...);
 herr_t object_get_wrapper(void *obj, const H5VL_loc_params_t *loc_params,
@@ -1350,20 +1352,9 @@ herr_t get_native_info(void* obj, hid_t vol_id, hid_t dxpl_id, void **req, ...){
     return r;
 }
 
-void get_native_file_no(unsigned long* file_num_out, const H5VL_provenance_t* file_obj){
-    H5VL_loc_params_t p;
-    H5O_info_t oinfo;
-    void* root_grp;
+void get_native_file_no(unsigned long* fileno, const H5VL_provenance_t* file_obj){
 
-    _new_loc_pram(H5I_FILE, &p);
-    root_grp = H5VLgroup_open(file_obj->under_object, &p, file_obj->under_vol_id,
-            "/", H5P_DEFAULT, H5P_DEFAULT, NULL);
-    p.obj_type = H5I_GROUP;
-    get_native_info(root_grp, file_obj->under_vol_id,
-            H5P_DEFAULT, NULL, H5VL_NATIVE_OBJECT_GET_INFO, &p, &oinfo, H5O_INFO_BASIC);
-
-    *file_num_out = oinfo.fileno;
-    H5VLgroup_close(root_grp, file_obj->under_vol_id, H5P_DEFAULT, NULL);//file_obj->under_object
+    file_get_wrapper(file_obj->under_object, file_obj->under_vol_id, H5VL_FILE_GET_FILENO, H5P_DEFAULT, NULL, fileno);
 }
 
 H5VL_provenance_t *_file_open_common(void *under, hid_t vol_id,
@@ -1378,6 +1369,13 @@ H5VL_provenance_t *_file_open_common(void *under, hid_t vol_id,
     file->generic_prov_info = add_file_node(PROV_HELPER, name, file_no);
 
     return file;
+}
+
+void file_get_wrapper(void *file, hid_t driver_id, H5VL_file_get_t get_type,
+        hid_t dxpl_id, void **req, ...){
+    va_list args;
+    va_start(args, req);
+    H5VLfile_get(file, driver_id, get_type, dxpl_id, req, args);
 }
 
 void dataset_get_wrapper(void *dset, hid_t driver_id, H5VL_dataset_get_t get_type,
@@ -3086,9 +3084,9 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
     hid_t fapl_id, hid_t dxpl_id, void **req)
 {
     unsigned long start;
-    H5VL_provenance_info_t *info;
+    H5VL_provenance_info_t *info = NULL;
     H5VL_provenance_t *file;
-    hid_t under_fapl_id;
+    hid_t under_fapl_id = -1;
     void *under;
 
 #ifdef ENABLE_PROVNC_LOGGING
@@ -3113,10 +3111,10 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
     /* Open the file with the underlying VOL connector */
     under = H5VLfile_create(name, flags, fcpl_id, under_fapl_id, dxpl_id, req);
 
-    if(!PROV_HELPER)
-        PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
-
     if(under) {
+        if(!PROV_HELPER)
+            PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
+
         file = _file_open_common(under, info->under_vol_id, name);
 
         /* Check for async request */
@@ -3130,10 +3128,12 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
         prov_write(file->prov_helper, __func__, get_time_usec() - start);
 
     /* Close underlying FAPL */
-    H5Pclose(under_fapl_id);
+    if(under_fapl_id > 0)
+        H5Pclose(under_fapl_id);
 
     /* Release copy of our VOL info */
-    H5VL_provenance_info_free(info);
+    if(info)
+        H5VL_provenance_info_free(info);
 
     return (void *)file;
 } /* end H5VL_provenance_file_create() */
@@ -3154,9 +3154,9 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     hid_t dxpl_id, void **req)
 {
     unsigned long start;
-    H5VL_provenance_info_t *info;
+    H5VL_provenance_info_t *info = NULL;
     H5VL_provenance_t *file;
-    hid_t under_fapl_id;
+    hid_t under_fapl_id = -1;
     void *under;
 
 #ifdef ENABLE_PROVNC_LOGGING
@@ -3176,11 +3176,11 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     /* Open the file with the underlying VOL connector */
     under = H5VLfile_open(name, flags, under_fapl_id, dxpl_id, req);
 
-    if(!PROV_HELPER)
-        PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
-
     //setup global
     if(under) {
+        if(!PROV_HELPER)
+            PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
+
         file = _file_open_common(under, info->under_vol_id, name);
 
         /* Check for async request */
@@ -3194,10 +3194,12 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
         prov_write(file->prov_helper, __func__, get_time_usec() - start);
 
     /* Close underlying FAPL */
-    H5Pclose(under_fapl_id);
+    if(under_fapl_id > 0)
+        H5Pclose(under_fapl_id);
 
     /* Release copy of our VOL info */
-    H5VL_provenance_info_free(info);
+    if(info)
+        H5VL_provenance_info_free(info);
 
     return (void *)file;
 } /* end H5VL_provenance_file_open() */
