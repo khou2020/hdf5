@@ -56,7 +56,7 @@
 #define va_copy(D,S)      ((D) = (S))
 #endif
 
-#define STAT_FUNC_MOD 167 //a reasonably big size to avoid collision.
+#define STAT_FUNC_MOD 733//a reasonably big size to avoid expensive collision handling, make sure it works with 62 function names.
 
 /************/
 /* Typedefs */
@@ -454,6 +454,7 @@ unsigned int genHash(const char *msg);
 void _dic_init(void);
 void _dic_print(void);
 void _dic_free(void);
+void _preset_dic_print(void);
 
 datatype_prov_info_t *new_dtype_info(file_prov_info_t* root_file,
     const char *name, haddr_t addr)
@@ -1450,6 +1451,85 @@ void _dic_print(void){
         if(FUNC_DIC[i]){
             printf("%d %s\n", i, FUNC_DIC[i]);
         }
+    }
+}
+void _preset_dic_print(void){
+    const char* preset_dic[] = {
+            "H5VL_provenance_init",                         /* initialize   */
+            "H5VL_provenance_term",                         /* terminate    */
+            "H5VL_provenance_info_copy",                /* info copy    */
+            "H5VL_provenance_info_cmp",                 /* info compare */
+            "H5VL_provenance_info_free",                /* info free    */
+            "H5VL_provenance_info_to_str",              /* info to str  */
+            "H5VL_provenance_str_to_info",              /* str to info  */
+            "H5VL_provenance_get_object",               /* get_object   */
+            "H5VL_provenance_get_wrap_ctx",             /* get_wrap_ctx */
+            "H5VL_provenance_wrap_object",              /* wrap_object  */
+            "H5VL_provenance_free_wrap_ctx",            /* free_wrap_ctx */
+            "H5VL_provenance_attr_create",                       /* create */
+            "H5VL_provenance_attr_open",                         /* open */
+            "H5VL_provenance_attr_read",                         /* read */
+            "H5VL_provenance_attr_write",                        /* write */
+            "H5VL_provenance_attr_get",                          /* get */
+            "H5VL_provenance_attr_specific",                     /* specific */
+            "H5VL_provenance_attr_optional",                     /* optional */
+            "H5VL_provenance_attr_close",                         /* close */
+            "H5VL_provenance_dataset_create",                    /* create */
+            "H5VL_provenance_dataset_open",                      /* open */
+            "H5VL_provenance_dataset_read",                      /* read */
+            "H5VL_provenance_dataset_write",                     /* write */
+            "H5VL_provenance_dataset_get",                       /* get */
+            "H5VL_provenance_dataset_specific",                  /* specific */
+            "H5VL_provenance_dataset_optional",                  /* optional */
+            "H5VL_provenance_dataset_close",                      /* close */
+            "H5VL_provenance_datatype_commit",                   /* commit */
+            "H5VL_provenance_datatype_open",                     /* open */
+            "H5VL_provenance_datatype_get",                      /* get_size */
+            "H5VL_provenance_datatype_specific",                 /* specific */
+            "H5VL_provenance_datatype_optional",                 /* optional */
+            "H5VL_provenance_datatype_close",                     /* close */
+            "H5VL_provenance_file_create",                       /* create */
+            "H5VL_provenance_file_open",                         /* open */
+            "H5VL_provenance_file_get",                          /* get */
+            "H5VL_provenance_file_specific",                     /* specific */
+            "H5VL_provenance_file_optional",                     /* optional */
+            "H5VL_provenance_file_close",                         /* close */
+            "H5VL_provenance_group_create",                      /* create */
+            "H5VL_provenance_group_open",                        /* open */
+            "H5VL_provenance_group_get",                         /* get */
+            "H5VL_provenance_group_specific",                    /* specific */
+            "H5VL_provenance_group_optional",                    /* optional */
+            "H5VL_provenance_group_close",                        /* close */
+            "H5VL_provenance_link_create",                       /* create */
+            "H5VL_provenance_link_copy",                         /* copy */
+            "H5VL_provenance_link_move",                         /* move */
+            "H5VL_provenance_link_get",                          /* get */
+            "H5VL_provenance_link_specific",                     /* specific */
+            "H5VL_provenance_link_optional",                     /* optional */
+            "H5VL_provenance_object_open",                       /* open */
+            "H5VL_provenance_object_copy",                       /* copy */
+            "H5VL_provenance_object_get",                        /* get */
+            "H5VL_provenance_object_specific",                   /* specific */
+            "H5VL_provenance_object_optional",                   /* optional */
+            "H5VL_provenance_request_wait",                      /* wait */
+            "H5VL_provenance_request_notify",
+            "H5VL_provenance_request_cancel",
+            "H5VL_provenance_request_specific",
+            "H5VL_provenance_request_optional",
+            "H5VL_provenance_request_free",
+    };
+    int size = sizeof(preset_dic) / sizeof(const char*);
+    int key_space[1000];
+    for(int i = 0; i < 1000; i++){
+        key_space[i] = -1;
+    }
+
+    for(int i = 0; i < size; i++){
+        printf("%d %s\n", genHash(preset_dic[i]), preset_dic[i]);
+        if(key_space[genHash(preset_dic[i])] == -1){
+            key_space[genHash(preset_dic[i])] = genHash(preset_dic[i]);
+        }else
+            printf("Collision found: key = %d, hash index = %d\n", key_space[genHash(preset_dic[i])], genHash(preset_dic[i]));
     }
 }
 
