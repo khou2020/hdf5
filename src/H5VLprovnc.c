@@ -172,12 +172,9 @@ struct H5VL_prov_datatype_info_t {
     haddr_t native_addr;
     char *dtype_name;
     int ref_cnt;
-
     hid_t dtype_id;
-
     int datatype_commit_cnt;
     int datatype_get_cnt;
-
     datatype_prov_info_t *next;
 };
 
@@ -187,13 +184,16 @@ struct H5VL_prov_attribute_info_t {
     haddr_t native_addr;
     char *attr_name;
     int ref_cnt;
-
     int func_cnt;//stats
-
     attribute_prov_info_t *next;
 };
 
-
+unsigned long PROV_WRITE_TOTAL_TIME;
+unsigned long FILE_LL_TOTAL_TIME; //record file linked list overhead
+unsigned long DS_LL_TOTAL_TIME; //dataset
+unsigned long GRP_LL_TOTAL_TIME; //group
+unsigned long DT_LL_TOTAL_TIME; //datatype
+unsigned long ATTR_LL_TOTAL_TIME; //attribute
 static prov_helper_t* PROV_HELPER = NULL;
 
 //======================================= statistics =======================================
@@ -619,6 +619,44 @@ prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* p
 
 void prov_helper_teardown(prov_helper_t* helper){
     if(helper){// not null
+
+        char pline[512];
+        sprintf(pline,
+                "PROV_WRITE_TOTAL_TIME %lu\n"
+                "FILE_LL_TOTAL_TIME %lu\n"
+                "DS_LL_TOTAL_TIME %lu\n"
+                "GRP_LL_TOTAL_TIME %lu\n"
+                "DT_LL_TOTAL_TIME %lu\n"
+                "ATTR_LL_TOTAL_TIME %lu\n",
+                PROV_WRITE_TOTAL_TIME,
+                FILE_LL_TOTAL_TIME,
+                DS_LL_TOTAL_TIME,
+                GRP_LL_TOTAL_TIME,
+                DT_LL_TOTAL_TIME,
+                ATTR_LL_TOTAL_TIME);
+
+        switch(helper->prov_level){
+            case File_only:
+                fputs(pline, helper->prov_file_handle);
+                break;
+
+            case File_and_print:
+                fputs(pline, helper->prov_file_handle);
+                printf("%s", pline);
+                break;
+
+            case Print_only:
+                printf("%s", pline);
+                break;
+
+            case Level3:
+            case Level4:
+            case Disabled:
+            case Default:
+            default:
+                break;
+        }
+
         if(helper->prov_level == File_only || helper->prov_level ==File_and_print){//no file
             fflush(helper->prov_file_handle);
             fclose(helper->prov_file_handle);
@@ -650,6 +688,7 @@ void file_ds_accessed(file_prov_info_t* info){
 datatype_prov_info_t* add_dtype_node(file_prov_info_t *file_info,
     const char *obj_name, haddr_t native_addr)
 {
+    unsigned long start = get_time_usec();
     datatype_prov_info_t *cur;
 
     assert(file_info);
@@ -678,12 +717,13 @@ datatype_prov_info_t* add_dtype_node(file_prov_info_t *file_info,
 
     // Increment refcount on datatype
     cur->ref_cnt++;
-
+    DT_LL_TOTAL_TIME += (get_time_usec() - start);
     return cur;
 }
 
 int rm_dtype_node(prov_helper_t *helper, datatype_prov_info_t *dtype_info)
 {
+    unsigned long start = get_time_usec();
     file_prov_info_t *file_info;
     datatype_prov_info_t *cur;
     datatype_prov_info_t *last;
@@ -718,6 +758,7 @@ int rm_dtype_node(prov_helper_t *helper, datatype_prov_info_t *dtype_info)
                 assert(file_info->opened_dtypes == NULL);
 
             // Decrement refcount on file info
+            DT_LL_TOTAL_TIME += (get_time_usec() - start);
             rm_file_node(helper, file_info->file_no);
 
             return 0;
@@ -726,7 +767,7 @@ int rm_dtype_node(prov_helper_t *helper, datatype_prov_info_t *dtype_info)
         last = cur;
         cur = cur->next;
     }
-
+    DT_LL_TOTAL_TIME += (get_time_usec() - start);
     //node not found.
     return -1;
 }
@@ -735,7 +776,7 @@ group_prov_info_t *add_grp_node(file_prov_info_t *file_info,
     const char *obj_name, haddr_t native_addr)
 {
     group_prov_info_t *cur;
-
+    unsigned long start = get_time_usec();
     assert(file_info);
     assert(native_addr);
 
@@ -762,12 +803,12 @@ group_prov_info_t *add_grp_node(file_prov_info_t *file_info,
 
     // Increment refcount on group
     cur->ref_cnt++;
-
+    GRP_LL_TOTAL_TIME += (get_time_usec() - start);
     return cur;
 }
 
 int rm_grp_node(prov_helper_t *helper, group_prov_info_t *grp_info)
-{
+{   unsigned long start = get_time_usec();
     file_prov_info_t *file_info;
     group_prov_info_t *cur;
     group_prov_info_t *last;
@@ -803,6 +844,7 @@ int rm_grp_node(prov_helper_t *helper, group_prov_info_t *grp_info)
                 assert(file_info->opened_grps == NULL);
 
             // Decrement refcount on file info
+            GRP_LL_TOTAL_TIME += (get_time_usec() - start);
             rm_file_node(helper, file_info->file_no);
 
             return 0;
@@ -811,14 +853,14 @@ int rm_grp_node(prov_helper_t *helper, group_prov_info_t *grp_info)
         last = cur;
         cur = cur->next;
     }
-
+    GRP_LL_TOTAL_TIME += (get_time_usec() - start);
     //node not found.
     return -1;
 }
 
 attribute_prov_info_t *add_attr_node(file_prov_info_t *file_info,
     const char *obj_name, haddr_t native_addr)
-{
+{   unsigned long start = get_time_usec();
     attribute_prov_info_t *cur;
 
     assert(file_info);
@@ -847,12 +889,12 @@ attribute_prov_info_t *add_attr_node(file_prov_info_t *file_info,
 
     // Increment refcount on attribute
     cur->ref_cnt++;
-
+    ATTR_LL_TOTAL_TIME += (get_time_usec() - start);
     return cur;
 }
 
 int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info)
-{
+{   unsigned long start = get_time_usec();
     file_prov_info_t *file_info;
     attribute_prov_info_t *cur;
     attribute_prov_info_t *last;
@@ -888,6 +930,7 @@ int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info)
                 assert(file_info->opened_attrs == NULL);
 
             // Decrement refcount on file info
+            ATTR_LL_TOTAL_TIME += (get_time_usec() - start);
             rm_file_node(helper, file_info->file_no);
 
             return 0;
@@ -896,7 +939,7 @@ int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info)
         last = cur;
         cur = cur->next;
     }
-
+    ATTR_LL_TOTAL_TIME += (get_time_usec() - start);
     //node not found.
     return -1;
 }
@@ -904,6 +947,7 @@ int rm_attr_node(prov_helper_t *helper, attribute_prov_info_t *attr_info)
 file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name,
     unsigned long file_no)
 {
+    unsigned long start = get_time_usec();
     file_prov_info_t* cur;
 
     assert(helper);
@@ -934,13 +978,14 @@ file_prov_info_t* add_file_node(prov_helper_t* helper, const char* file_name,
 
     // Increment refcount on file node
     cur->ref_cnt++;
-
+    FILE_LL_TOTAL_TIME += (get_time_usec() - start);
     return cur;
 }
 
 //need a dumy node to make it simpler
 int rm_file_node(prov_helper_t* helper, unsigned long file_no)
 {
+    unsigned long start = get_time_usec();
     file_prov_info_t* cur;
     file_prov_info_t* last;
 
@@ -987,7 +1032,7 @@ int rm_file_node(prov_helper_t* helper, unsigned long file_no)
         last = cur;
         cur = cur->next;
     }
-
+    FILE_LL_TOTAL_TIME += (get_time_usec() - start);
     return helper->opened_files_cnt;
 }
 
@@ -1014,6 +1059,7 @@ dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no,
     H5VL_provenance_t* dset, haddr_t native_addr, file_prov_info_t* file_info_in,
     const char* ds_name, hid_t dxpl_id, void** req)
 {
+    unsigned long start = get_time_usec();
     file_prov_info_t* file_info;
     dataset_prov_info_t* cur;
 
@@ -1057,13 +1103,14 @@ dataset_prov_info_t* add_dataset_node(unsigned long obj_file_no,
 
     // Increment refcount on dataset
     cur->ref_cnt++;
-
+    DS_LL_TOTAL_TIME += (get_time_usec() - start);
     return cur;
 }
 
 //need a dumy node to make it simpler
 int rm_dataset_node(prov_helper_t *helper, dataset_prov_info_t *dset_info)
 {
+    unsigned long start = get_time_usec();
     file_prov_info_t *file_info;
     dataset_prov_info_t *cur;
     dataset_prov_info_t *last;
@@ -1098,6 +1145,7 @@ int rm_dataset_node(prov_helper_t *helper, dataset_prov_info_t *dset_info)
                 assert(file_info->opened_datasets == NULL);
 
             // Decrement refcount on file info
+            DS_LL_TOTAL_TIME += (get_time_usec() - start);
             rm_file_node(helper, file_info->file_no);
 
             return 0;
@@ -1106,7 +1154,7 @@ int rm_dataset_node(prov_helper_t *helper, dataset_prov_info_t *dset_info)
         last = cur;
         cur = cur->next;
     }
-
+    DS_LL_TOTAL_TIME += (get_time_usec() - start);
     //node not found.
     return -1;
 }
@@ -1533,7 +1581,7 @@ void _preset_dic_print(void){
 
 int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration){
 //    assert(strcmp(msg, "root_file_info"));
-
+    unsigned long start = get_time_usec();
     const char* base = "H5VL_provenance_";
     size_t base_len;
     size_t msg_len;
@@ -1582,7 +1630,7 @@ int prov_write(prov_helper_t* helper_in, const char* msg, unsigned long duration
     if(helper_in->prov_level == (File_only | File_and_print)){
         fputs(pline, helper_in->prov_file_handle);
     }
-
+    PROV_WRITE_TOTAL_TIME += (get_time_usec() - start);
     return 0;
 }
 
@@ -1699,7 +1747,12 @@ H5VL_provenance_init(hid_t vipl_id)
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL INIT\n");
 #endif
-
+    PROV_WRITE_TOTAL_TIME = 0;
+    FILE_LL_TOTAL_TIME = 0;
+    DS_LL_TOTAL_TIME = 0;
+    GRP_LL_TOTAL_TIME = 0;
+    DT_LL_TOTAL_TIME = 0;
+    ATTR_LL_TOTAL_TIME = 0;
     /* Shut compiler up about unused parameter */
     vipl_id = vipl_id;
 
