@@ -589,6 +589,67 @@ void attribute_stats_prov_write(const attribute_prov_info_t *attr_info) {
     //printf("attribute_stats_prov_write() is yet to be implemented.\n");
 }
 
+void prov_verify_open_things(int open_files, int open_dsets)
+{
+    if(PROV_HELPER) {
+        assert(open_files == PROV_HELPER->opened_files_cnt);
+
+        /* Check opened datasets */
+        if(open_files > 0) {
+            file_prov_info_t* opened_file;
+            int total_open_dsets = 0;
+
+            opened_file = PROV_HELPER->opened_files;
+            while(opened_file) {
+                total_open_dsets += opened_file->opened_datasets_cnt;
+                opened_file = opened_file->next;
+            }
+            assert(open_dsets == total_open_dsets);
+        }
+    }
+}
+
+void prov_dump_open_things(FILE *f)
+{
+    if(PROV_HELPER) {
+        file_prov_info_t* opened_file;
+        unsigned file_count = 0;
+
+        fprintf(f, "# of open files: %d\n", PROV_HELPER->opened_files_cnt);
+
+        /* Print opened files */
+        opened_file = PROV_HELPER->opened_files;
+        while(opened_file) {
+            dataset_prov_info_t *opened_dataset;
+            unsigned dset_count = 0;
+
+            fprintf(f, "file #%u: info ptr = %p, name = '%s', fileno = %lu\n", file_count, (void *)opened_file, opened_file->file_name, opened_file->file_no);
+            fprintf(f, "\tref_cnt = %d\n", opened_file->ref_cnt);
+
+            /* Print opened datasets */
+            fprintf(f, "\topened_datasets_cnt = %d\n", opened_file->opened_datasets_cnt);
+            opened_dataset = opened_file->opened_datasets;
+            while(opened_dataset) {
+                fprintf(f, "\t\tdataset #%u: name = '%s', native_addr = %llu\n", dset_count, opened_dataset->dset_name, (unsigned long long)opened_dataset->native_addr);
+                fprintf(f, "\t\t\troot_file_info ptr = %p\n", (void *)opened_dataset->root_file_info);
+                fprintf(f, "\t\t\tref_cnt = %d\n", opened_dataset->ref_cnt);
+
+                dset_count++;
+                opened_dataset = opened_dataset->next;
+            }
+
+            fprintf(f, "\topened_grps_cnt = %d\n", opened_file->opened_grps_cnt);
+            fprintf(f, "\topened_dtypes_cnt = %d\n", opened_file->opened_dtypes_cnt);
+            fprintf(f, "\topened_attrs_cnt = %d\n", opened_file->opened_attrs_cnt);
+
+            file_count++;
+            opened_file = opened_file->next;
+        }
+    }
+    else
+        fprintf(f, "PROV_HELPER not initialized\n");
+}
+
 prov_helper_t* prov_helper_init( char* file_path, Prov_level prov_level, char* prov_line_format){
     prov_helper_t* new_helper = (prov_helper_t *)calloc(1, sizeof(prov_helper_t));
 
@@ -2194,6 +2255,10 @@ H5VL_provenance_get_wrap_ctx(const void *obj, void **wrap_ctx)
             break;
     }
 
+    // Increment reference count on file info, so it doesn't get freed while
+    // we're wrapping objects with it.
+    new_wrap_ctx->root_file_info->ref_cnt++;
+
     /* Increment reference count on underlying VOL ID, and copy the VOL info */
     unsigned long m1 = get_time_usec();
     new_wrap_ctx->under_vol_id = o->under_vol_id;
@@ -2276,6 +2341,9 @@ H5VL_provenance_free_wrap_ctx(void *_wrap_ctx)
 #endif
 
     err_id = H5Eget_current_stack();
+
+    // Release hold on underlying file_info
+    rm_file_node(PROV_HELPER, wrap_ctx->root_file_info->file_no);
 
     /* Release underlying VOL ID and wrap context */
     if(wrap_ctx->under_wrap_ctx)
