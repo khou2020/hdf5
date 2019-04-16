@@ -69,7 +69,7 @@ typedef struct ProvenanceHelper {
     char* prov_line_format;
     char user_name[32];
     int pid;
-    uint64_t tid;
+    pthread_t tid;
     char proc_name[64];
     int ptr_cnt;
     int opened_files_cnt;
