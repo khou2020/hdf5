@@ -558,7 +558,6 @@ void file_info_free(file_prov_info_t* info)
 	    MPI_Comm_free(&info->mpi_comm);
 	if(MPI_INFO_NULL != info->mpi_info)
 	    MPI_Info_free(&info->mpi_info);
-fprintf(stderr, "Freeing MPI Comm & Info!\n");
     }
 #endif /* H5_HAVE_PARALLEL */
     if(info->file_name)
@@ -3683,7 +3682,6 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
             file_info->mpi_comm = mpi_comm;
             file_info->mpi_info = mpi_info;
             file_info->mpi_comm_info_valid = true;
-fprintf(stderr, "Using MPI Comm & Info!\n");
 
             // Reset flag, so Comm & Info aren't freed
             have_mpi_comm_info = false;
@@ -3796,7 +3794,6 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
             file_info->mpi_comm = mpi_comm;
             file_info->mpi_info = mpi_info;
             file_info->mpi_comm_info_valid = true;
-fprintf(stderr, "Using MPI Comm & Info!\n");
 
             // Reset flag, so Comm & Info aren't freed
             have_mpi_comm_info = false;
