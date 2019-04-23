@@ -100,8 +100,9 @@ struct H5VL_prov_file_info_t {//assigned when a file is closed, serves to store 
     unsigned long file_no;
 #ifdef H5_HAVE_PARALLEL
     // Only present for parallel HDF5 builds
-    MPI_Comm comm;              // Copy of MPI communicator for file
-    MPI_Info info;              // Copy of MPI info for file
+    MPI_Comm mpi_comm;          // Copy of MPI communicator for file
+    MPI_Info mpi_info;          // Copy of MPI info for file
+    hbool_t mpi_comm_info_valid; // Indicate that MPI Comm & Info are valid
 #endif /* H5_HAVE_PARALLEL */
     int ref_cnt;
 
@@ -550,6 +551,16 @@ void dtype_info_free(datatype_prov_info_t* info)
 
 void file_info_free(file_prov_info_t* info)
 {
+#ifdef H5_HAVE_PARALLEL
+    // Release MPI Comm & Info, if they are valid
+    if(info->mpi_comm_info_valid) {
+	if(MPI_COMM_NULL != info->mpi_comm)
+	    MPI_Comm_free(&info->mpi_comm);
+	if(MPI_INFO_NULL != info->mpi_info)
+	    MPI_Info_free(&info->mpi_info);
+fprintf(stderr, "Freeing MPI Comm & Info!\n");
+    }
+#endif /* H5_HAVE_PARALLEL */
     if(info->file_name)
         free(info->file_name);
     free(info);
@@ -1123,7 +1134,7 @@ int rm_file_node(prov_helper_t* helper, unsigned long file_no)
                 else
                     last->next = cur->next;
 
-                // Unlink from list of opened files
+                // Free file info
                 file_info_free(cur);
 
                 // Update connector info
@@ -3620,13 +3631,13 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
     H5VL_provenance_info_t *info = NULL;
     H5VL_provenance_t *file;
     hid_t under_fapl_id = -1;
+    void *under;
 #ifdef H5_HAVE_PARALLEL
     hid_t driver_id;            // VFD driver for file
-    MPI_Comm mpi_comm;          // MPI Comm from FAPL
-    MPI_Info mpi_info;          // MPI Info from FAPL
+    MPI_Comm mpi_comm = MPI_COMM_NULL;  // MPI Comm from FAPL
+    MPI_Info mpi_info = MPI_INFO_NULL;  // MPI Info from FAPL
     hbool_t have_mpi_comm_info = false;     // Whether the MPI Comm & Info are retrieved
 #endif /* H5_HAVE_PARALLEL */
-    void *under;
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PROVNC VOL FILE Create\n");
@@ -3638,18 +3649,20 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
     /* Copy the FAPL */
     under_fapl_id = H5Pcopy(fapl_id);
 
+    /* Set the VOL ID and info for the underlying FAPL */
+    H5Pset_vol(under_fapl_id, info->under_vol_id, info->under_vol_info);
+
 #ifdef H5_HAVE_PARALLEL
     // Determine if the file is accessed with the parallel VFD (MPI-IO)
     // and copy the MPI comm & info objects for our use
-    if((driver_id == H5Pget_driver(under_fapl_id)) > 0 && driver_id == H5FD_MPIO) {
+    if((driver_id = H5Pget_driver(under_fapl_id)) > 0 && driver_id == H5FD_MPIO) {
         // Retrieve the MPI comm & info objects
         H5Pget_fapl_mpio(under_fapl_id, &mpi_comm, &mpi_info);
+
+        // Indicate that the Comm & Info are available
         have_mpi_comm_info = true;
     }
 #endif /* H5_HAVE_PARALLEL */
-
-    /* Set the VOL ID and info for the underlying FAPL */
-    H5Pset_vol(under_fapl_id, info->under_vol_id, info->under_vol_info);
 
     /* Open the file with the underlying VOL connector */
     m1 = get_time_usec();
@@ -3661,9 +3674,19 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
             PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
 
         file = _file_open_common(under, info->under_vol_id, name);
+
 #ifdef H5_HAVE_PARALLEL
         if(have_mpi_comm_info) {
             file_prov_info_t *file_info = file->generic_prov_info;
+
+            // Take ownership of MPI Comm & Info
+            file_info->mpi_comm = mpi_comm;
+            file_info->mpi_info = mpi_info;
+            file_info->mpi_comm_info_valid = true;
+fprintf(stderr, "Using MPI Comm & Info!\n");
+
+            // Reset flag, so Comm & Info aren't freed
+            have_mpi_comm_info = false;
         }
 #endif /* H5_HAVE_PARALLEL */
 
@@ -3684,6 +3707,16 @@ H5VL_provenance_file_create(const char *name, unsigned flags, hid_t fcpl_id,
     /* Release copy of our VOL info */
     if(info)
         H5VL_provenance_info_free(info);
+
+#ifdef H5_HAVE_PARALLEL
+    // Release MPI Comm & Info, if they weren't taken over
+    if(have_mpi_comm_info) {
+	if(MPI_COMM_NULL != mpi_comm)
+	    MPI_Comm_free(&mpi_comm);
+	if(MPI_INFO_NULL != mpi_info)
+	    MPI_Info_free(&mpi_info);
+    }
+#endif /* H5_HAVE_PARALLEL */
 
     TOTAL_PROV_OVERHEAD += (get_time_usec() - start - (m2 - m1));
     return (void *)file;
@@ -3711,6 +3744,12 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     H5VL_provenance_t *file;
     hid_t under_fapl_id = -1;
     void *under;
+#ifdef H5_HAVE_PARALLEL
+    hid_t driver_id;            // VFD driver for file
+    MPI_Comm mpi_comm = MPI_COMM_NULL;  // MPI Comm from FAPL
+    MPI_Info mpi_info = MPI_INFO_NULL;  // MPI Info from FAPL
+    hbool_t have_mpi_comm_info = false;     // Whether the MPI Comm & Info are retrieved
+#endif /* H5_HAVE_PARALLEL */
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL FILE Open\n");
@@ -3725,6 +3764,18 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     /* Set the VOL ID and info for the underlying FAPL */
     H5Pset_vol(under_fapl_id, info->under_vol_id, info->under_vol_info);
 
+#ifdef H5_HAVE_PARALLEL
+    // Determine if the file is accessed with the parallel VFD (MPI-IO)
+    // and copy the MPI comm & info objects for our use
+    if((driver_id = H5Pget_driver(under_fapl_id)) > 0 && driver_id == H5FD_MPIO) {
+        // Retrieve the MPI comm & info objects
+        H5Pget_fapl_mpio(under_fapl_id, &mpi_comm, &mpi_info);
+
+        // Indicate that the Comm & Info are available
+        have_mpi_comm_info = true;
+    }
+#endif /* H5_HAVE_PARALLEL */
+
     /* Open the file with the underlying VOL connector */
     m1 = get_time_usec();
     under = H5VLfile_open(name, flags, under_fapl_id, dxpl_id, req);
@@ -3736,6 +3787,21 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
             PROV_HELPER = prov_helper_init(info->prov_file_path, info->prov_level, info->prov_line_format);
 
         file = _file_open_common(under, info->under_vol_id, name);
+
+#ifdef H5_HAVE_PARALLEL
+        if(have_mpi_comm_info) {
+            file_prov_info_t *file_info = file->generic_prov_info;
+
+            // Take ownership of MPI Comm & Info
+            file_info->mpi_comm = mpi_comm;
+            file_info->mpi_info = mpi_info;
+            file_info->mpi_comm_info_valid = true;
+fprintf(stderr, "Using MPI Comm & Info!\n");
+
+            // Reset flag, so Comm & Info aren't freed
+            have_mpi_comm_info = false;
+        }
+#endif /* H5_HAVE_PARALLEL */
 
         /* Check for async request */
         if(req && *req)
@@ -3754,6 +3820,16 @@ H5VL_provenance_file_open(const char *name, unsigned flags, hid_t fapl_id,
     /* Release copy of our VOL info */
     if(info)
         H5VL_provenance_info_free(info);
+
+#ifdef H5_HAVE_PARALLEL
+    // Release MPI Comm & Info, if they weren't taken over
+    if(have_mpi_comm_info) {
+	if(MPI_COMM_NULL != mpi_comm)
+	    MPI_Comm_free(&mpi_comm);
+	if(MPI_INFO_NULL != mpi_info)
+	    MPI_Info_free(&mpi_info);
+    }
+#endif /* H5_HAVE_PARALLEL */
 
     TOTAL_PROV_OVERHEAD += (get_time_usec() - start - (m2 - m1));
     return (void *)file;
@@ -3928,6 +4004,9 @@ H5VL_provenance_file_specific(void *file, H5VL_file_specific_t specific_type,
                     char* file_name = ((file_prov_info_t*)(o->generic_prov_info))->file_name;
 
                     *ret = _file_open_common(*ret, under_vol_id, file_name);
+
+                    // Shouldn't need to duplicate MPI Comm & Info
+                    // since the file_info should be the same
                 }
             } /* end if */
 
