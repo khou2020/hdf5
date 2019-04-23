@@ -866,21 +866,21 @@ done:
  *-------------------------------------------------------------------------
  */
 herr_t
-H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id,
-    hid_t val_mem_type_id, H5M_iterate_t op, void *op_data, hid_t dxpl_id)
+H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id, H5M_iterate_t op,
+    void *op_data, hid_t dxpl_id)
 {
     H5VL_object_t          *vol_obj = NULL;
+    H5VL_loc_params_t       loc_params;
     herr_t                  ret_value = SUCCEED;    /* Return value */
 
     FUNC_ENTER_API(FAIL)
-    H5TRACE7("e", "i*hiix*xi", map_id, idx, key_mem_type_id, val_mem_type_id, op,
-             op_data, dxpl_id);
+    H5TRACE6("e", "i*hix*xi", map_id, idx, key_mem_type_id, op, op_data, dxpl_id);
 
     /* Check arguments */
     if (key_mem_type_id < 0)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid key memory datatype ID")
-    if (val_mem_type_id < 0)
-        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid value memory datatype ID")
+    if (!op)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "no operator specified")
 
     /* Get map pointer */
     if (NULL == (vol_obj = (H5VL_object_t *)H5I_object_verify(map_id, H5I_MAP)))
@@ -896,8 +896,12 @@ H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id,
     /* Set DXPL for operation */
     H5CX_set_dxpl(dxpl_id);
 
+    /* Set location struct fields */
+    loc_params.type = H5VL_OBJECT_BY_SELF;
+    loc_params.obj_type = H5I_get_type(map_id);
+
     /* Iterate over keys */
-    if(H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, H5VL_MAP_ITER, idx, key_mem_type_id, val_mem_type_id, op, op_data) < 0)
+    if(H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, H5VL_MAP_ITER, &loc_params, idx, key_mem_type_id, op, op_data) < 0)
         HGOTO_ERROR(H5E_MAP, H5E_BADITER, FAIL, "unable to ierate over keys")
 
 done:

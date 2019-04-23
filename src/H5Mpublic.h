@@ -58,8 +58,7 @@ typedef enum H5VL_map_specific_t {
 } H5VL_map_specific_t;
 
 /* Callback for H5Miterate() */
-typedef herr_t (*H5M_iterate_t)(hid_t map_id, const void *key,
-    const void *value, void *op_data);
+typedef herr_t (*H5M_iterate_t)(hid_t map_id, const void *key, void *op_data);
 
 
 /********************/
@@ -92,7 +91,7 @@ H5_DLL herr_t H5Mget(hid_t map_id, hid_t key_mem_type_id, const void *key,
 H5_DLL herr_t H5Mexists(hid_t map_id, hid_t key_mem_type_id, const void *key,
     hbool_t *exists, hid_t dxpl_id);
 H5_DLL herr_t H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id,
-    hid_t val_mem_type_id, H5M_iterate_t op, void *op_data, hid_t dxpl_id);
+    H5M_iterate_t op, void *op_data, hid_t dxpl_id);
 
 /* Symbols defined for compatibility with previous versions of the HDF5 API.
  *
