@@ -1921,6 +1921,7 @@ test_file_open_overlap(void)
     hid_t sid;
     ssize_t nobjs;      /* # of open objects */
     unsigned intent;
+    unsigned long fileno1, fileno2;     /* File number */
     herr_t ret;         /* Generic return value */
 
     /* Output message about test being performed */
@@ -1938,6 +1939,19 @@ test_file_open_overlap(void)
     ret = H5Fget_intent(fid1, &intent);
     CHECK(ret, FAIL, "H5Fget_intent");
     VERIFY(intent, H5F_ACC_RDWR, "H5Fget_intent");
+
+    /* Check the file numbers */
+    fileno1 = 0;
+    ret = H5Fget_fileno(fid1, &fileno1);
+    CHECK(ret, FAIL, "H5Fget_fileno");
+    fileno2 = 0;
+    ret = H5Fget_fileno(fid2, &fileno2);
+    CHECK(ret, FAIL, "H5Fget_fileno");
+    VERIFY(fileno1, fileno2, "H5Fget_fileno");
+
+    /* Check that a file number pointer of NULL is ignored */
+    ret = H5Fget_fileno(fid1, NULL);
+    CHECK(ret, FAIL, "H5Fget_fileno");
 
     /* Create a group in file */
     gid = H5Gcreate2(fid1, GROUP1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -2652,6 +2666,7 @@ test_userblock_file_size(void)
     hid_t fcpl2_id;
     hsize_t dims[2] = {3, 4};
     hsize_t filesize1, filesize2, filesize;
+    unsigned long fileno1, fileno2;     /* File number */
     herr_t ret;         /* Generic return value */
 
     /* Output message about test being performed */
@@ -2668,6 +2683,15 @@ test_userblock_file_size(void)
     CHECK(file1_id, FAIL, "H5Fcreate");
     file2_id = H5Fcreate(FILE2, H5F_ACC_TRUNC, fcpl2_id, H5P_DEFAULT);
     CHECK(file2_id, FAIL, "H5Fcreate");
+
+    /* Check the file numbers */
+    fileno1 = 0;
+    ret = H5Fget_fileno(file1_id, &fileno1);
+    CHECK(ret, FAIL, "H5Fget_fileno");
+    fileno2 = 0;
+    ret = H5Fget_fileno(file2_id, &fileno2);
+    CHECK(ret, FAIL, "H5Fget_fileno");
+    CHECK(fileno1, fileno2, "H5Fget_fileno");
 
     /* Create groups */
     group1_id = H5Gcreate2(file1_id, GROUP1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -5167,7 +5191,7 @@ test_libver_bounds_open(void)
         /* Get new low bound and verify that it has been upgraded properly */
         ret = H5Pget_libver_bounds(new_fapl, &new_low, NULL);
         CHECK(ret, FAIL, "H5Pget_libver_bounds");
-        VERIFY(new_low, H5F_LIBVER_LATEST, "Low bound should be upgraded to H5F_LIBVER_LATEST");
+        VERIFY(new_low >= H5F_LIBVER_V110, TRUE, "Low bound should be upgraded to at least H5F_LIBVER_V110");
 
         ret = H5Pclose(new_fapl);
         CHECK(ret, FAIL, "H5Pclose");
@@ -5445,7 +5469,7 @@ test_libver_bounds_super_create(hid_t fapl, hid_t fcpl, htri_t is_swmr)
     } H5E_END_TRY;
 
     /* Get the internal file pointer if the create succeeds */
-    if((ok = fid >= 0)) {
+    if(fid >= 0) {
         f = (H5F_t *)H5VL_object(fid);
         CHECK(f, NULL, "H5VL_object");
     }
@@ -5456,34 +5480,35 @@ test_libver_bounds_super_create(hid_t fapl, hid_t fcpl, htri_t is_swmr)
 
     if(is_swmr) { /* SWMR is enabled */
 
-        if(high == H5F_LIBVER_LATEST) { /* Should succeed */
-            VERIFY(ok, TRUE, "H5Fcreate");
+        if(high >= H5F_LIBVER_V110) { /* Should succeed */
+            VERIFY(fid >= 0, TRUE, "H5Fcreate");
             VERIFY(HDF5_SUPERBLOCK_VERSION_3, f->shared->sblock->super_vers, "HDF5_superblock_ver_bounds");
-            VERIFY(H5F_LIBVER_V110, f->shared->low_bound, "HDF5_superblock_ver_bounds");
+            VERIFY(f->shared->low_bound >= H5F_LIBVER_V110, TRUE, "HDF5_superblock_ver_bounds");
 
         } else /* Should fail */
-            VERIFY(ok, FALSE, "H5Fcreate");
+            VERIFY(fid >= 0, FALSE, "H5Fcreate");
 
     }
     else { /* Should succeed */
-        VERIFY(ok, TRUE, "H5Fcreate");
+        VERIFY(fid >= 0, TRUE, "H5Fcreate");
         VERIFY(low, f->shared->low_bound, "HDF5_superblock_ver_bounds");
 
         switch(low) {
             case H5F_LIBVER_EARLIEST:
-                ok = (f->shared->sblock->super_vers == 0 ||
-                      f->shared->sblock->super_vers == 1 ||
-                      f->shared->sblock->super_vers == 2);
+                ok = (f->shared->sblock->super_vers == HDF5_SUPERBLOCK_VERSION_DEF  ||
+                      f->shared->sblock->super_vers == HDF5_SUPERBLOCK_VERSION_1 ||
+                      f->shared->sblock->super_vers == HDF5_SUPERBLOCK_VERSION_2);
                 VERIFY(ok, TRUE, "HDF5_superblock_ver_bounds");
                 break;
 
             case H5F_LIBVER_V18:
-                ok = (f->shared->sblock->super_vers == 2);
+                ok = (f->shared->sblock->super_vers == HDF5_SUPERBLOCK_VERSION_2);
                 VERIFY(ok, TRUE, "HDF5_superblock_ver_bounds");
                 break;
 
             case H5F_LIBVER_V110:
-                ok = (f->shared->sblock->super_vers == 3);
+            case H5F_LIBVER_V112:
+                ok = (f->shared->sblock->super_vers == HDF5_SUPERBLOCK_VERSION_3);
                 VERIFY(ok, TRUE, "HDF5_superblock_ver_bounds");
                 break;
 
@@ -5495,7 +5520,7 @@ test_libver_bounds_super_create(hid_t fapl, hid_t fcpl, htri_t is_swmr)
         } /* end switch */
     }
 
-    if(ok) { /* Close the file */
+    if(fid >= 0) { /* Close the file */
         ret = H5Fclose(fid);
         CHECK(ret, FAIL, "H5Fclose");
     }
@@ -5587,7 +5612,6 @@ test_libver_bounds_super_open(hid_t fapl, hid_t fcpl, htri_t is_swmr)
     hid_t new_fapl = -1;    /* File access property list */
     unsigned super_vers;    /* Superblock version */
     H5F_libver_t low, high; /* Low and high bounds */
-    hbool_t ok;                /* The result is ok or not */
     herr_t ret;                /* Return value */
 
     /* Create the file with the input fcpl and fapl */
@@ -5626,7 +5650,7 @@ test_libver_bounds_super_open(hid_t fapl, hid_t fcpl, htri_t is_swmr)
             } H5E_END_TRY;
 
             /* Get the internal file pointer if the open succeeds */
-            if((ok = fid >= 0)) {
+            if(fid >= 0) {
                 f = (H5F_t *)H5VL_object(fid);
                 CHECK(f, NULL, "H5VL_object");
             }
@@ -5634,26 +5658,24 @@ test_libver_bounds_super_open(hid_t fapl, hid_t fcpl, htri_t is_swmr)
             /* Verify the file open succeeds or fails */
             switch(super_vers) {
                 case 3:
-                    if(high == H5F_LIBVER_LATEST) {
+                    if(high >= H5F_LIBVER_V110) {
                         /* Should succeed */
-                        VERIFY(ok, TRUE, "H5Fopen");
-                        VERIFY(H5F_LIBVER_V110, f->shared->low_bound, "HDF5_superblock_ver_bounds");
+                        VERIFY(fid >= 0, TRUE, "H5Fopen");
+                        VERIFY(f->shared->low_bound >= H5F_LIBVER_V110, TRUE, "HDF5_superblock_ver_bounds");
 
                         /* Close the file */
                         ret = H5Fclose(fid);
                         CHECK(ret, FAIL, "H5Fclose");
                     } else /* Should fail */
-                        VERIFY(ok, FALSE, "H5Fopen");
+                        VERIFY(fid >= 0, FALSE, "H5Fopen");
                     break;
 
                 case 2:
                     if(is_swmr)  /* Should fail */
-                        VERIFY(ok, FALSE, "H5Fopen");
+                        VERIFY(fid >= 0, FALSE, "H5Fopen");
                     else { /* Should succeed */
-                        VERIFY(ok, TRUE, "H5Fopen");
-
-                        ok = f->shared->low_bound >= H5F_LIBVER_V18;
-                        VERIFY(ok, TRUE, "HDF5_superblock_ver_bounds");
+                        VERIFY(fid >= 0, TRUE, "H5Fopen");
+                        VERIFY(f->shared->low_bound >= H5F_LIBVER_V18, TRUE, "HDF5_superblock_ver_bounds");
 
                         /* Close the file */
                         ret = H5Fclose(fid);
@@ -5664,10 +5686,10 @@ test_libver_bounds_super_open(hid_t fapl, hid_t fcpl, htri_t is_swmr)
                 case 1:
                 case 0:
                     if(is_swmr)  /* Should fail */
-                        VERIFY(ok, FALSE, "H5Fopen");
+                        VERIFY(fid >= 0, FALSE, "H5Fopen");
                     else { /* Should succeed */
-                        VERIFY(ok, TRUE, "H5Fopen");
-                        VERIFY(low, f->shared->low_bound, "HDF5_superblock_ver_bounds");
+                        VERIFY(fid >= 0, TRUE, "H5Fopen");
+                        VERIFY(f->shared->low_bound, low, "HDF5_superblock_ver_bounds");
 
                         ret = H5Fclose(fid);
                         CHECK(ret, FAIL, "H5Fclose");
