@@ -1,5 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * Copyright by The HDF Group.                                               *
+ * Copyright by the Board of Trustees of the University of Illinois.         *
  * All rights reserved.                                                      *
  *                                                                           *
  * This file is part of HDF5.  The full HDF5 copyright notice, including     *
@@ -10,11 +11,40 @@
  * help@hdfgroup.org.                                                        *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef VOL_TEST_PARALLEL_H
-#define VOL_TEST_PARALLEL_H
+/*
+ * Programmer:  Raymond Lu <songyulu@hdfgroup.org>
+ *              April, 2019
+ *
+ * Purpose:     Private function for external.c and external_env.c
+ */
+#ifndef _EXTERNAL_COMMON_H
+#define _EXTERNAL_COMMON_H
 
-#include <mpi.h>
+/* Include test header files */
+#include "h5test.h"
 
-#include "testpar.h"
+static const char *EXT_FNAME[] = {
+    "extern_1",
+    "extern_2",
+    "extern_3",
+    "extern_4",
+    "extern_dir/file_1",
+    "extern_5",
+    NULL
+};
 
-#endif
+static const char *EXT_ENV_FNAME[] = {
+    "extern_env_dir/env_file_1",
+    NULL
+};
+
+/* A similar collection of files is used for the tests that
+ * perform file I/O.
+ */
+#define N_EXT_FILES         4
+#define PART_SIZE           25
+#define TOTAL_SIZE          100
+#define GARBAGE_PER_FILE    10
+
+H5TEST_DLL herr_t reset_raw_data_files(int);
+#endif /* _EXTERNAL_COMMON_H */
