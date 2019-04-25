@@ -3473,7 +3473,6 @@ AC_CONFIG_FILES([src/libhdf5.settings
                  Makefile
                  src/Makefile
                  test/Makefile
-                 test/VOL/Makefile
                  test/H5srcdir_str.h
                  test/testabort_fail.sh
                  test/testcheck_version.sh
