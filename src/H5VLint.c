@@ -552,7 +552,8 @@ H5VL__new_vol_obj(H5I_type_t type, void *object, H5VL_t *vol_connector, hbool_t 
     HDassert(vol_connector);
 
     /* Make sure type number is valid */
-    if(type != H5I_ATTR && type != H5I_DATASET && type != H5I_DATATYPE && type != H5I_FILE && type != H5I_GROUP)
+    if(type != H5I_ATTR && type != H5I_DATASET && type != H5I_DATATYPE
+            && type != H5I_FILE && type != H5I_GROUP && type != H5I_MAP)
         HGOTO_ERROR(H5E_VOL, H5E_BADVALUE, NULL, "invalid type number")
 
     /* Create the new VOL object */
