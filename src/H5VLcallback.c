@@ -6566,8 +6566,8 @@ H5VL__optional(void *obj, const H5VL_class_t *cls, hid_t dxpl_id,
         HGOTO_ERROR(H5E_VOL, H5E_UNSUPPORTED, FAIL, "VOL connector has no 'optional' method")
 
     /* Call the corresponding VOL callback */
-    if((cls->optional)(obj, dxpl_id, req, arguments) < 0)
-        HGOTO_ERROR(H5E_VOL, H5E_CANTOPERATE, FAIL, "unable to execute optional callback")
+    if((ret_value = (cls->optional)(obj, dxpl_id, req, arguments)) < 0)
+        HGOTO_ERROR(H5E_VOL, H5E_CANTOPERATE, ret_value, "unable to execute optional callback")
 
 done:
     FUNC_LEAVE_NOAPI(ret_value)
@@ -6603,7 +6603,7 @@ H5VL_optional(const H5VL_object_t *vol_obj, hid_t dxpl_id,
     /* Call the corresponding internal VOL routine */
     HDva_start(arguments, req);
     arg_started = TRUE;
-    if(H5VL__optional(vol_obj->data, vol_obj->connector->cls, dxpl_id, req, arguments) < 0)
+    if((ret_value = H5VL__optional(vol_obj->data, vol_obj->connector->cls, dxpl_id, req, arguments)) < 0)
         HGOTO_ERROR(H5E_VOL, H5E_CANTOPERATE, FAIL, "unable to execute optional callback")
 
 done:
@@ -6613,7 +6613,7 @@ done:
 
     /* Reset object wrapping info in API context */
     if(vol_wrapper_set && H5VL_reset_vol_wrapper() < 0)
-        HDONE_ERROR(H5E_VOL, H5E_CANTRESET, FAIL, "can't reset VOL wrapper info")
+        HDONE_ERROR(H5E_VOL, H5E_CANTRESET, ret_value, "can't reset VOL wrapper info")
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL_optional() */
@@ -6646,8 +6646,8 @@ H5VLoptional(void *obj, hid_t connector_id, hid_t dxpl_id, void **req,
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a VOL connector ID")
 
     /* Call the corresponding internal VOL routine */
-    if(H5VL__optional(obj, cls, dxpl_id, req, arguments) < 0)
-        HGOTO_ERROR(H5E_VOL, H5E_CANTOPERATE, FAIL, "unable to execute optional callback")
+    if((ret_value = H5VL__optional(obj, cls, dxpl_id, req, arguments)) < 0)
+        HGOTO_ERROR(H5E_VOL, H5E_CANTOPERATE, ret_value, "unable to execute optional callback")
 
 done:
     FUNC_LEAVE_API_NOINIT(ret_value)

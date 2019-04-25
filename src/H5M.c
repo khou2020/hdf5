@@ -825,8 +825,8 @@ H5Mexists(hid_t map_id, hid_t key_mem_type_id, const void *key, hbool_t *exists,
     H5CX_set_dxpl(dxpl_id);
 
     /* Check if key exists */
-    if(H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_EXISTS, key_mem_type_id, key, exists) < 0)
-        HGOTO_ERROR(H5E_MAP, H5E_CANTGET, FAIL, "unable to check if key exists")
+    if((ret_value = H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_EXISTS, key_mem_type_id, key, exists)) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_CANTGET, ret_value, "unable to check if key exists")
 
 done:
     FUNC_LEAVE_API(ret_value)
@@ -861,7 +861,7 @@ done:
  *              return this value without issuing an error. A return value
  *              of zero allows iteration to continue.
  *
- * Return:      SUCCEED/FAIL
+ * Return:      Last value returned by op
  *
  *-------------------------------------------------------------------------
  */
@@ -901,8 +901,8 @@ H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id, H5M_iterate_t op,
     loc_params.obj_type = H5I_get_type(map_id);
 
     /* Iterate over keys */
-    if(H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, H5VL_MAP_ITER, &loc_params, idx, key_mem_type_id, op, op_data) < 0)
-        HGOTO_ERROR(H5E_MAP, H5E_BADITER, FAIL, "unable to ierate over keys")
+    if((ret_value = H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, &loc_params, H5VL_MAP_ITER, idx, key_mem_type_id, op, op_data)) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_BADITER, ret_value, "unable to ierate over keys")
 
 done:
     FUNC_LEAVE_API(ret_value)
