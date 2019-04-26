@@ -847,19 +847,18 @@ done:
  * 
  *              H5M_iterate_t is defined as:
  *              herr_t (*H5M_iterate_t)(hid_t map_id, const void *key,
- *                      const void *value, void *ctx)
+ *                      void *ctx)
  *
- *              The KEY and VALUE parameters are the buffers for the key
- *              for this iteration and its associated value, converted to
- *              the datatypes specified by KEY_MEM_TYPE_ID and
- *              VAL_MEM_TYPE_ID, respectively. The OP_DATA parameter is a
- *              simple pass through of the value passed to H5Miterate,
- *              which can be used to store application-defined data for
- *              iteration. A negative return value from this function will
- *              cause H5Miterate to issue an error, while a positive
- *              return value will cause H5Miterate to stop iterating and
- *              return this value without issuing an error. A return value
- *              of zero allows iteration to continue.
+ *              The KEY parameter is the buffer for the key for this
+ *              iteration, converted to the datatype specified by
+ *              KEY_MEM_TYPE_ID. The OP_DATA parameter is a simple pass
+ *              through of the value passed to H5Miterate, which can be
+ *              used to store application-defined data for iteration. A
+ *              negative return value from this function will cause
+ *              H5Miterate to issue an error, while a positive return
+ *              value will cause H5Miterate to stop iterating and return
+ *              this value without issuing an error. A return value of
+ *              zero allows iteration to continue.
  *
  * Return:      Last value returned by op
  *
@@ -923,19 +922,18 @@ done:
  *
  *              H5M_iterate_t is defined as:
  *              herr_t (*H5M_iterate_t)(hid_t map_id, const void *key,
- *                      const void *value, void *ctx)
+ *                      void *ctx)
  *
- *              The KEY and VALUE parameters are the buffers for the key
- *              for this iteration and its associated value, converted to
- *              the datatypes specified by KEY_MEM_TYPE_ID and
- *              VAL_MEM_TYPE_ID, respectively. The OP_DATA parameter is a
- *              simple pass through of the value passed to H5Miterate,
- *              which can be used to store application-defined data for
- *              iteration. A negative return value from this function will
- *              cause H5Miterate to issue an error, while a positive
- *              return value will cause H5Miterate to stop iterating and
- *              return this value without issuing an error. A return value
- *              of zero allows iteration to continue.
+ *              The KEY parameter is the buffer for the key for this
+ *              iteration, converted to the datatype specified by
+ *              KEY_MEM_TYPE_ID. The OP_DATA parameter is a simple pass
+ *              through of the value passed to H5Miterate, which can be
+ *              used to store application-defined data for iteration. A
+ *              negative return value from this function will cause
+ *              H5Miterate to issue an error, while a positive return
+ *              value will cause H5Miterate to stop iterating and return
+ *              this value without issuing an error. A return value of
+ *              zero allows iteration to continue.
  *
  * Return:      Last value returned by op
  *
