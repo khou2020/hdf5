@@ -908,3 +908,87 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Miterate() */
 
+
+/*-------------------------------------------------------------------------
+ * Function:    H5Miterate_by_name
+ *
+ * Purpose:     H5Miterate_by_name iterates over all key-value pairs
+ *              stored in the map specified by MAP_ID, making the callback
+ *              specified by OP for each. The IDX parameter is an in/out
+ *              parameter that may be used to restart a previously
+ *              interrupted iteration.  At the start of iteration IDX
+ *              should be set to 0, and to restart iteration at the same
+ *              location on a subsequent call to H5Miterate, IDX should be
+ *              the same value as returned by the previous call.
+ *
+ *              H5M_iterate_t is defined as:
+ *              herr_t (*H5M_iterate_t)(hid_t map_id, const void *key,
+ *                      const void *value, void *ctx)
+ *
+ *              The KEY and VALUE parameters are the buffers for the key
+ *              for this iteration and its associated value, converted to
+ *              the datatypes specified by KEY_MEM_TYPE_ID and
+ *              VAL_MEM_TYPE_ID, respectively. The OP_DATA parameter is a
+ *              simple pass through of the value passed to H5Miterate,
+ *              which can be used to store application-defined data for
+ *              iteration. A negative return value from this function will
+ *              cause H5Miterate to issue an error, while a positive
+ *              return value will cause H5Miterate to stop iterating and
+ *              return this value without issuing an error. A return value
+ *              of zero allows iteration to continue.
+ *
+ * Return:      Last value returned by op
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5Miterate_by_name(hid_t loc_id, const char *map_name, hsize_t *idx,
+    hid_t key_mem_type_id, H5M_iterate_t op, void *op_data, hid_t dxpl_id,
+    hid_t lapl_id)
+{
+    H5VL_object_t          *vol_obj = NULL;
+    H5VL_loc_params_t       loc_params;
+    herr_t                  ret_value = SUCCEED;    /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE8("e", "i*s*hix*xii", loc_id, map_name, idx, key_mem_type_id, op,
+             op_data, dxpl_id, lapl_id);
+
+    /* Check arguments */
+    if(!map_name)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "map_name parameter cannot be NULL")
+    if(!*map_name)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "map_name parameter cannot be an empty string")
+    if (key_mem_type_id < 0)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid key memory datatype ID")
+    if (!op)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "no operator specified")
+
+    /* Get the location object */
+    if (NULL == (vol_obj = (H5VL_object_t *)H5I_object(loc_id)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "invalid location identifier")
+
+    /* Get the default dataset transfer property list if the user didn't provide one */
+    if (H5P_DEFAULT == dxpl_id)
+        dxpl_id = H5P_DATASET_XFER_DEFAULT;
+    else
+        if (TRUE != H5P_isa_class(dxpl_id, H5P_DATASET_XFER))
+            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not xfer parms")
+
+    /* Set DXPL for operation */
+    H5CX_set_dxpl(dxpl_id);
+
+    /* Set location struct fields */
+    loc_params.type                         = H5VL_OBJECT_BY_NAME;
+    loc_params.obj_type                     = H5I_get_type(loc_id);
+    loc_params.loc_data.loc_by_name.name    = map_name;
+    loc_params.loc_data.loc_by_name.lapl_id = lapl_id;
+
+    /* Iterate over keys */
+    if((ret_value = H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, &loc_params, H5VL_MAP_ITER, idx, key_mem_type_id, op, op_data)) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_BADITER, ret_value, "unable to ierate over keys")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Miterate_by_name() */
+

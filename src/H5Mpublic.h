@@ -92,6 +92,9 @@ H5_DLL herr_t H5Mexists(hid_t map_id, hid_t key_mem_type_id, const void *key,
     hbool_t *exists, hid_t dxpl_id);
 H5_DLL herr_t H5Miterate(hid_t map_id, hsize_t *idx, hid_t key_mem_type_id,
     H5M_iterate_t op, void *op_data, hid_t dxpl_id);
+H5_DLL herr_t H5Miterate_by_name(hid_t loc_id, const char *map_name,
+    hsize_t *idx, hid_t key_mem_type_id, H5M_iterate_t op, void *op_data,
+    hid_t dxpl_id, hid_t lapl_id);
 
 /* Symbols defined for compatibility with previous versions of the HDF5 API.
  *
