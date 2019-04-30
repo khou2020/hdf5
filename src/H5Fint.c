@@ -863,18 +863,18 @@ H5F__is_hdf5(const char *name, hid_t fapl_id)
      *          should work with arbitrary VFDs, unlike H5Fis_hdf5().
      */
     if(NULL == (file = H5FD_open(name, H5F_ACC_RDONLY, fapl_id, HADDR_UNDEF)))
-        HGOTO_ERROR(H5E_IO, H5E_CANTINIT, FAIL, "unable to open file")
+        HGOTO_ERROR(H5E_FILE, H5E_CANTINIT, FAIL, "unable to open file")
 
     /* The file is an hdf5 file if the hdf5 file signature can be found */
     if(H5FD_locate_signature(file, &sig_addr) < 0)
-        HGOTO_ERROR(H5E_FILE, H5E_NOTHDF5, FAIL, "unable to locate file signature")
+        HGOTO_ERROR(H5E_FILE, H5E_NOTHDF5, FAIL, "error while trying to locate file signature")
     ret_value = (HADDR_UNDEF != sig_addr);
 
 done:
     /* Close the file */
     if(file)
         if(H5FD_close(file) < 0 && TRUE == ret_value)
-            HDONE_ERROR(H5E_IO, H5E_CANTCLOSEFILE, FAIL, "unable to close file")
+            HDONE_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "unable to close file")
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5F__is_hdf5() */
@@ -2013,6 +2013,31 @@ H5F__close(H5F_t *f)
 done:
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5F__close() */
+
+
+/*-------------------------------------------------------------------------
+ * Function:    H5F_delete
+ *
+ * Purpose:     Deletes a file.
+ *
+ * Return:      SUCCEED/FAIL
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5F_delete(const char *filename, hid_t fapl_id)
+{
+    herr_t          ret_value = SUCCEED;       /* Return value                             */
+
+    FUNC_ENTER_NOAPI(FAIL)
+
+    HDassert(filename);
+
+    /* Delete the file */
+    HGOTO_ERROR(H5E_FILE, H5E_CANTDELETEFILE, FAIL, "H5Fdelete no implemented in native VOL connector")
+
+done:
+    FUNC_LEAVE_NOAPI(ret_value)
+} /* end H5F_delete() */
 
 
 /*-------------------------------------------------------------------------
