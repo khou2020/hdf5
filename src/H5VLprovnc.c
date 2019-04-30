@@ -156,6 +156,12 @@ struct H5VL_prov_dataset_info_t {
     hsize_t total_write_time;
     int dataset_read_cnt;
     int dataset_write_cnt;
+#ifdef H5_HAVE_PARALLEL
+    int coll_dataset_read_cnt;
+    int coll_dataset_write_cnt;
+    int broken_coll_dataset_read_cnt;
+    int broken_coll_dataset_write_cnt;
+#endif /* H5_HAVE_PARALLEL */
     int access_cnt;
 
     dataset_prov_info_t *next;
