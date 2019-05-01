@@ -157,6 +157,8 @@ struct H5VL_prov_dataset_info_t {
     int dataset_read_cnt;
     int dataset_write_cnt;
 #ifdef H5_HAVE_PARALLEL
+    int ind_dataset_read_cnt;
+    int ind_dataset_write_cnt;
     int coll_dataset_read_cnt;
     int coll_dataset_write_cnt;
     int broken_coll_dataset_read_cnt;
@@ -2980,11 +2982,19 @@ H5VL_provenance_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     unsigned long m1, m2;
 
     H5VL_provenance_t *o = (H5VL_provenance_t *)dset;
+#ifdef H5_HAVE_PARALLEL
+    H5FD_mpio_xfer_t xfer_mode = H5FD_MPIO_INDEPENDENT;
+#endif /* H5_HAVE_PARALLEL */
     herr_t ret_value;
 
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL DATASET Read\n");
 #endif
+
+#ifdef H5_HAVE_PARALLEL
+    // Retrieve MPI-IO transfer option
+    H5Pget_dxpl_mpio(plist_id, &xfer_mode);
+#endif /* H5_HAVE_PARALLEL */
 
     m1 = get_time_usec();
     ret_value = H5VLdataset_read(o->under_object, o->under_vol_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req);
@@ -2995,16 +3005,35 @@ H5VL_provenance_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
 
     if(ret_value >= 0) {
+        dataset_prov_info_t * dset_info = (dataset_prov_info_t*)o->generic_prov_info;
         hsize_t r_size;
 
-        if(H5S_ALL == mem_space_id)
-            r_size = ((dataset_prov_info_t*)o->generic_prov_info)->dset_type_size * ((dataset_prov_info_t*)o->generic_prov_info)->dset_space_size;
-        else
-            r_size = ((dataset_prov_info_t*)o->generic_prov_info)->dset_type_size * (hsize_t)H5Sget_select_npoints(mem_space_id);
+#ifdef H5_HAVE_PARALLEL
+        // Increment appropriate parallel I/O counters
+        if(xfer_mode == H5FD_MPIO_INDEPENDENT)
+            // Increment counter for independent reads
+            dset_info->ind_dataset_read_cnt++;
+        else {
+            H5D_mpio_actual_io_mode_t actual_io_mode;
 
-        ((dataset_prov_info_t*)(o->generic_prov_info))->total_bytes_read += r_size;
-        ((dataset_prov_info_t*)(o->generic_prov_info))->dataset_read_cnt++;
-        ((dataset_prov_info_t*)(o->generic_prov_info))->total_read_time += (m2 - m1);
+            // Increment counter for collective reads
+            dset_info->coll_dataset_read_cnt++;
+
+            // Check for actually completing a collective I/O
+            H5Pget_mpio_actual_io_mode(plist_id, &actual_io_mode);
+            if(!actual_io_mode)
+                dset_info->broken_coll_dataset_read_cnt++;
+        } /* end else */
+#endif /* H5_HAVE_PARALLEL */
+
+        if(H5S_ALL == mem_space_id)
+            r_size = dset_info->dset_type_size * dset_info->dset_space_size;
+        else
+            r_size = dset_info->dset_type_size * (hsize_t)H5Sget_select_npoints(mem_space_id);
+
+        dset_info->total_bytes_read += r_size;
+        dset_info->dataset_read_cnt++;
+        dset_info->total_read_time += (m2 - m1);
     }
 
     prov_write(o->prov_helper, __func__, get_time_usec() - start);
@@ -3032,6 +3061,9 @@ H5VL_provenance_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
     unsigned long m1, m2;
 
     H5VL_provenance_t *o = (H5VL_provenance_t *)dset;
+#ifdef H5_HAVE_PARALLEL
+    H5FD_mpio_xfer_t xfer_mode = H5FD_MPIO_INDEPENDENT;
+#endif /* H5_HAVE_PARALLEL */
     herr_t ret_value;
 
     assert(dset);
@@ -3039,6 +3071,11 @@ H5VL_provenance_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
 #ifdef ENABLE_PROVNC_LOGGING
     printf("------- PASS THROUGH VOL DATASET Write\n");
 #endif
+
+#ifdef H5_HAVE_PARALLEL
+    // Retrieve MPI-IO transfer option
+    H5Pget_dxpl_mpio(plist_id, &xfer_mode);
+#endif /* H5_HAVE_PARALLEL */
 
     m1 = get_time_usec();
     ret_value = H5VLdataset_write(o->under_object, o->under_vol_id, mem_type_id, mem_space_id, file_space_id, plist_id, buf, req);
@@ -3049,16 +3086,35 @@ H5VL_provenance_dataset_write(void *dset, hid_t mem_type_id, hid_t mem_space_id,
         *req = H5VL_provenance_new_obj(*req, o->under_vol_id, o->prov_helper);
 
     if(ret_value >= 0) {
+        dataset_prov_info_t * dset_info = (dataset_prov_info_t*)o->generic_prov_info;
         hsize_t w_size;
 
-        if(H5S_ALL == mem_space_id)
-            w_size = ((dataset_prov_info_t*)o->generic_prov_info)->dset_type_size * ((dataset_prov_info_t*)o->generic_prov_info)->dset_space_size;
-        else
-            w_size = ((dataset_prov_info_t*)o->generic_prov_info)->dset_type_size * (hsize_t)H5Sget_select_npoints(mem_space_id);
+#ifdef H5_HAVE_PARALLEL
+        // Increment appropriate parallel I/O counters
+        if(xfer_mode == H5FD_MPIO_INDEPENDENT)
+            // Increment counter for independent writes
+            dset_info->ind_dataset_write_cnt++;
+        else {
+            H5D_mpio_actual_io_mode_t actual_io_mode;
 
-        ((dataset_prov_info_t*)o->generic_prov_info)->total_bytes_written += w_size;
-        ((dataset_prov_info_t*)(o->generic_prov_info))->dataset_write_cnt++;
-        ((dataset_prov_info_t*)(o->generic_prov_info))->total_write_time += (m2 - m1);
+            // Increment counter for collective writes
+            dset_info->coll_dataset_write_cnt++;
+
+            // Check for actually completing a collective I/O
+            H5Pget_mpio_actual_io_mode(plist_id, &actual_io_mode);
+            if(!actual_io_mode)
+                dset_info->broken_coll_dataset_write_cnt++;
+        } /* end else */
+#endif /* H5_HAVE_PARALLEL */
+
+        if(H5S_ALL == mem_space_id)
+            w_size = dset_info->dset_type_size * dset_info->dset_space_size;
+        else
+            w_size = dset_info->dset_type_size * (hsize_t)H5Sget_select_npoints(mem_space_id);
+
+        dset_info->total_bytes_written += w_size;
+        dset_info->dataset_write_cnt++;
+        dset_info->total_write_time += (m2 - m1);
     }
 
     prov_write(o->prov_helper, __func__, get_time_usec() - start);
