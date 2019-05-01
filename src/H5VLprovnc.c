@@ -227,6 +227,9 @@ static herr_t H5VL_provenance_file_specific_reissue(void *obj, hid_t connector_i
     H5VL_file_specific_t specific_type, hid_t dxpl_id, void **req, ...);  //TOTAL_PROV_OVERHEAD is not recorded.
 static herr_t H5VL_provenance_request_specific_reissue(void *obj, hid_t connector_id,
     H5VL_request_specific_t specific_type, ...); //TOTAL_PROV_OVERHEAD is not recorded.
+static herr_t H5VL_provenance_link_create_reissue(H5VL_link_create_type_t create_type,
+    void *obj, const H5VL_loc_params_t *loc_params, hid_t connector_id,
+    hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req, ...);
 static H5VL_provenance_t *H5VL_provenance_new_obj(void *under_obj,
     hid_t under_vol_id, prov_helper_t* helper);
 static herr_t H5VL_provenance_free_obj(H5VL_provenance_t *obj);
@@ -246,7 +249,9 @@ static void *H5VL_provenance_unwrap_object(void *under);
 static herr_t H5VL_provenance_free_wrap_ctx(void *obj);
 
 /* Attribute callbacks */
-static void *H5VL_provenance_attr_create(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t acpl_id, hid_t aapl_id, hid_t dxpl_id, void **req);
+static void *H5VL_provenance_attr_create(void *obj, const H5VL_loc_params_t *loc_params,
+    const char *name, hid_t type_id, hid_t space_id, hid_t acpl_id,
+    hid_t aapl_id, hid_t dxpl_id, void **req);
 static void *H5VL_provenance_attr_open(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t aapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_attr_read(void *attr, hid_t mem_type_id, void *buf, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_attr_write(void *attr, hid_t mem_type_id, const void *buf, hid_t dxpl_id, void **req);
@@ -256,7 +261,9 @@ static herr_t H5VL_provenance_attr_optional(void *obj, hid_t dxpl_id, void **req
 static herr_t H5VL_provenance_attr_close(void *attr, hid_t dxpl_id, void **req);
 
 /* Dataset callbacks */
-static void *H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const char *ds_name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req);
+static void *H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
+    const char *ds_name, hid_t lcpl_id, hid_t type_id, hid_t space_id,
+    hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req);
 static void *H5VL_provenance_dataset_open(void *obj, const H5VL_loc_params_t *loc_params, const char *ds_name, hid_t dapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_dataset_read(void *dset, hid_t mem_type_id, hid_t mem_space_id,
                                     hid_t file_space_id, hid_t plist_id, void *buf, void **req);
@@ -283,7 +290,8 @@ static herr_t H5VL_provenance_file_optional(void *file, hid_t dxpl_id, void **re
 static herr_t H5VL_provenance_file_close(void *file, hid_t dxpl_id, void **req);
 
 /* Group callbacks */
-static void *H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id, void **req);
+static void *H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params,
+    const char *name, hid_t lcpl_id, hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id, void **req);
 static void *H5VL_provenance_group_open(void *obj, const H5VL_loc_params_t *loc_params, const char *name, hid_t gapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_group_get(void *obj, H5VL_group_get_t get_type, hid_t dxpl_id, void **req, va_list arguments);
 static herr_t H5VL_provenance_group_specific(void *obj, H5VL_group_specific_t specific_type, hid_t dxpl_id, void **req, va_list arguments);
@@ -291,7 +299,9 @@ static herr_t H5VL_provenance_group_optional(void *obj, hid_t dxpl_id, void **re
 static herr_t H5VL_provenance_group_close(void *grp, hid_t dxpl_id, void **req);
 
 /* Link callbacks */
-static herr_t H5VL_provenance_link_create(H5VL_link_create_type_t create_type, void *obj, const H5VL_loc_params_t *loc_params, hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req);
+static herr_t H5VL_provenance_link_create(H5VL_link_create_type_t create_type,
+    void *obj, const H5VL_loc_params_t *loc_params, hid_t lcpl_id, hid_t lapl_id,
+    hid_t dxpl_id, void **req, va_list arguments);
 static herr_t H5VL_provenance_link_copy(void *src_obj, const H5VL_loc_params_t *loc_params1, void *dst_obj, const H5VL_loc_params_t *loc_params2, hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_link_move(void *src_obj, const H5VL_loc_params_t *loc_params1, void *dst_obj, const H5VL_loc_params_t *loc_params2, hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req);
 static herr_t H5VL_provenance_link_get(void *obj, const H5VL_loc_params_t *loc_params, H5VL_link_get_t get_type, hid_t dxpl_id, void **req, va_list arguments);
@@ -2517,7 +2527,8 @@ H5VL_provenance_free_wrap_ctx(void *_wrap_ctx)
  */
 static void *
 H5VL_provenance_attr_create(void *obj, const H5VL_loc_params_t *loc_params,
-    const char *name, hid_t acpl_id, hid_t aapl_id, hid_t dxpl_id, void **req)
+    const char *name, hid_t type_id, hid_t space_id, hid_t acpl_id,
+    hid_t aapl_id, hid_t dxpl_id, void **req)
 {
     unsigned long start = get_time_usec();
     unsigned long m1, m2;
@@ -2531,7 +2542,7 @@ H5VL_provenance_attr_create(void *obj, const H5VL_loc_params_t *loc_params,
 #endif
 
     m1 = get_time_usec();
-    under = H5VLattr_create(o->under_object, loc_params, o->under_vol_id, name, acpl_id, aapl_id, dxpl_id, req);
+    under = H5VLattr_create(o->under_object, loc_params, o->under_vol_id, name, type_id, space_id, acpl_id, aapl_id, dxpl_id, req);
     m2 = get_time_usec();
 
     if(under)
@@ -2878,7 +2889,8 @@ H5VL_provenance_attr_close(void *attr, hid_t dxpl_id, void **req)
  */
 static void *
 H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
-    const char *ds_name, hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)
+    const char *ds_name, hid_t lcpl_id, hid_t type_id, hid_t space_id,
+    hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
     unsigned long start = get_time_usec();
     unsigned long m1, m2;
@@ -2892,7 +2904,7 @@ H5VL_provenance_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
 #endif
 
     m1 = get_time_usec();
-    under = H5VLdataset_create(o->under_object, loc_params, o->under_vol_id, ds_name, dcpl_id,  dapl_id, dxpl_id, req);
+    under = H5VLdataset_create(o->under_object, loc_params, o->under_vol_id, ds_name, lcpl_id, type_id, space_id, dcpl_id,  dapl_id, dxpl_id, req);
     m2 = get_time_usec();
 
     if(under)
@@ -4133,7 +4145,8 @@ H5VL_provenance_file_close(void *file, hid_t dxpl_id, void **req)
  */
 static void *
 H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params,
-    const char *name, hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id, void **req)
+    const char *name, hid_t lcpl_id, hid_t gcpl_id, hid_t gapl_id, hid_t dxpl_id,
+    void **req)
 {
     unsigned long start = get_time_usec();
     unsigned long m1, m2;
@@ -4147,7 +4160,7 @@ H5VL_provenance_group_create(void *obj, const H5VL_loc_params_t *loc_params,
 #endif
 
     m1 = get_time_usec();
-    under = H5VLgroup_create(o->under_object, loc_params, o->under_vol_id, name, gcpl_id,  gapl_id, dxpl_id, req);
+    under = H5VLgroup_create(o->under_object, loc_params, o->under_vol_id, name, lcpl_id, gcpl_id,  gapl_id, dxpl_id, req);
     m2 = get_time_usec();
 
     if(under)
@@ -4422,6 +4435,33 @@ H5VL_provenance_group_close(void *grp, hid_t dxpl_id, void **req)
 
 
 /*-------------------------------------------------------------------------
+ * Function:    H5VL_provenance_link_create_reissue
+ *
+ * Purpose:     Re-wrap vararg arguments into a va_list and reissue the
+ *              link create callback to the underlying VOL connector.
+ *
+ * Return:      Success:    0
+ *              Failure:    -1
+ *
+ *-------------------------------------------------------------------------
+ */
+static herr_t 
+H5VL_provenance_link_create_reissue(H5VL_link_create_type_t create_type,
+    void *obj, const H5VL_loc_params_t *loc_params, hid_t connector_id,
+    hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req, ...)
+{
+    va_list arguments;
+    herr_t ret_value;
+
+    va_start(arguments, req);
+    ret_value = H5VLlink_create(create_type, obj, loc_params, connector_id, lcpl_id, lapl_id, dxpl_id, req, arguments);
+    va_end(arguments);
+
+    return ret_value;
+} /* end H5VL_provenance_link_create_reissue() */
+
+
+/*-------------------------------------------------------------------------
  * Function:    H5VL_provenance_link_create
  *
  * Purpose:     Creates a hard / soft / UD / external link.
@@ -4432,7 +4472,9 @@ H5VL_provenance_group_close(void *grp, hid_t dxpl_id, void **req)
  *-------------------------------------------------------------------------
  */
 static herr_t 
-H5VL_provenance_link_create(H5VL_link_create_type_t create_type, void *obj, const H5VL_loc_params_t *loc_params, hid_t lcpl_id, hid_t lapl_id, hid_t dxpl_id, void **req)
+H5VL_provenance_link_create(H5VL_link_create_type_t create_type, void *obj,
+    const H5VL_loc_params_t *loc_params, hid_t lcpl_id, hid_t lapl_id,
+    hid_t dxpl_id, void **req, va_list arguments)
 {
     unsigned long start = get_time_usec();
     unsigned long m1, m2;
@@ -4452,9 +4494,11 @@ H5VL_provenance_link_create(H5VL_link_create_type_t create_type, void *obj, cons
     /* Fix up the link target object for hard link creation */
     if(H5VL_LINK_CREATE_HARD == create_type) {
         void         *cur_obj;
+        H5VL_loc_params_t cur_params;
 
-        /* Retrieve the object for the link target */
-        H5Pget(lcpl_id, H5VL_PROP_LINK_TARGET, &cur_obj);
+        /* Retrieve the object & loc params for the link target */
+        cur_obj = va_arg(arguments, void *);
+        cur_params = va_arg(arguments, H5VL_loc_params_t);
 
         /* If it's a non-NULL pointer, find the 'under object' and re-set the property */
         if(cur_obj) {
@@ -4463,13 +4507,19 @@ H5VL_provenance_link_create(H5VL_link_create_type_t create_type, void *obj, cons
                 under_vol_id = ((H5VL_provenance_t *)cur_obj)->under_vol_id;
 
             /* Set the object for the link target */
-            H5Pset(lcpl_id, H5VL_PROP_LINK_TARGET, &(((H5VL_provenance_t *)cur_obj)->under_object));
+            cur_obj = ((H5VL_provenance_t *)cur_obj)->under_object;
         } /* end if */
-    } /* end if */
 
-    m1 = get_time_usec();
-    ret_value = H5VLlink_create(create_type, (o ? o->under_object : NULL), loc_params, under_vol_id, lcpl_id, lapl_id, dxpl_id, req);
-    m2 = get_time_usec();
+        /* Re-issue 'link create' call, using the unwrapped pieces */
+        m1 = get_time_usec();
+        ret_value = H5VL_provenance_link_create_reissue(create_type, (o ? o->under_object : NULL), loc_params, under_vol_id, lcpl_id, lapl_id, dxpl_id, req, cur_obj, cur_params);
+        m2 = get_time_usec();
+    } /* end if */
+    else {
+        m1 = get_time_usec();
+        ret_value = H5VLlink_create(create_type, (o ? o->under_object : NULL), loc_params, under_vol_id, lcpl_id, lapl_id, dxpl_id, req, arguments);
+        m2 = get_time_usec();
+    } /* end else */
 
     /* Check for async request */
     if(req && *req)
