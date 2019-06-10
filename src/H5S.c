@@ -1983,6 +1983,38 @@ done:
 
 
 /*-------------------------------------------------------------------------
+ * Function:    H5Sset_extent_real
+ *
+ * Purpose:     Modify the dimensions of a dataspace.
+ *
+ * Return:      Success: Non-negative
+ *              Failure: Negative
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5Sset_extent_real(hid_t space_id, const hsize_t *size)
+{
+    H5S_t *space;
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE2("e", "i*h", space_id, size);
+
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+    if(NULL == size)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "NULL size pointer")
+
+    if(H5S_set_extent_real(space, size) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTSET, FAIL, "can't adjust selection")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sset_extent_real() */
+
+
+/*-------------------------------------------------------------------------
  * Function:	H5Sextent_equal
  *
  * Purpose:	Determines if two dataspace extents are equal.
