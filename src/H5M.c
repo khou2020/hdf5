@@ -990,3 +990,59 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Miterate_by_name() */
 
+
+/*-------------------------------------------------------------------------
+ * Function:    H5Mdelete_key
+ *
+ * Purpose:     H5Mdelete_key deletes a key-value pair from the Map
+ *              specified by MAP_ID. KEY_MEM_TYPE_ID specifies the
+ *              datatype for the provided key buffers, and if different
+ *              from that used to create the Map object, the key will be
+ *              internally converted to the datatype for the map object.
+ *              Any further options can be specified through the property
+ *              list DXPL_ID.
+ *
+ * Return:      SUCCEED/FAIL
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5Mdelete_key(hid_t map_id, hid_t key_mem_type_id, const void *key,
+    hid_t dxpl_id)
+{
+    H5VL_object_t          *vol_obj = NULL;
+    H5VL_loc_params_t       loc_params;
+    herr_t                  ret_value = SUCCEED;    /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+
+    /* Check arguments */
+    if (key_mem_type_id < 0)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid key memory datatype ID")
+
+    /* Get map pointer */
+    if (NULL == (vol_obj = (H5VL_object_t *)H5I_object_verify(map_id, H5I_MAP)))
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "map_id is not a map ID")
+
+    /* Get the default dataset transfer property list if the user didn't provide one */
+    if (H5P_DEFAULT == dxpl_id)
+        dxpl_id = H5P_DATASET_XFER_DEFAULT;
+    else
+        if (TRUE != H5P_isa_class(dxpl_id, H5P_DATASET_XFER))
+            HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not xfer parms")
+
+    /* Set DXPL for operation */
+    H5CX_set_dxpl(dxpl_id);
+
+    /* Set location struct fields */
+    loc_params.type = H5VL_OBJECT_BY_SELF;
+    loc_params.obj_type = H5I_get_type(map_id);
+
+    /* Set the key/value pair */
+    if(H5VL_optional(vol_obj, dxpl_id, H5_REQUEST_NULL, H5VL_MAP_SPECIFIC, &loc_params, H5VL_MAP_DELETE_KEY, key_mem_type_id, key) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_CANTSET, FAIL, "unable to set key/value pair")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Mdelete_key() */
+
