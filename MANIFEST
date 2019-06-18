@@ -94,6 +94,7 @@
 ./bin/switch_maint_mode      _DO_NOT_DISTRIBUTE_
 ./bin/timekeeper      _DO_NOT_DISTRIBUTE_
 ./bin/trace
+./bin/warnhist      _DO_NOT_DISTRIBUTE_
 ./bin/yodconfigure
 ./bin/batch/ctestP.lsf.in.cmake
 ./bin/batch/ctestP.sl.in.cmake
@@ -1015,6 +1016,7 @@
 ./test/file_image.c
 ./test/file_image_core_test.h5
 ./test/fill_old.h5
+./test/fill18.h5
 ./test/fillval.c
 ./test/filter_fail.c
 ./test/filter_plugin.c
