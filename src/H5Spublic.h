@@ -28,8 +28,34 @@
 /* Define user-level maximum number of dimensions */
 #define H5S_MAX_RANK    32
 
-/* Forward declaration of selection iterator struct */
-typedef struct H5S_sel_iter_t H5S_sel_iter_t;
+/* Flags for selection iterators */
+#define H5S_SEL_ITER_GET_SEQ_LIST_SORTED 0x0001 /* Retrieve elements from iterator
+                                                 * in increasing offset order, for
+                                                 * each call to retrieve sequences.
+                                                 * Currently, this only applies to
+                                                 * point selections, as hyperslab
+                                                 * selections are always returned
+                                                 * in increasing offset order.
+                                                 *
+                                                 * Note that the order is only
+                                                 * increasing for each call to
+                                                 * get_seq_list, the next set of
+                                                 * sequences could start with an
+                                                 * earlier offset than the previous
+                                                 * one.
+                                                 */
+#define H5S_SEL_ITER_SHARE_WITH_DATASPACE 0x0002 /* Don't copy the dataspace
+                                                 * selection when creating the
+                                                 * selection iterator.
+                                                 * 
+                                                 * This can improve performance
+                                                 * of creating the iterator, but
+                                                 * the dataspace _MUST_NOT_ be
+                                                 * modified or closed until the
+                                                 * selection iterator is closed
+                                                 * or the iterator's behavior
+                                                 * will be undefined.
+                                                 */
 
 /* Different types of dataspaces */
 typedef enum H5S_class_t {
@@ -130,6 +156,11 @@ H5_DLL herr_t H5Sget_select_elem_pointlist(hid_t spaceid, hsize_t startpoint,
 H5_DLL herr_t H5Sselect_hyperslab(hid_t space_id, H5S_seloper_t op,
     const hsize_t start[], const hsize_t _stride[], const hsize_t count[],
     const hsize_t _block[]);
+H5_DLL hid_t H5Scombine_hyperslab(hid_t space_id, H5S_seloper_t op,
+    const hsize_t start[], const hsize_t _stride[], const hsize_t count[],
+    const hsize_t _block[]);
+H5_DLL herr_t H5Smodify_select(hid_t space1_id, H5S_seloper_t op, hid_t space2_id);
+H5_DLL hid_t H5Scombine_select(hid_t space1_id, H5S_seloper_t op, hid_t space2_id);
 H5_DLL htri_t H5Sis_regular_hyperslab(hid_t spaceid);
 H5_DLL htri_t H5Sget_regular_hyperslab(hid_t spaceid, hsize_t start[],
     hsize_t stride[], hsize_t count[], hsize_t block[]);
@@ -137,12 +168,11 @@ H5_DLL hssize_t H5Sget_select_hyper_nblocks(hid_t spaceid);
 H5_DLL herr_t H5Sget_select_hyper_blocklist(hid_t spaceid, hsize_t startblock,
     hsize_t numblocks, hsize_t buf[/*numblocks*/]);
 
-/* The following have been temporarily added to support the DAOS VOL plugin */
-H5_DLL H5S_sel_iter_t * H5Sselect_iter_init(hid_t space_id, size_t elmt_size);
-H5_DLL herr_t H5Sselect_iter_release(H5S_sel_iter_t *sel_iter);
-H5_DLL herr_t H5Sselect_get_seq_list(hid_t space_id, unsigned flags, H5S_sel_iter_t *sel_iter,
-                                     size_t maxseq, size_t maxbytes, size_t *nseq,
-                                     size_t *nbytes, hsize_t *off, size_t *len);
+/* Operations on dataspace selection iterators */
+H5_DLL hid_t H5Ssel_iter_create(hid_t spaceid, size_t elmt_size, unsigned flags);
+H5_DLL herr_t H5Ssel_iter_get_seq_list(hid_t sel_iter_id, size_t maxseq,
+    size_t maxbytes, size_t *nseq, size_t *nbytes, hsize_t *off, size_t *len);
+H5_DLL herr_t H5Ssel_iter_close(hid_t sel_iter_id);
 
 /* Symbols defined for compatibility with previous versions of the HDF5 API.
  *
