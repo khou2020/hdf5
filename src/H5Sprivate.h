@@ -95,7 +95,7 @@ typedef struct {
 struct H5S_sel_iter_class_t;
 
 /* Selection iteration container */
-struct H5S_sel_iter_t {
+typedef struct H5S_sel_iter_t {
     /* Selection class */
     const struct H5S_sel_iter_class_t *type; /* Selection iteration class info */
 
@@ -113,7 +113,7 @@ struct H5S_sel_iter_t {
         H5S_hyper_iter_t hyp;   /* New Hyperslab selection iteration information */
         H5S_all_iter_t all;     /* "All" selection iteration information */
     } u;
-};
+} H5S_sel_iter_t;
 
 /* Selection iteration operator for internal library callbacks */
 typedef herr_t (*H5S_sel_iter_lib_op_t)(void *elem, const H5T_t *type,

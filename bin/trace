@@ -165,7 +165,6 @@ $Source = "";
                "H5P_prp_get_func_t"         => "x",
                "H5P_prp_set_func_t"         => "x",
                "H5P_prp_compare_func_t"     => "x",
-               "H5S_sel_iter_t"             => "x",
                "H5T_cdata_t"                => "x",
                "H5T_conv_t"                 => "x",
                "H5T_conv_except_func_t"     => "x",
