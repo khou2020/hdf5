@@ -200,7 +200,6 @@ H5Mcreate(hid_t loc_id, const char *name, hid_t key_type_id, hid_t val_type_id,
     void               *map = NULL;                         /* New map's info */
     H5VL_object_t      *vol_obj = NULL;                     /* object token of loc_id */
     H5VL_loc_params_t   loc_params;
-    H5P_genplist_t     *plist = NULL;                       /* Property list pointer */
     hid_t               ret_value = H5I_INVALID_HID;        /* Return value */
 
     FUNC_ENTER_API(H5I_INVALID_HID)
@@ -231,28 +230,17 @@ H5Mcreate(hid_t loc_id, const char *name, hid_t key_type_id, hid_t val_type_id,
     if(H5CX_set_apl(&mapl_id, H5P_CLS_MACC, loc_id, TRUE) < 0)
         HGOTO_ERROR(H5E_MAP, H5E_CANTSET, H5I_INVALID_HID, "can't set access property list info")
 
-    /* Get the property list structure for the mcpl */
-    if(NULL == (plist = (H5P_genplist_t *)H5I_object(mcpl_id)))
-        HGOTO_ERROR(H5E_ATOM, H5E_BADATOM, H5I_INVALID_HID, "can't find object for ID")
-
     /* Get the location object */
     if(NULL == (vol_obj = (H5VL_object_t *)H5I_object(loc_id)))
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "invalid location identifier")
-
-    /* Set creation properties */
-    if(H5P_set(plist, H5VL_PROP_MAP_KEY_TYPE_ID, &key_type_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for key datatype id")
-    if(H5P_set(plist, H5VL_PROP_MAP_VAL_TYPE_ID, &val_type_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for value datatype id")
-    if(H5P_set(plist, H5VL_PROP_MAP_LCPL_ID, &lcpl_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for lcpl id")
 
     /* Set location parameters */
     loc_params.type         = H5VL_OBJECT_BY_SELF;
     loc_params.obj_type     = H5I_get_type(loc_id);
 
     /* Create the map */
-    if(H5VL_optional(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CREATE, &loc_params, name, mcpl_id, mapl_id, &map) < 0)
+    if(H5VL_optional(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CREATE, &loc_params, name, lcpl_id,
+            key_type_id, val_type_id, mcpl_id, mapl_id, &map) < 0)
         HGOTO_ERROR(H5E_MAP, H5E_CANTINIT, H5I_INVALID_HID, "unable to create map")
 
     /* Get an atom for the map */
@@ -300,7 +288,6 @@ H5Mcreate_anon(hid_t loc_id, hid_t key_type_id, hid_t val_type_id,
     void                *map = NULL;                    /* map token from VOL connector */
     H5VL_object_t       *vol_obj = NULL;                /* object token of loc_id */
     H5VL_loc_params_t   loc_params;
-    H5P_genplist_t      *plist;                         /* Property list pointer */
     hid_t               ret_value   = H5I_INVALID_HID;  /* Return value */
 
     FUNC_ENTER_API(H5I_INVALID_HID)
@@ -321,22 +308,13 @@ H5Mcreate_anon(hid_t loc_id, hid_t key_type_id, hid_t val_type_id,
     if(NULL == (vol_obj = (H5VL_object_t *)H5I_object(loc_id)))
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "invalid location identifier")
 
-    /* Get the plist structure */
-    if(NULL == (plist = (H5P_genplist_t *)H5I_object(mcpl_id)))
-        HGOTO_ERROR(H5E_ATOM, H5E_BADATOM, H5I_INVALID_HID, "can't find object for ID")
-
-    /* set creation properties */
-    if(H5P_set(plist, H5VL_PROP_MAP_KEY_TYPE_ID, &key_type_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for key datatype id")
-    if(H5P_set(plist, H5VL_PROP_MAP_VAL_TYPE_ID, &val_type_id) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, H5I_INVALID_HID, "can't set property value for value datatype id")
-
     /* Set location parameters */
     loc_params.type     = H5VL_OBJECT_BY_SELF;
     loc_params.obj_type = H5I_get_type(loc_id);
 
     /* Create the map */
-    if(H5VL_optional(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CREATE, &loc_params, NULL, mcpl_id, mapl_id, &map) < 0)
+    if(H5VL_optional(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CREATE, &loc_params, NULL, H5P_LINK_CREATE_DEFAULT,
+            key_type_id, val_type_id, mcpl_id, mapl_id, &map) < 0)
         HGOTO_ERROR(H5E_MAP, H5E_CANTINIT, H5I_INVALID_HID, "unable to create map")
 
     /* Get an atom for the map */
