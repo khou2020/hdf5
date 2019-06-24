@@ -967,6 +967,45 @@ H5S_select_adjust_u(H5S_t *space, const hsize_t *offset)
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_select_adjust_u() */
 
+/*--------------------------------------------------------------------------
+ NAME
+    H5Sselect_adjust_u
+ PURPOSE
+    Adjust a selection by subtracting an offset
+ USAGE
+    herr_t H5Sselect_adjust_u(space_id, offset)
+        hid_t space_id;        IN: ID of dataspace to adjust
+        const hsize_t *offset; IN: Offset to subtract
+ RETURNS
+    Non-negative on success, negative on failure
+ DESCRIPTION
+    Moves a selection by subtracting an offset from it.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+herr_t
+H5Sselect_adjust_u(hid_t space_id, const hsize_t *offset)
+{
+    H5S_t *space;
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE2("e", "i*h", space_id, offset);
+
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+    if(NULL == offset)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "NULL offset pointer")
+
+    if(H5S_select_adjust_u(space, offset) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTSET, FAIL, "can't adjust selection");
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_adjust_u() */
+
 
 /*--------------------------------------------------------------------------
  NAME
@@ -1941,6 +1980,47 @@ done:
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_select_shape_same() */
+
+/*--------------------------------------------------------------------------
+ NAME
+    H5Sselect_shape_same
+ PURPOSE
+    Check if two selections are the same shape
+ USAGE
+    htri_t H5Sselect_shape_same(space1_id, space2_id)
+        hid_t space1_id;         IN: ID of 1st Dataspace pointer to compare
+        hid_t space2_id;         IN: ID of 2nd Dataspace pointer to compare
+ RETURNS
+    TRUE/FALSE/FAIL
+ DESCRIPTION
+    Checks to see if the current selection in the dataspaces are the same
+    dimensionality and shape.
+    This is primarily used for reading the entire selection in one swoop.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+htri_t
+H5Sselect_shape_same(hid_t space1_id, hid_t space2_id)
+{
+    H5S_t *space1, *space2;
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE2("t", "ii", space1_id, space2_id);
+
+    if(NULL == (space1 = (H5S_t *)H5I_object_verify(space1_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace");
+    if(NULL == (space2 = (H5S_t *)H5I_object_verify(space2_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace");
+
+    if((ret_value = H5S_select_shape_same(space1, space2)) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't compare selections");
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_shape_same() */
 
 
 /*--------------------------------------------------------------------------
