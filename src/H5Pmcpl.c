@@ -106,27 +106,9 @@ const H5P_libclass_t H5P_CLS_MCRT[1] = {{
 static herr_t
 H5P__mcrt_reg_prop(H5P_genclass_t *pclass)
 {
-    hid_t   key_type_id = H5I_INVALID_HID;
-    hid_t   val_type_id = H5I_INVALID_HID;
-    hid_t   lcpl_id     = H5P_LINK_CREATE_DEFAULT;
-    herr_t  ret_value   = SUCCEED;         /* Return value */
+    herr_t ret_value   = SUCCEED;         /* Return value */
 
     FUNC_ENTER_STATIC
-
-    /* Register the key type ID property*/
-    if(H5P__register_real(pclass, H5VL_PROP_MAP_KEY_TYPE_ID, sizeof(hid_t), &key_type_id, 
-                         NULL, NULL, NULL, NULL, NULL, NULL, NULL, H5P_ignore_cmp, NULL) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTINSERT, FAIL, "can't insert property into class")
-
-    /* Register the value type ID property */
-    if(H5P__register_real(pclass, H5VL_PROP_MAP_VAL_TYPE_ID, sizeof(hid_t), &val_type_id, 
-                         NULL, NULL, NULL, NULL, NULL, NULL, NULL, H5P_ignore_cmp, NULL) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTINSERT, FAIL, "can't insert property into class")
-
-    /* Register the lcpl ID property */
-    if(H5P__register_real(pclass, H5VL_PROP_MAP_LCPL_ID, sizeof(hid_t), &lcpl_id, 
-                         NULL, NULL, NULL, NULL, NULL, NULL, NULL, H5P_ignore_cmp, NULL) < 0)
-        HGOTO_ERROR(H5E_PLIST, H5E_CANTINSERT, FAIL, "can't insert property into class")
 
 done:
     FUNC_LEAVE_NOAPI(ret_value)

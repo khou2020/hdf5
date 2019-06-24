@@ -38,11 +38,6 @@
 #define H5_VOL_RESERVED 256     /* VOL connector IDs below this value are reserved for library use */
 #define H5_VOL_MAX      65535   /* Maximum VOL connector ID */
 
-/* Map creation property names -- temporary only */
-#define H5VL_PROP_MAP_KEY_TYPE_ID           "map_key_type"
-#define H5VL_PROP_MAP_VAL_TYPE_ID           "map_value_type"
-#define H5VL_PROP_MAP_LCPL_ID               "map_lcpl_id"
-
 
 /*******************/
 /* Public Typedefs */

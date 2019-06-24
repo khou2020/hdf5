@@ -269,41 +269,6 @@ H5FD_mpi_haddr_to_MPIOff(haddr_t addr, MPI_Offset *mpi_off/*out*/)
 
 
 /*-------------------------------------------------------------------------
- * Function:    H5FDmpi_comm_info_dup
- *
- * Purpose:     Make duplicates of communicator and Info object.
- *              If the Info object is in fact MPI_INFO_NULL, no duplicate
- *              is made but the same value assigned to the new Info object
- *              handle.
- *
- * Return:      Success:    Non-negative.  The new communicator and Info
- *              object handles are returned via comm_new and
- *              info_new pointers.
- *
- *              Failure:    Negative.
- *
- * Programmer:  Albert Cheng
- *              Jan  8, 2003
- *
- * Modifications:
- *-------------------------------------------------------------------------
- */
-herr_t
-H5FDmpi_comm_info_dup(MPI_Comm comm, MPI_Info info, MPI_Comm *comm_new, MPI_Info *info_new)
-{
-    herr_t ret_value = SUCCEED;
-
-    FUNC_ENTER_API(FAIL)
-    H5TRACE4("e", "McMi*Mc*Mi", comm, info, comm_new, info_new);
-
-    ret_value = H5FD_mpi_comm_info_dup(comm, info, comm_new, info_new);
-
-done:
-    FUNC_LEAVE_API(ret_value)
-}
-
-
-/*-------------------------------------------------------------------------
  * Function:    H5FD_mpi_comm_info_dup
  *
  * Purpose:     Make duplicates of communicator and Info object.
@@ -369,40 +334,6 @@ done:
     }
 
     FUNC_LEAVE_NOAPI(ret_value)
-}
-
-
-/*-------------------------------------------------------------------------
- * Function:    H5FDmpi_comm_info_free
- *
- * Purpose:     Free the communicator and Info object.
- *              If comm or info is in fact MPI_COMM_NULL or MPI_INFO_NULL
- *              respectively, no action occurs to it.
- *
- * Return:      Success:    Non-negative.  The values the pointers refer
- *              to will be set to the corresponding NULL
- *              handles.
- *
- *              Failure:    Negative.
- *
- * Programmer:  Albert Cheng
- *              Jan  8, 2003
- *
- * Modifications:
- *-------------------------------------------------------------------------
- */
-herr_t
-H5FDmpi_comm_info_free(MPI_Comm *comm, MPI_Info *info)
-{
-    herr_t ret_value = SUCCEED;
-
-    FUNC_ENTER_API(FAIL)
-    H5TRACE2("e", "*Mc*Mi", comm, info);
-
-    ret_value = H5FD_mpi_comm_info_free(comm, info);
-
-done:
-    FUNC_LEAVE_API(ret_value)
 }
 
 
