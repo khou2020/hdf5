@@ -297,6 +297,36 @@ done:
 
 
 /*-------------------------------------------------------------------------
+ * Function:    H5Sselect_release
+ *
+ * Purpose: Releases all memory associated with a dataspace selection.
+ *
+ * Return:  Non-negative on success/Negative on failure
+ *
+ *-------------------------------------------------------------------------
+ */
+herr_t
+H5Sselect_release(hid_t space_id)
+{
+    H5S_t *space;
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE1("e", "i", space_id);
+
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+
+    /* Call the selection type's release function */
+    if(H5S_SELECT_RELEASE(space) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTRELEASE, FAIL, "unable to release selection")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_release() */
+
+
+/*-------------------------------------------------------------------------
  * Function:	H5S_select_serial_size
  *
  * Purpose:	Determines the number of bytes required to store the current
