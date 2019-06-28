@@ -6376,6 +6376,47 @@ done:
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_hyper_intersect_block() */
 
+/*--------------------------------------------------------------------------
+ NAME
+    H5Shyper_intersect_block
+ PURPOSE
+    Detect intersections in span trees
+ USAGE
+    htri_t H5Shyper_intersect_block(space_id, start, end)
+        hid_t space_id;     IN: Dataspace ID to operate on
+        hssize_t *start;    IN: Starting coordinate for block
+        hssize_t *end;      IN: Ending coordinate for block
+ RETURNS
+    Non-negative on success, negative on failure
+ DESCRIPTION
+    Quickly detect intersections between span tree and block
+    Does not use selection offset.
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+htri_t
+H5Shyper_intersect_block(hid_t space_id, const hsize_t *start, const hsize_t *end)
+{
+    H5S_t *space;
+    htri_t ret_value = FAIL;    /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE3("t", "i*h*h", space_id, start, end);
+
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+    if(H5S_GET_SELECT_TYPE(space) != H5S_SEL_HYPERSLABS)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a hyperslab selection")
+    if(NULL == start || NULL == end)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "NULL pointer to start/end")
+
+    if((ret_value = H5S_hyper_intersect_block(space, start, end)) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "can't determine whether block intersects")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Shyper_intersect_block() */
+
 
 /*--------------------------------------------------------------------------
  NAME
@@ -7031,6 +7072,47 @@ H5S_hyper_adjust_s(H5S_t *space, const hssize_t *offset)
 done:
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_hyper_adjust_s() */
+
+/*--------------------------------------------------------------------------
+ NAME
+    H5Shyper_adjust_s
+ PURPOSE
+    Adjust a hyperslab selection by subtracting an offset
+ USAGE
+    herr_t H5Shyper_adjust_s(space_id,offset)
+        hid_t space_id;         IN: ID of the dataspace to adjust
+        const hssize_t *offset; IN: Offset to subtract
+ RETURNS
+    Non-negative on success, negative on failure
+ DESCRIPTION
+    Moves a hyperslab selection by subtracting an offset from it.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+herr_t
+H5Shyper_adjust_s(hid_t space_id, const hssize_t *offset)
+{
+    H5S_t *space;
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+    H5TRACE2("e", "i*Hs", space_id, offset);
+
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+    if(H5S_GET_SELECT_TYPE(space) != H5S_SEL_HYPERSLABS)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a hyperslab selection")
+    if(NULL == offset)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "NULL offset pointer")
+
+    if(H5S_hyper_adjust_s(space, offset) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTSET, FAIL, "can't adjust selection")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Shyper_adjust_s() */
 
 
 /*--------------------------------------------------------------------------
