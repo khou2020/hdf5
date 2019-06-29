@@ -509,6 +509,7 @@ H5F__get_objects_cb(void *obj_ptr, hid_t obj_id, void *key)
             case H5I_ERROR_CLASS:
             case H5I_ERROR_MSG:
             case H5I_ERROR_STACK:
+            case H5I_SPACE_SEL_ITER:
             case H5I_NTYPES:
             default:
                 HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5_ITER_ERROR, "unknown or invalid data object")
@@ -933,9 +934,9 @@ H5F__new(H5F_file_t *shared, unsigned flags, hid_t fcpl_id, hid_t fapl_id, H5FD_
             f->shared->fs_addr[u] = HADDR_UNDEF;
             f->shared->fs_man[u] = NULL;
         }
-        f->shared->first_alloc_dealloc = FALSE;
-        f->shared->eoa_pre_fsm_fsalloc = HADDR_UNDEF;
-        f->shared->eoa_post_fsm_fsalloc = HADDR_UNDEF;
+        /* This will be stored as eoa_pre_fsm_fsalloc in the fsinfo message */
+        /* This is done to be backward compatible with 1.10 library that has the FSM hack */
+        f->shared->eoa_fsm_fsalloc = HADDR_UNDEF;
         f->shared->eoa_post_mdci_fsalloc = HADDR_UNDEF;
 
         /* Initialization for handling file space (for paged aggregation) */
@@ -3635,6 +3636,7 @@ H5F__get_file(void *obj, H5I_type_t type)
         case H5I_ERROR_CLASS:
         case H5I_ERROR_MSG:
         case H5I_ERROR_STACK:
+        case H5I_SPACE_SEL_ITER:
         case H5I_NTYPES:
         default:
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, NULL, "not a file or file object")

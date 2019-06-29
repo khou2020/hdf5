@@ -2023,7 +2023,7 @@ H5I__iterate_cb(void *_item, void H5_ATTR_UNUSED *_key, void *_udata)
      */
     if((!udata->app_ref) || (item->app_count > 0)) {
         H5I_type_t  type        = udata->obj_type;
-        const void *obj_ptr     = NULL;
+        void *obj_ptr;
         herr_t      cb_ret_val;
 
         /* The stored object pointer might be an H5VL_object_t, in which
@@ -2171,7 +2171,6 @@ H5Iget_name(hid_t id, char *name/*out*/, size_t size)
 {
     H5VL_object_t *vol_obj;     /* Object token of loc_id */
     H5VL_loc_params_t loc_params;
-    H5G_loc_t     loc;          /* Object location */
     ssize_t       ret_value;    /* Return value */
 
     FUNC_ENTER_API((-1))
@@ -2384,6 +2383,7 @@ H5I__id_dump_cb(void *_item, void H5_ATTR_UNUSED *_key, void *_udata)
         case H5I_ERROR_CLASS:
         case H5I_ERROR_MSG:
         case H5I_ERROR_STACK:
+        case H5I_SPACE_SEL_ITER:
         case H5I_NTYPES:
         default:
             break;   /* Other types of IDs are not stored in files */

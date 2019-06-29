@@ -130,11 +130,14 @@ test_vds_prefix_second(unsigned config, hid_t fapl)
 
     /* Create source file if requested */
     if(config & TEST_IO_DIFFERENT_FILE) {
-        HDgetcwd(buffer, 1024);
-        HDchdir(TMPDIR);
+        if(NULL == HDgetcwd(buffer, 1024))
+            TEST_ERROR
+        if(HDchdir(TMPDIR) < 0)
+            TEST_ERROR
         if((srcfile[0] = H5Fcreate(srcfilename, H5F_ACC_TRUNC, H5P_DEFAULT, fapl)) < 0)
             TEST_ERROR
-        HDchdir(buffer);
+        if(HDchdir(buffer) < 0)
+            TEST_ERROR
     }
     else {
         srcfile[0] = vfile;
@@ -211,11 +214,14 @@ test_vds_prefix_second(unsigned config, hid_t fapl)
     /* Reopen srcdset and srcfile if config option specified */
     if(config & TEST_IO_CLOSE_SRC) {
         if(config & TEST_IO_DIFFERENT_FILE) {
-            HDgetcwd(buffer, 1024);
-            HDchdir(TMPDIR);
+            if(NULL == HDgetcwd(buffer, 1024))
+                TEST_ERROR
+            if(HDchdir(TMPDIR) < 0)
+                TEST_ERROR
             if((srcfile[0] = H5Fopen(srcfilename, H5F_ACC_RDONLY, fapl)) < 0)
                 TEST_ERROR
-            HDchdir(buffer);
+            if(HDchdir(buffer) < 0)
+                TEST_ERROR
         }
         if((srcdset[0] = H5Dopen2(srcfile[0], "src_dset", H5P_DEFAULT)) < 0)
             TEST_ERROR
@@ -296,7 +302,6 @@ main(void)
     hid_t fapl, my_fapl;
     unsigned bit_config;
     H5F_libver_t low, high;     /* Low and high bounds */
-    unsigned latest = FALSE;    /* Using the latest library version bound */
     int nerrors = 0;
 
     /* Testing setup */
@@ -320,10 +325,6 @@ main(void)
             /* Test virtual dataset only for V110 and above */
             if(high < H5F_LIBVER_V110)
                 continue;
-
-            /* Whether to use latest hyperslab/point selection version */
-            if(low >= H5F_LIBVER_V112)
-                latest = TRUE;
 
             /* Set the low/high version bounds */
             if(H5Pset_libver_bounds(my_fapl, low, high) < 0)

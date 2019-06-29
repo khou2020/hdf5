@@ -1698,6 +1698,7 @@
 ./tools/testfiles/h5dump-help.txt
 ./tools/testfiles/non_existing.ddl
 ./tools/testfiles/packedbits.ddl
+./tools/testfiles/t128bit_float.h5
 ./tools/testfiles/taindices.h5
 ./tools/testfiles/tall-1.ddl
 ./tools/testfiles/tall-2.ddl
@@ -3246,8 +3247,6 @@
 ./config/cmake/ConfigureChecks.cmake
 ./config/cmake/CPack.Info.plist.in
 ./config/cmake/CTestCustom.cmake
-./config/cmake/FindHDFJAVA.cmake.in
-./config/cmake/FindJNI.cmake
 ./config/cmake/H5cxx_config.h.in
 ./config/cmake/H5pubconf.h.in
 ./config/cmake/hdf5-config.cmake.in
