@@ -145,7 +145,7 @@ H5O_dtype_decode_helper(H5F_t *f, unsigned *ioflags/*in,out*/, const uint8_t **p
     /* Version, class & flags */
     UINT32DECODE(*pp, flags);
     version = (flags>>4) & 0x0f;
-    if(version < H5O_DTYPE_VERSION_1 || version > H5O_DTYPE_VERSION_3)
+    if(version < H5O_DTYPE_VERSION_1 || version > H5O_DTYPE_VERSION_LATEST)
         HGOTO_ERROR(H5E_DATATYPE, H5E_CANTLOAD, FAIL, "bad version number for datatype message")
     dt->shared->version = version;
     dt->shared->type = (H5T_class_t)(flags & 0x0f);
@@ -438,16 +438,29 @@ H5O_dtype_decode_helper(H5F_t *f, unsigned *ioflags/*in,out*/, const uint8_t **p
 
             /* Set reference type */
             dt->shared->u.atomic.u.r.rtype = (H5R_type_t)(flags & 0x0f);
+            if(dt->shared->u.atomic.u.r.rtype <= H5R_BADTYPE
+                || dt->shared->u.atomic.u.r.rtype >= H5R_MAXTYPE)
+                HGOTO_ERROR(H5E_DATATYPE, H5E_CANTDECODE, FAIL, "invalid reference type");
 
-            /* Set extra information for object references, so the hobj_ref_t gets swizzled correctly */
-            if(dt->shared->u.atomic.u.r.rtype == H5R_OBJECT) {
-                /* Mark location this type as undefined for now.  The caller function should
-                 * decide the location. */
-                dt->shared->u.atomic.u.r.loc = H5T_LOC_BADLOC;
+            /* Set generic flag */
+            if(dt->shared->u.atomic.u.r.rtype == H5R_OBJECT2
+                || dt->shared->u.atomic.u.r.rtype == H5R_DATASET_REGION2
+                || dt->shared->u.atomic.u.r.rtype == H5R_ATTR)
+                dt->shared->u.atomic.u.r.opaque = TRUE;
+            else
+                dt->shared->u.atomic.u.r.opaque = FALSE;
 
-                /* This type needs conversion */
-                dt->shared->force_conv = TRUE;
-            } /* end if */
+            /* Mark location this type as undefined for now.  The caller
+             * function should decide the location. */
+            dt->shared->u.atomic.u.r.loc = H5T_LOC_BADLOC;
+
+            /* This type needs conversion */
+            dt->shared->force_conv = TRUE;
+
+            dt->shared->u.atomic.u.r.f = NULL;
+            dt->shared->u.atomic.u.r.getsize = NULL;
+            dt->shared->u.atomic.u.r.read = NULL;
+            dt->shared->u.atomic.u.r.write = NULL;
             break;
 
         case H5T_ENUM:

@@ -58,6 +58,7 @@ main(int argc, char *argv[])
     AddTest("select", test_select, cleanup_select,  "Selections", NULL);
     AddTest("time", test_time, cleanup_time,  "Time Datatypes", NULL);
     AddTest("reference", test_reference, cleanup_reference,  "References", NULL);
+    AddTest("reference2", test_reference2, cleanup_reference2,  "References2", NULL);
     AddTest("vltypes", test_vltypes, cleanup_vltypes,  "Variable-Length Datatypes", NULL);
     AddTest("vlstrings", test_vlstrings, cleanup_vlstrings,  "Variable-Length Strings", NULL);
     AddTest("iterate", test_iterate, cleanup_iterate,  "Group & Attribute Iteration", NULL);

@@ -17,7 +17,7 @@
  */
 
 #include "H5Tmodule.h"          /* This source code file is part of the H5T module */
-
+#define H5R_FRIEND              /*suppress error about including H5Rpkg   */
 
 #include "H5private.h"		/* Generic Functions			*/
 #include "H5CXprivate.h"        /* API Contexts                         */
@@ -27,6 +27,7 @@
 #include "H5Iprivate.h"		/* IDs			  		*/
 #include "H5MMprivate.h"	/* Memory management			*/
 #include "H5Pprivate.h"		/* Property lists			*/
+#include "H5Rpkg.h"		/* References				*/
 #include "H5Tpkg.h"		/* Datatypes				*/
 
 /* Local functions */
@@ -1080,6 +1081,16 @@ H5T_vlen_reclaim_recurse(void *elem, const H5T_t *dt, H5MM_free_t free_func, voi
             } /* end else */
             break;
 
+        case H5T_REFERENCE:
+            if(dt->shared->u.atomic.u.r.opaque) {
+                struct href *ref = (struct href *)elem;
+
+                HDassert(ref);
+                /* TODO could make a private routine to call destroy */
+                if(H5R__destroy(ref) < 0)
+                    HGOTO_ERROR(H5E_REFERENCE, H5E_CANTFREE, FAIL, "cannot free reference")
+            }
+            break;
         /* Don't do anything for simple types */
         case H5T_INTEGER:
         case H5T_FLOAT:
@@ -1087,7 +1098,6 @@ H5T_vlen_reclaim_recurse(void *elem, const H5T_t *dt, H5MM_free_t free_func, voi
         case H5T_STRING:
         case H5T_BITFIELD:
         case H5T_OPAQUE:
-        case H5T_REFERENCE:
         case H5T_ENUM:
             break;
 

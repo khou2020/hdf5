@@ -344,7 +344,7 @@ test_reference_obj(void)
 
     /* Create a dataset */
     dataset = H5Dcreate2(fid1, "Dataset3", H5T_STD_REF_OBJ, sid1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dcreate2");
+    CHECK(dataset, FAIL, "H5Dcreate2");
 
     /* Create reference to dataset */
     ret = H5Rcreate(&wbuf[0], fid1, "/Group1/Dataset1", H5R_OBJECT, (hid_t)-1);
@@ -396,7 +396,7 @@ test_reference_obj(void)
 
     /* Open the dataset */
     dataset = H5Dopen2(fid1, "/Dataset3", H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dopen2");
+    CHECK(dataset, FAIL, "H5Dopen2");
 
     /* Read selection from disk */
     ret = H5Dread(dataset, H5T_STD_REF_OBJ, H5S_ALL, H5S_ALL, H5P_DEFAULT, rbuf);
@@ -583,7 +583,7 @@ test_reference_region(H5F_libver_t libver_low, H5F_libver_t libver_high)
 
     /* Create a dataset */
     dset1 = H5Dcreate2(fid1, "Dataset1", H5T_STD_REF_DSETREG, sid1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dcreate2");
+    CHECK(dset1, FAIL, "H5Dcreate2");
 
     /* Create references */
 
@@ -1571,7 +1571,7 @@ test_reference_compat(void)
 
     /* Create a dataset with object reference datatype */
     dataset = H5Dcreate2(fid1, "Dataset3", H5T_STD_REF_OBJ, sid1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dcreate2");
+    CHECK(dataset, FAIL, "H5Dcreate2");
 
     /* Create reference to dataset */
     ret = H5Rcreate(&wbuf_obj[0], fid1, "/Group1/Dataset1", H5R_OBJECT, (hid_t)-1);
@@ -1600,7 +1600,7 @@ test_reference_compat(void)
 
     /* Create a dataset with region reference datatype */
     dataset = H5Dcreate2(fid1, "Dataset4", H5T_STD_REF_DSETREG, sid1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dcreate2");
+    CHECK(dataset, FAIL, "H5Dcreate2");
 
     /* Select 6x6 hyperslab for first reference */
     start[0] = 2; start[1] = 2;
@@ -1658,7 +1658,7 @@ test_reference_compat(void)
 
     /* Open the object reference dataset */
     dataset = H5Dopen2(fid1, "/Dataset3", H5P_DEFAULT);
-    CHECK(ret, FAIL, "H5Dopen2");
+    CHECK(dataset, FAIL, "H5Dopen2");
 
     /* Read selection from disk */
     ret = H5Dread(dataset, H5T_STD_REF_OBJ, H5S_ALL, H5S_ALL, H5P_DEFAULT, rbuf_obj);
@@ -1820,8 +1820,8 @@ test_reference(void)
 void
 cleanup_reference(void)
 {
-    remove(FILE1);
-    remove(FILE2);
-    remove(FILE3);
+    HDremove(FILE1);
+    HDremove(FILE2);
+    HDremove(FILE3);
 }
 
