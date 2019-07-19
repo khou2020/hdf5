@@ -2068,7 +2068,7 @@ H5S_select_intersect_block(const H5S_t *space, const hsize_t *start,
     HDassert(end);
 
     /* If selections aren't "none", compare their bounds */
-    ifH5S_GET_SELECT_TYPE(space) != H5S_SEL_NONE) {
+    if(H5S_SEL_NONE != H5S_GET_SELECT_TYPE(space)) {
         hsize_t low[H5S_MAX_RANK];      /* Low bound of selection in dataspace */
         hsize_t high[H5S_MAX_RANK];     /* High bound of selection in dataspace */
         unsigned u;                     /* Local index variable */
