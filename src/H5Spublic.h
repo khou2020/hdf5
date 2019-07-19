@@ -149,6 +149,8 @@ H5_DLL htri_t H5Sselect_valid(hid_t spaceid);
 H5_DLL herr_t H5Sselect_adjust_u(hid_t spaceid, const hsize_t *offset);
 H5_DLL herr_t H5Sget_select_bounds(hid_t spaceid, hsize_t start[],
     hsize_t end[]);
+H5_DLL htri_t H5Sselect_intersect_block(hid_t space_id, const hsize_t *start,
+    const hsize_t *end);
 H5_DLL herr_t H5Soffset_simple(hid_t space_id, const hssize_t *offset);
 H5_DLL herr_t H5Sselect_all(hid_t spaceid);
 H5_DLL herr_t H5Sselect_none(hid_t spaceid);
@@ -171,7 +173,6 @@ H5_DLL htri_t H5Sget_regular_hyperslab(hid_t spaceid, hsize_t start[],
 H5_DLL hssize_t H5Sget_select_hyper_nblocks(hid_t spaceid);
 H5_DLL herr_t H5Sget_select_hyper_blocklist(hid_t spaceid, hsize_t startblock,
     hsize_t numblocks, hsize_t buf[/*numblocks*/]);
-H5_DLL htri_t H5Shyper_intersect_block(hid_t space_id, const hsize_t *start, const hsize_t *end);
 H5_DLL herr_t H5Shyper_adjust_s(hid_t space_id, const hssize_t *offset);
 
 /* Operations on dataspace selection iterators */

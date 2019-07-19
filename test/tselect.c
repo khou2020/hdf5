@@ -869,7 +869,7 @@ test_select_all_hyper(hid_t xfer_plist)
 
     /* Select no extent for disk dataset */
     ret = H5Sselect_none(sid1);
-    CHECK(ret, FAIL, "H5Sselect_all");
+    CHECK(ret, FAIL, "H5Sselect_none");
 
     /* Read selection from disk (should fail with no selection defined) */
     ret=H5Dread(dataset,H5T_NATIVE_UCHAR,sid2,sid1,xfer_plist,rbuf);
@@ -890,7 +890,7 @@ test_select_all_hyper(hid_t xfer_plist)
 
     /* A quick check to make certain that iterating through a "none" selection works */
     ret = H5Sselect_none(sid2);
-    CHECK(ret, FAIL, "H5Sselect_all");
+    CHECK(ret, FAIL, "H5Sselect_none");
     ret = H5Diterate(rbuf,H5T_NATIVE_UCHAR,sid2,test_select_none_iter1,&tbuf);
     CHECK(ret, FAIL, "H5Diterate");
 
@@ -7874,7 +7874,7 @@ test_scalar_select2(void)
 
     /* Select all elements in memory & file with "all" selection */
     ret = H5Sselect_all(sid);
-    CHECK(ret, FAIL, "H5Sselect_none");
+    CHECK(ret, FAIL, "H5Sselect_all");
 
     /* Close disk dataspace */
     ret = H5Sclose(sid);
@@ -15189,6 +15189,148 @@ test_sel_iter(void)
     CHECK(ret, FAIL, "H5Sclose");
 }   /* test_sel_iter() */
 
+/****************************************************************
+**
+**  test_select_intersect_block(): Test selections on dataspace,
+**	verify that "intersect block" routine is working correctly.
+**
+****************************************************************/
+static void
+test_select_intersect_block(void)
+{
+    hid_t       sid;            /* Dataspace ID */
+    hsize_t	dims1[] = {6, 12};  /* 2-D Dataspace dimensions */
+    hsize_t     block_start[] = {1, 3};   /* Start offset for block */
+    hsize_t     block_end[] = {2, 5}; /* End offset for block */
+    hsize_t     block_end2[] = {0, 5}; /* Bad end offset for block */
+    hsize_t     block_end3[] = {2, 2}; /* Another bad end offset for block */
+    hsize_t     block_end4[] = {1, 3}; /* End offset that makes a single element block */
+    hsize_t	coord[10][2];   /* Coordinates for point selection */
+    hsize_t	start[2];       /* Starting location of hyperslab */
+    hsize_t	stride[2];      /* Stride of hyperslab */
+    hsize_t	count[2];       /* Element count of hyperslab */
+    hsize_t	block[2];       /* Block size of hyperslab */
+    htri_t      status;         /* Intersection status */
+    herr_t	ret;		/* Generic return value	*/
+
+    /* Output message about test being performed */
+    MESSAGE(6, ("Testing Dataspace Selection Block Intersection\n"));
+
+    /* Create dataspace */
+    sid = H5Screate_simple(2, dims1, NULL);
+    CHECK(sid, FAIL, "H5Screate_simple");
+
+
+    /* Try intersection calls with bad parameters */
+    H5E_BEGIN_TRY {     /* Bad dataspace ID */
+        status = H5Sselect_intersect_block(H5I_INVALID_HID, block_start, block_end);
+    } H5E_END_TRY;
+    VERIFY(status, FAIL, "H5Sselect_intersect_block");
+    H5E_BEGIN_TRY {     /* Bad start pointer */
+        status = H5Sselect_intersect_block(sid, NULL, block_end);
+    } H5E_END_TRY;
+    VERIFY(status, FAIL, "H5Sselect_intersect_block");
+    H5E_BEGIN_TRY {     /* Bad end pointer */
+        status = H5Sselect_intersect_block(sid, block_start, NULL);
+    } H5E_END_TRY;
+    VERIFY(status, FAIL, "H5Sselect_intersect_block");
+    H5E_BEGIN_TRY {     /* Invalid block */
+        status = H5Sselect_intersect_block(sid, block_start, block_end2);
+    } H5E_END_TRY;
+    VERIFY(status, FAIL, "H5Sselect_intersect_block");
+    H5E_BEGIN_TRY {     /* Another invalid block */
+        status = H5Sselect_intersect_block(sid, block_start, block_end3);
+    } H5E_END_TRY;
+    VERIFY(status, FAIL, "H5Sselect_intersect_block");
+
+
+    /* Set selection to 'none' */
+    ret = H5Sselect_none(sid);
+    CHECK(ret, FAIL, "H5Sselect_none");
+
+    /* Test block intersection with 'none' selection (always false) */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, FALSE, "H5Sselect_intersect_block");
+
+
+    /* Set selection to 'all' */
+    ret = H5Sselect_all(sid);
+    CHECK(ret, FAIL, "H5Sselect_all");
+
+    /* Test block intersection with 'all' selection (always true) */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, TRUE, "H5Sselect_intersect_block");
+
+
+    /* Select sequence of ten points */
+    coord[0][0] = 0; coord[0][1] = 10;
+    coord[1][0] = 1; coord[1][1] = 2;
+    coord[2][0] = 2; coord[2][1] = 4;
+    coord[3][0] = 0; coord[3][1] = 6;
+    coord[4][0] = 1; coord[4][1] = 8;
+    coord[5][0] = 2; coord[5][1] = 11;
+    coord[6][0] = 0; coord[6][1] = 4;
+    coord[7][0] = 1; coord[7][1] = 0;
+    coord[8][0] = 2; coord[8][1] = 1;
+    coord[9][0] = 0; coord[9][1] = 3;
+    ret = H5Sselect_elements(sid, H5S_SELECT_SET, (size_t)10, (const hsize_t *)coord);
+    CHECK(ret, FAIL, "H5Sselect_elements");
+
+    /* Test block intersection with 'point' selection */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, TRUE, "H5Sselect_intersect_block");
+    status = H5Sselect_intersect_block(sid, block_start, block_end4);
+    VERIFY(status, FALSE, "H5Sselect_intersect_block");
+
+
+    /* Select single 4x6 hyperslab block at (2,1) */
+    start[0] = 2; start[1] = 1;
+    stride[0] = 1; stride[1] = 1;
+    count[0] = 4; count[1] = 6;
+    block[0] = 1; block[1] = 1;
+    ret = H5Sselect_hyperslab(sid, H5S_SELECT_SET, start, stride, count, block);
+    CHECK(ret, FAIL, "H5Sselect_hyperslab");
+
+    /* Test block intersection with single 'hyperslab' selection */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, TRUE, "H5Sselect_intersect_block");
+    status = H5Sselect_intersect_block(sid, block_start, block_end4);
+    VERIFY(status, FALSE, "H5Sselect_intersect_block");
+
+    /* 'OR' another hyperslab block in, making an irregular hyperslab selection */
+    start[0] = 3; start[1] = 2;
+    stride[0] = 1; stride[1] = 1;
+    count[0] = 4; count[1] = 6;
+    block[0] = 1; block[1] = 1;
+    ret = H5Sselect_hyperslab(sid, H5S_SELECT_OR, start, stride, count, block);
+    CHECK(ret, FAIL, "H5Sselect_hyperslab");
+
+    /* Test block intersection with 'hyperslab' selection */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, TRUE, "H5Sselect_intersect_block");
+    status = H5Sselect_intersect_block(sid, block_start, block_end4);
+    VERIFY(status, FALSE, "H5Sselect_intersect_block");
+
+    /* Select regular, strided hyperslab selection */
+    start[0] = 2; start[1] = 1;
+    stride[0] = 2; stride[1] = 2;
+    count[0] = 2; count[1] = 4;
+    block[0] = 1; block[1] = 1;
+    ret = H5Sselect_hyperslab(sid, H5S_SELECT_SET, start, stride, count, block);
+    CHECK(ret, FAIL, "H5Sselect_hyperslab");
+
+    /* Test block intersection with single 'hyperslab' selection */
+    status = H5Sselect_intersect_block(sid, block_start, block_end);
+    VERIFY(status, TRUE, "H5Sselect_intersect_block");
+    status = H5Sselect_intersect_block(sid, block_start, block_end4);
+    VERIFY(status, FALSE, "H5Sselect_intersect_block");
+
+
+    /* Close dataspace */
+    ret = H5Sclose(sid);
+    CHECK(ret, FAIL, "H5Sclose");
+}   /* test_select_intersect_block() */
+
 
 /****************************************************************
 **
@@ -15369,6 +15511,9 @@ test_select(void)
 
     /* Test selection iterators */
     test_sel_iter();
+
+    /* Test selection intersection with block  */
+    test_select_intersect_block();
 }   /* test_select() */
 
 

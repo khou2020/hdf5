@@ -54,6 +54,8 @@
 /* Local Prototypes */
 /********************/
 
+static htri_t H5S__select_intersect_block(const H5S_t *space,
+    const hsize_t *start, const hsize_t *end);
 #ifdef LATER
 static herr_t H5S_select_iter_block(const H5S_sel_iter_t *iter, hsize_t *start, hsize_t *end);
 static htri_t H5S_select_iter_has_next_block(const H5S_sel_iter_t *iter);
@@ -1030,7 +1032,7 @@ H5Sselect_adjust_u(hid_t space_id, const hsize_t *offset)
         HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "NULL offset pointer")
 
     if(H5S_select_adjust_u(space, offset) < 0)
-        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTSET, FAIL, "can't adjust selection");
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTSET, FAIL, "can't adjust selection")
 
 done:
     FUNC_LEAVE_API(ret_value)
@@ -2011,6 +2013,7 @@ done:
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_select_shape_same() */
 
+
 /*--------------------------------------------------------------------------
  NAME
     H5Sselect_shape_same
@@ -2034,23 +2037,117 @@ done:
 htri_t
 H5Sselect_shape_same(hid_t space1_id, hid_t space2_id)
 {
-    H5S_t *space1, *space2;
-    herr_t ret_value = SUCCEED;         /* Return value */
+    H5S_t *space1, *space2;     /* Dataspaces to compare */
+    htri_t ret_value;           /* Return value */
 
     FUNC_ENTER_API(FAIL)
     H5TRACE2("t", "ii", space1_id, space2_id);
 
     if(NULL == (space1 = (H5S_t *)H5I_object_verify(space1_id, H5I_DATASPACE)))
-        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace");
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
     if(NULL == (space2 = (H5S_t *)H5I_object_verify(space2_id, H5I_DATASPACE)))
-        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace");
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
 
     if((ret_value = H5S_select_shape_same(space1, space2)) < 0)
-        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't compare selections");
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't compare selections")
 
 done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Sselect_shape_same() */
+
+
+/*--------------------------------------------------------------------------
+ NAME
+    H5S__select_intersect_block
+ PURPOSE
+    Check if current selection intersects with a block
+ USAGE
+    htri_t H5S__select_intersect_block(space, start, end)
+        const H5S_t *space;      IN: Dataspace to compare
+        const hsize_t *start;    IN: Starting coordinate of block
+        const hsize_t *end;      IN: Opposite ("ending") coordinate of block
+ RETURNS
+    TRUE / FALSE / FAIL
+ DESCRIPTION
+    Checks to see if the current selection in the dataspace intersects with
+    the block given.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+    Assumes that start & end block bounds are _inclusive_, so start == end
+    value OK.
+--------------------------------------------------------------------------*/
+static htri_t
+H5S__select_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
+{
+    htri_t ret_value = TRUE;        /* Return value */
+
+    FUNC_ENTER_STATIC
+
+    /* Check args */
+    HDassert(space);
+    HDassert(start);
+    HDassert(end);
+
+    /* Call selection type's intersect routine */
+    if((ret_value = (*space->select.type->intersect_block)(space, start, end)) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't intersect block with selection")
+
+done:
+    FUNC_LEAVE_NOAPI(ret_value)
+} /* end H5S__select_intersect_block() */
+
+
+/*--------------------------------------------------------------------------
+ NAME
+    H5Sselect_intersect_block
+ PURPOSE
+    Check if current selection intersects with a block
+ USAGE
+    htri_t H5Sselect_intersect_block(space_id, start, end)
+        hid_t space1_id;         IN: ID of dataspace pointer to compare
+        const hsize_t *start;    IN: Starting coordinate of block
+        const hsize_t *end;      IN: Opposite ("ending") coordinate of block
+ RETURNS
+    TRUE / FALSE / FAIL
+ DESCRIPTION
+    Checks to see if the current selection in the dataspace intersects with
+    the block given.
+ GLOBAL VARIABLES
+ COMMENTS, BUGS, ASSUMPTIONS
+    Assumes that start & end block bounds are _inclusive_, so start == end
+    value OK.
+ EXAMPLES
+ REVISION LOG
+--------------------------------------------------------------------------*/
+htri_t
+H5Sselect_intersect_block(hid_t space_id, const hsize_t *start, const hsize_t *end)
+{
+    H5S_t *space;                       /* Dataspace to query */
+    unsigned u;                         /* Local index value */
+    herr_t ret_value = SUCCEED;         /* Return value */
+
+    FUNC_ENTER_API(FAIL)
+
+    /* Check arguments */
+    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
+    if(NULL == start)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADVALUE, FAIL, "block start array pointer is NULL")
+    if(NULL == end)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_BADVALUE, FAIL, "block end array pointer is NULL")
+
+    /* Range check start & end values */
+    for(u = 0; u < space->extent.rank; u++)
+        if(start[u] > end[u])
+            HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "block start[%u] (%Hu) > end[%u] (%Hu)", u, start[u], u, end[u])
+
+    /* Call internal routine to do comparison */
+    if((ret_value = H5S__select_intersect_block(space, start, end)) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't compare selection and block")
+
+done:
+    FUNC_LEAVE_API(ret_value)
+} /* end H5Sselect_intersect_block() */
 
 
 /*--------------------------------------------------------------------------
