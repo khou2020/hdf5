@@ -144,6 +144,8 @@ typedef struct H5S_sel_iter_op_t {
 #define H5S_SELECT_IS_CONTIGUOUS(S)     ((*(S)->select.type->is_contiguous)(S))
 #define H5S_SELECT_IS_SINGLE(S)         ((*(S)->select.type->is_single)(S))
 #define H5S_SELECT_IS_REGULAR(S)        ((*(S)->select.type->is_regular)(S))
+#define H5S_SELECT_SHAPE_SAME(S1,S2)    ((*(S)->select.type->shape_same)(S1,S2))
+#define H5S_SELECT_INTERSECT_BLOCK(S,START,END) ((*(S)->select.type->intersect_block)(S,START,END))
 #define H5S_SELECT_ADJUST_U(S,O)        ((*(S)->select.type->adjust_u)(S, O))
 #define H5S_SELECT_PROJECT_SCALAR(S,O)  ((*(S)->select.type->project_scalar)(S, O))
 #define H5S_SELECT_PROJECT_SIMPLE(S,NS, O) ((*(S)->select.type->project_simple)(S, NS, O))
@@ -169,6 +171,8 @@ typedef struct H5S_sel_iter_op_t {
 #define H5S_SELECT_IS_CONTIGUOUS(S)     (H5S_select_is_contiguous(S))
 #define H5S_SELECT_IS_SINGLE(S)         (H5S_select_is_single(S))
 #define H5S_SELECT_IS_REGULAR(S)        (H5S_select_is_regular(S))
+#define H5S_SELECT_SHAPE_SAME(S1,S2)    (H5S_select_shape_same(S1,S2))
+#define H5S_SELECT_INTERSECT_BLOCK(S,START,END) (H5S_select_intersect_block(S,START,END))
 #define H5S_SELECT_ADJUST_U(S,O)        (H5S_select_adjust_u(S, O))
 #define H5S_SELECT_PROJECT_SCALAR(S,O)  (H5S_select_project_scalar(S, O))
 #define H5S_SELECT_PROJECT_SIMPLE(S,NS,O) (H5S_select_project_simple(S, NS, O))
@@ -243,6 +247,8 @@ H5_DLL herr_t H5S_get_select_num_elem_non_unlim(const H5S_t *space,
 H5_DLL herr_t H5S_select_offset(H5S_t *space, const hssize_t *offset);
 H5_DLL herr_t H5S_select_copy(H5S_t *dst, const H5S_t *src, hbool_t share_selection);
 H5_DLL htri_t H5S_select_shape_same(const H5S_t *space1, const H5S_t *space2);
+H5_DLL htri_t H5S_select_intersect_block(const H5S_t *space, const hsize_t *start,
+    const hsize_t *end);
 H5_DLL herr_t H5S_select_construct_projection(const H5S_t *base_space,
     H5S_t **new_space_ptr, unsigned new_space_rank, const void *buf,
     void const **adj_buf_ptr, hsize_t element_size);

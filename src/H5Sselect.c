@@ -54,8 +54,6 @@
 /* Local Prototypes */
 /********************/
 
-static htri_t H5S__select_intersect_block(const H5S_t *space,
-    const hsize_t *start, const hsize_t *end);
 #ifdef LATER
 static herr_t H5S_select_iter_block(const H5S_sel_iter_t *iter, hsize_t *start, hsize_t *end);
 static htri_t H5S_select_iter_has_next_block(const H5S_sel_iter_t *iter);
@@ -252,11 +250,15 @@ H5S_select_copy(H5S_t *dst, const H5S_t *src, hbool_t share_selection)
     HDassert(dst);
     HDassert(src);
 
+    /* Release the current selection */
+    if(H5S_SELECT_RELEASE(dst) < 0)
+        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTRELEASE, FAIL, "unable to release selection")
+
     /* Copy regular fields */
     dst->select = src->select;
 
     /* Perform correct type of copy based on the type of selection */
-    if((ret_value = (*src->select.type->copy)(dst,src,share_selection)) < 0)
+    if((ret_value = (*src->select.type->copy)(dst, src, share_selection)) < 0)
         HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOPY, FAIL, "can't copy selection specific information")
 
 done:
@@ -283,7 +285,7 @@ done:
 herr_t
 H5S_select_release(H5S_t *ds)
 {
-    herr_t ret_value = FAIL;    /* Return value */
+    herr_t ret_value = SUCCEED;         /* Return value */
 
     FUNC_ENTER_NOAPI_NOINIT
 
@@ -296,36 +298,6 @@ H5S_select_release(H5S_t *ds)
 done:
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5S_select_release() */
-
-
-/*-------------------------------------------------------------------------
- * Function:    H5Sselect_release
- *
- * Purpose: Releases all memory associated with a dataspace selection.
- *
- * Return:  Non-negative on success/Negative on failure
- *
- *-------------------------------------------------------------------------
- */
-herr_t
-H5Sselect_release(hid_t space_id)
-{
-    H5S_t *space;
-    herr_t ret_value = SUCCEED;         /* Return value */
-
-    FUNC_ENTER_API(FAIL)
-    H5TRACE1("e", "i", space_id);
-
-    if(NULL == (space = (H5S_t *)H5I_object_verify(space_id, H5I_DATASPACE)))
-        HGOTO_ERROR(H5E_DATASPACE, H5E_BADTYPE, FAIL, "not a dataspace")
-
-    /* Call the selection type's release function */
-    if(H5S_SELECT_RELEASE(space) < 0)
-        HGOTO_ERROR(H5E_DATASPACE, H5E_CANTRELEASE, FAIL, "unable to release selection")
-
-done:
-    FUNC_LEAVE_API(ret_value)
-} /* end H5Sselect_release() */
 
 
 /*-------------------------------------------------------------------------
@@ -1760,9 +1732,12 @@ H5S_get_select_type(const H5S_t *space)
  DESCRIPTION
     Checks to see if the current selection in the dataspaces are the same
     dimensionality and shape.
+
     This is primarily used for reading the entire selection in one swoop.
  GLOBAL VARIABLES
  COMMENTS, BUGS, ASSUMPTIONS
+    This routine participates in the "Inlining C function pointers" pattern,
+    don't call it directly, use the appropriate macro defined in H5Sprivate.h.
  EXAMPLES
  REVISION LOG
 --------------------------------------------------------------------------*/
@@ -2058,11 +2033,11 @@ done:
 
 /*--------------------------------------------------------------------------
  NAME
-    H5S__select_intersect_block
+    H5S_select_intersect_block
  PURPOSE
     Check if current selection intersects with a block
  USAGE
-    htri_t H5S__select_intersect_block(space, start, end)
+    htri_t H5S_select_intersect_block(space, start, end)
         const H5S_t *space;      IN: Dataspace to compare
         const hsize_t *start;    IN: Starting coordinate of block
         const hsize_t *end;      IN: Opposite ("ending") coordinate of block
@@ -2075,13 +2050,16 @@ done:
  COMMENTS, BUGS, ASSUMPTIONS
     Assumes that start & end block bounds are _inclusive_, so start == end
     value OK.
+
+    This routine participates in the "Inlining C function pointers" pattern,
+    don't call it directly, use the appropriate macro defined in H5Sprivate.h.
 --------------------------------------------------------------------------*/
-static htri_t
-H5S__select_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
+htri_t
+H5S_select_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
 {
     htri_t ret_value = TRUE;        /* Return value */
 
-    FUNC_ENTER_STATIC
+    FUNC_ENTER_NOAPI(FAIL)
 
     /* Check args */
     HDassert(space);
@@ -2094,7 +2072,7 @@ H5S__select_intersect_block(const H5S_t *space, const hsize_t *start, const hsiz
 
 done:
     FUNC_LEAVE_NOAPI(ret_value)
-} /* end H5S__select_intersect_block() */
+} /* end H5S_select_intersect_block() */
 
 
 /*--------------------------------------------------------------------------
@@ -2139,10 +2117,10 @@ H5Sselect_intersect_block(hid_t space_id, const hsize_t *start, const hsize_t *e
     /* Range check start & end values */
     for(u = 0; u < space->extent.rank; u++)
         if(start[u] > end[u])
-            HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "block start[%u] (%Hu) > end[%u] (%Hu)", u, start[u], u, end[u])
+            HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "block start[%u] (%llu) > end[%u] (%llu)", u, (unsigned long long)start[u], u, (unsigned long long)end[u])
 
     /* Call internal routine to do comparison */
-    if((ret_value = H5S__select_intersect_block(space, start, end)) < 0)
+    if((ret_value = H5S_select_intersect_block(space, start, end)) < 0)
         HGOTO_ERROR(H5E_DATASPACE, H5E_CANTCOMPARE, FAIL, "can't compare selection and block")
 
 done:
