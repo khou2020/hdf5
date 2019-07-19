@@ -2055,7 +2055,8 @@ done:
     don't call it directly, use the appropriate macro defined in H5Sprivate.h.
 --------------------------------------------------------------------------*/
 htri_t
-H5S_select_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
+H5S_select_intersect_block(const H5S_t *space, const hsize_t *start,
+    const hsize_t *end)
 {
     htri_t ret_value = TRUE;        /* Return value */
 
@@ -2065,6 +2066,23 @@ H5S_select_intersect_block(const H5S_t *space, const hsize_t *start, const hsize
     HDassert(space);
     HDassert(start);
     HDassert(end);
+
+    /* If selections aren't "none", compare their bounds */
+    ifH5S_GET_SELECT_TYPE(space) != H5S_SEL_NONE) {
+        hsize_t low[H5S_MAX_RANK];      /* Low bound of selection in dataspace */
+        hsize_t high[H5S_MAX_RANK];     /* High bound of selection in dataspace */
+        unsigned u;                     /* Local index variable */
+
+        /* Get low & high bounds for dataspace selection */
+        if(H5S_SELECT_BOUNDS(space, low, high) < 0)
+            HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "can't get selection bounds for dataspace")
+
+        /* Loop over selection bounds and block, checking for overlap */
+        for(u = 0; u < space->extent.rank; u++)
+            /* If selection bounds & block don't overlap, can leave now */
+            if(!H5S_RANGE_OVERLAP(low[u], high[u], start[u], end[u]))
+                HGOTO_DONE(FALSE)
+    } /* end if */
 
     /* Call selection type's intersect routine */
     if((ret_value = (*space->select.type->intersect_block)(space, start, end)) < 0)

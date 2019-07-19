@@ -2023,7 +2023,6 @@ H5S__point_intersect_block(const H5S_t *space, const hsize_t *start,
     const hsize_t *end)
 {
     H5S_pnt_node_t *pnt;        /* Point information node */
-    unsigned u;                 /* Local index variable */
     htri_t ret_value = FALSE;   /* Return value */
 
     FUNC_ENTER_STATIC_NOERR
@@ -2034,16 +2033,11 @@ H5S__point_intersect_block(const H5S_t *space, const hsize_t *start,
     HDassert(start);
     HDassert(end);
 
-    /* Loop over selection bounds and block, checking for overlap */
-    for(u = 0; u < space->extent.rank; u++)
-        /* If selection bounds & block don't overlap, can leave now */
-        if(!H5S_RANGE_OVERLAP(space->select.sel_info.pnt_lst->low_bounds[u],
-                space->select.sel_info.pnt_lst->high_bounds[u], start[u], end[u]))
-            HGOTO_DONE(FALSE)
-
     /* Loop over points */
     pnt = space->select.sel_info.pnt_lst->head;
     while(pnt) {
+        unsigned u;                 /* Local index variable */
+
         /* Verify that the point is within the block */
         for(u = 0; u < space->extent.rank; u++)
             if(pnt->pnt[u] < start[u] || pnt->pnt[u] > end[u])

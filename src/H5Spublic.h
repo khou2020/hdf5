@@ -142,12 +142,12 @@ H5_DLL htri_t H5Sextent_equal(hid_t sid1, hid_t sid2);
 /* Operations on dataspace selections */
 H5_DLL H5S_sel_type H5Sget_select_type(hid_t spaceid);
 H5_DLL hssize_t H5Sget_select_npoints(hid_t spaceid);
-H5_DLL htri_t H5Sselect_shape_same(hid_t space1_id, hid_t space2_id);
 H5_DLL herr_t H5Sselect_copy(hid_t dst_id, hid_t src_id);
 H5_DLL htri_t H5Sselect_valid(hid_t spaceid);
 H5_DLL herr_t H5Sselect_adjust_u(hid_t spaceid, const hsize_t *offset);
 H5_DLL herr_t H5Sget_select_bounds(hid_t spaceid, hsize_t start[],
     hsize_t end[]);
+H5_DLL htri_t H5Sselect_shape_same(hid_t space1_id, hid_t space2_id);
 H5_DLL htri_t H5Sselect_intersect_block(hid_t space_id, const hsize_t *start,
     const hsize_t *end);
 H5_DLL herr_t H5Soffset_simple(hid_t space_id, const hssize_t *offset);

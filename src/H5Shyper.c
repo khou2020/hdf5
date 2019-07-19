@@ -187,6 +187,8 @@ static htri_t H5S__hyper_is_contiguous(const H5S_t *space);
 static htri_t H5S__hyper_is_single(const H5S_t *space);
 static htri_t H5S__hyper_is_regular(const H5S_t *space);
 static htri_t H5S__hyper_shape_same(const H5S_t *space1, const H5S_t *space2);
+static htri_t H5S__hyper_intersect_block(const H5S_t *space, const hsize_t *start,
+    const hsize_t *end);
 static herr_t H5S__hyper_adjust_u(H5S_t *space, const hsize_t *offset);
 static herr_t H5S__hyper_project_scalar(const H5S_t *space, hsize_t *offset);
 static herr_t H5S__hyper_project_simple(const H5S_t *space, H5S_t *new_space, hsize_t *offset);
@@ -232,7 +234,7 @@ const H5S_select_class_t H5S_sel_hyper[1] = {{
     H5S__hyper_is_single,
     H5S__hyper_is_regular,
     H5S__hyper_shape_same,
-    H5S_hyper_intersect_block,
+    H5S__hyper_intersect_block,
     H5S__hyper_adjust_u,
     H5S__hyper_project_scalar,
     H5S__hyper_project_simple,
@@ -6240,11 +6242,11 @@ done:
 
 /*--------------------------------------------------------------------------
  NAME
-    H5S_hyper_intersect_block
+    H5S__hyper_intersect_block
  PURPOSE
     Detect intersections of selection with block
  USAGE
-    htri_t H5S_hyper_intersect_block(space, start, end)
+    htri_t H5S__hyper_intersect_block(space, start, end)
         const H5S_t *space;     IN: Dataspace with selection to use
         const hsize_t *start;   IN: Starting coordinate for block
         const hsize_t *end;     IN: Ending coordinate for block
@@ -6259,14 +6261,12 @@ done:
  EXAMPLES
  REVISION LOG
 --------------------------------------------------------------------------*/
-htri_t
-H5S_hyper_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
+static htri_t
+H5S__hyper_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_t *end)
 {
-    const hsize_t *low_bounds, *high_bounds;    /* Pointers to the correct pair of low & high bounds */
-    unsigned u;                 /* Local index variable */
     htri_t ret_value = FAIL;    /* Return value */
 
-    FUNC_ENTER_NOAPI(FAIL)
+    FUNC_ENTER_STATIC
 
     /* Sanity check */
     HDassert(space);
@@ -6280,25 +6280,10 @@ H5S_hyper_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_
     if(space->select.sel_info.hslab->diminfo_valid == H5S_DIMINFO_VALID_NO)
         H5S__hyper_rebuild((H5S_t *)space);     /* Casting away const OK -QAK */
 
-    /* Check which set of low & high bounds we should be using */
-    if(space->select.sel_info.hslab->diminfo_valid == H5S_DIMINFO_VALID_YES) {
-        low_bounds = space->select.sel_info.hslab->diminfo.low_bounds;
-        high_bounds = space->select.sel_info.hslab->diminfo.high_bounds;
-    } /* end if */
-    else {
-        low_bounds = space->select.sel_info.hslab->span_lst->low_bounds;
-        high_bounds = space->select.sel_info.hslab->span_lst->high_bounds;
-    } /* end else */
-
-    /* Loop over selection bounds and block, checking for overlap */
-    for(u = 0; u < space->extent.rank; u++)
-        /* If selection bounds & block don't overlap, can leave now */
-        if(!H5S_RANGE_OVERLAP(low_bounds[u], high_bounds[u], start[u], end[u]))
-            HGOTO_DONE(FALSE)
-
     /* Check for regular hyperslab intersection */
     if(space->select.sel_info.hslab->diminfo_valid == H5S_DIMINFO_VALID_YES) {
         hbool_t single_block;   /* Whether the regular selection is a single block */
+        unsigned u;             /* Local index variable */
 
         /* Check for a single block */
         /* For a regular hyperslab to be single, it must have only one block
@@ -6382,7 +6367,7 @@ H5S_hyper_intersect_block(const H5S_t *space, const hsize_t *start, const hsize_
 
 done:
     FUNC_LEAVE_NOAPI(ret_value)
-} /* end H5S_hyper_intersect_block() */
+} /* end H5S__hyper_intersect_block() */
 
 
 /*--------------------------------------------------------------------------

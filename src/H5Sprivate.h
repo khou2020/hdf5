@@ -144,8 +144,6 @@ typedef struct H5S_sel_iter_op_t {
 #define H5S_SELECT_IS_CONTIGUOUS(S)     ((*(S)->select.type->is_contiguous)(S))
 #define H5S_SELECT_IS_SINGLE(S)         ((*(S)->select.type->is_single)(S))
 #define H5S_SELECT_IS_REGULAR(S)        ((*(S)->select.type->is_regular)(S))
-#define H5S_SELECT_SHAPE_SAME(S1,S2)    ((*(S)->select.type->shape_same)(S1,S2))
-#define H5S_SELECT_INTERSECT_BLOCK(S,START,END) ((*(S)->select.type->intersect_block)(S,START,END))
 #define H5S_SELECT_ADJUST_U(S,O)        ((*(S)->select.type->adjust_u)(S, O))
 #define H5S_SELECT_PROJECT_SCALAR(S,O)  ((*(S)->select.type->project_scalar)(S, O))
 #define H5S_SELECT_PROJECT_SIMPLE(S,NS, O) ((*(S)->select.type->project_simple)(S, NS, O))
@@ -171,8 +169,6 @@ typedef struct H5S_sel_iter_op_t {
 #define H5S_SELECT_IS_CONTIGUOUS(S)     (H5S_select_is_contiguous(S))
 #define H5S_SELECT_IS_SINGLE(S)         (H5S_select_is_single(S))
 #define H5S_SELECT_IS_REGULAR(S)        (H5S_select_is_regular(S))
-#define H5S_SELECT_SHAPE_SAME(S1,S2)    (H5S_select_shape_same(S1,S2))
-#define H5S_SELECT_INTERSECT_BLOCK(S,START,END) (H5S_select_intersect_block(S,START,END))
 #define H5S_SELECT_ADJUST_U(S,O)        (H5S_select_adjust_u(S, O))
 #define H5S_SELECT_PROJECT_SCALAR(S,O)  (H5S_select_project_scalar(S, O))
 #define H5S_SELECT_PROJECT_SIMPLE(S,NS,O) (H5S_select_project_simple(S, NS, O))
@@ -187,6 +183,8 @@ typedef struct H5S_sel_iter_op_t {
 #endif /* H5S_MODULE */
 /* Handle these callbacks in a special way, since they have prologs that need to be executed */
 #define H5S_SELECT_COPY(DST,SRC,SHARE)  (H5S_select_copy(DST,SRC,SHARE))
+#define H5S_SELECT_SHAPE_SAME(S1,S2)    (H5S_select_shape_same(S1,S2))
+#define H5S_SELECT_INTERSECT_BLOCK(S,START,END) (H5S_select_intersect_block(S,START,END))
 #define H5S_SELECT_RELEASE(S)           (H5S_select_release(S))
 #define H5S_SELECT_DESERIALIZE(S,BUF)   (H5S_select_deserialize(S,BUF))
 
@@ -284,8 +282,6 @@ H5_DLL herr_t H5S_combine_hyperslab(H5S_t *old_space, H5S_seloper_t op,
     const hsize_t *block, H5S_t **new_space);
 H5_DLL herr_t H5S_hyper_add_span_element(H5S_t *space, unsigned rank,
     const hsize_t *coords);
-H5_DLL htri_t H5S_hyper_intersect_block(const H5S_t *space, const hsize_t *start,
-    const hsize_t *end);
 H5_DLL herr_t H5S_hyper_adjust_s(H5S_t *space, const hssize_t *offset);
 H5_DLL htri_t H5S_hyper_normalize_offset(H5S_t *space, hssize_t *old_offset);
 H5_DLL herr_t H5S_hyper_denormalize_offset(H5S_t *space, const hssize_t *old_offset);
