@@ -1245,7 +1245,7 @@ H5D__chunk_io_init(const H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
         } /* end else */
 
         /* Build the memory selection for each chunk */
-        if(sel_hyper_flag && H5S_select_shape_same(file_space, mem_space) == TRUE) {
+        if(sel_hyper_flag && H5S_SELECT_SHAPE_SAME(file_space, mem_space) == TRUE) {
             /* Reset chunk template information */
             fm->mchunk_tmpl = NULL;
 

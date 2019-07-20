@@ -381,7 +381,6 @@ H5_DLL herr_t H5S__hyper_project_intersection(const H5S_t *src_space,
 
 /* Testing functions */
 #ifdef H5S_TESTING
-H5_DLL htri_t H5S__select_shape_same_test(hid_t sid1, hid_t sid2);
 H5_DLL herr_t H5S__get_rebuild_status_test(hid_t space_id,
     H5S_diminfo_valid_t *status1, H5S_diminfo_valid_t *status2);
 H5_DLL herr_t H5S__get_diminfo_status_test(hid_t space_id,
