@@ -135,7 +135,6 @@ H5_DLL int H5Sget_simple_extent_dims(hid_t space_id, hsize_t dims[],
 H5_DLL htri_t H5Sis_simple(hid_t space_id);
 H5_DLL H5S_class_t H5Sget_simple_extent_type(hid_t space_id);
 H5_DLL herr_t H5Sset_extent_none(hid_t space_id);
-H5_DLL herr_t H5Sset_extent_real(hid_t space_id, const hsize_t *size);
 H5_DLL herr_t H5Sextent_copy(hid_t dst_id,hid_t src_id);
 H5_DLL htri_t H5Sextent_equal(hid_t sid1, hid_t sid2);
 
