@@ -500,8 +500,10 @@ H5_DLL herr_t H5Pset_link_creation_order(hid_t plist_id, unsigned crt_order_flag
 H5_DLL herr_t H5Pget_link_creation_order(hid_t plist_id, unsigned *crt_order_flags /* out */);
 
 /* Map access property list (MAPL) routines */
+#ifdef H5_HAVE_MAP_API
 H5_DLL herr_t H5Pset_map_iterate_hints(hid_t mapl_id, size_t key_prefetch_size, size_t key_alloc_size);
 H5_DLL herr_t H5Pget_map_iterate_hints(hid_t mapl_id, size_t *key_prefetch_size /*out*/, size_t *key_alloc_size /*out*/);
+#endif /*  H5_HAVE_MAP_API */
 
 /* String creation property list (STRCPL) routines */
 H5_DLL herr_t H5Pset_char_encoding(hid_t plist_id, H5T_cset_t encoding);
