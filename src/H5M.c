@@ -29,6 +29,7 @@
 #include "H5VLprivate.h"        /* Virtual Object Layer                     */
 
 
+
 /****************/
 /* Local Macros */
 /****************/
@@ -174,6 +175,40 @@ H5M_term_package(void)
 
     FUNC_LEAVE_NOAPI(n)
 } /* end H5M_term_package() */
+
+
+/*-------------------------------------------------------------------------
+ * Function:    H5M__close_cb
+ *
+ * Purpose:     Called when the ref count reaches zero on the map's ID
+ *
+ * Return:      SUCCEED/FAIL
+ *
+ *-------------------------------------------------------------------------
+ */
+static herr_t
+H5M__close_cb(H5VL_object_t *map_vol_obj)
+{
+    herr_t              ret_value = SUCCEED;    /* Return value */
+
+    FUNC_ENTER_STATIC
+
+    /* Sanity check */
+    HDassert(map_vol_obj);
+
+    /* Close the map */
+    if(H5VL_optional(map_vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CLOSE) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_CLOSEERROR, FAIL, "unable to close map");
+
+    /* Free the VOL object */
+    if(H5VL_free_object(map_vol_obj) < 0)
+        HGOTO_ERROR(H5E_MAP, H5E_CANTDEC, FAIL, "unable to free VOL object");
+
+done:
+    FUNC_LEAVE_NOAPI(ret_value)
+} /* end H5M__close_cb() */
+
+#ifdef H5_HAVE_MAP_API
 
 
 /*-------------------------------------------------------------------------
@@ -425,38 +460,6 @@ H5Mclose(hid_t map_id)
 done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Mclose() */
-
-
-/*-------------------------------------------------------------------------
- * Function:    H5M__close_cb
- *
- * Purpose:     Called when the ref count reaches zero on the map's ID
- *
- * Return:      SUCCEED/FAIL
- *
- *-------------------------------------------------------------------------
- */
-static herr_t
-H5M__close_cb(H5VL_object_t *map_vol_obj)
-{
-    herr_t              ret_value = SUCCEED;    /* Return value */
-
-    FUNC_ENTER_STATIC
-
-    /* Sanity check */
-    HDassert(map_vol_obj);
-
-    /* Close the map */
-    if(H5VL_optional(map_vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL, H5VL_MAP_CLOSE) < 0)
-        HGOTO_ERROR(H5E_MAP, H5E_CLOSEERROR, FAIL, "unable to close map");
-
-    /* Free the VOL object */
-    if(H5VL_free_object(map_vol_obj) < 0)
-        HGOTO_ERROR(H5E_MAP, H5E_CANTDEC, FAIL, "unable to free VOL object");
-
-done:
-    FUNC_LEAVE_NOAPI(ret_value)
-} /* end H5M__close_cb() */
 
 
 /*-------------------------------------------------------------------------
@@ -993,6 +996,7 @@ H5Mdelete_key(hid_t map_id, hid_t key_mem_type_id, const void *key,
     herr_t                  ret_value = SUCCEED;    /* Return value */
 
     FUNC_ENTER_API(FAIL)
+    H5TRACE4("e", "ii*xi", map_id, key_mem_type_id, key, dxpl_id);
 
     /* Check arguments */
     if (key_mem_type_id < 0)
@@ -1023,4 +1027,6 @@ H5Mdelete_key(hid_t map_id, hid_t key_mem_type_id, const void *key,
 done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Mdelete_key() */
+
+#endif /*  H5_HAVE_MAP_API */
 

@@ -13,6 +13,9 @@
 
 /*
  * This file contains public declarations for the H5M module.
+ *
+ * NOTE:    This is an experimental API. Everything in the H5M package
+ *          is subject to revision in a future release.
  */
 #ifndef _H5Mpublic_H
 #define _H5Mpublic_H
@@ -22,6 +25,7 @@
 /* Public headers needed by this file */
 #include "H5public.h"
 #include "H5Ipublic.h"
+
 
 /*****************/
 /* Public Macros */
@@ -74,6 +78,12 @@ typedef herr_t (*H5M_iterate_t)(hid_t map_id, const void *key, void *op_data);
 extern "C" {
 #endif
 
+/* The map API is only built when requested since there's no support in
+ * the native file format at this time. It's only supported in a few VOL
+ * connectors.
+ */
+#ifdef H5_HAVE_MAP_API
+
 H5_DLL hid_t H5Mcreate(hid_t loc_id, const char *name, hid_t key_type_id,
     hid_t val_type_id, hid_t lcpl_id, hid_t mcpl_id, hid_t mapl_id);
 H5_DLL hid_t H5Mcreate_anon(hid_t loc_id, hid_t key_type_id, hid_t val_type_id,
@@ -106,8 +116,11 @@ H5_DLL herr_t H5Mdelete_key(hid_t map_id, hid_t key_mem_type_id,
 #ifndef H5_NO_DEPRECATED_SYMBOLS
 #endif /* H5_NO_DEPRECATED_SYMBOLS */
 
+#endif /*  H5_HAVE_MAP_API */
+
 #ifdef __cplusplus
 }
 #endif
-#endif /* _H5Dpublic_H */
+
+#endif /* _H5Mpublic_H */
 

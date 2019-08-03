@@ -682,6 +682,7 @@ if (NOT HDF5_EXTERNALLY_CONFIGURED)
     endif ()
   endif ()
 endif ()
+
 #-----------------------------------------------------------------------------
 # Option to use threadsafe
 #-----------------------------------------------------------------------------
@@ -734,6 +735,11 @@ if (HDF5_ENABLE_THREADSAFE)
     set (H5_HAVE_THREADSAFE 1)
   endif ()
 endif ()
+
+#-----------------------------------------------------------------------------
+# Option to build the map API
+#-----------------------------------------------------------------------------
+option (HDF5_ENABLE_MAP_API "Build the map API" OFF)
 
 #-----------------------------------------------------------------------------
 # Add the HDF5 Library Target to the build
