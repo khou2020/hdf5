@@ -18,6 +18,7 @@
  * Purpose:	Tests datasets stored in external raw files.
  */
 #include "external_common.h"
+#include "external_fname.h"
 
 
 /*-------------------------------------------------------------------------
@@ -635,7 +636,7 @@ test_read_file_set(hid_t fapl)
         TEST_ERROR
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the file and an initial group.  This causes messages about
@@ -775,7 +776,7 @@ test_write_file_set(hid_t fapl)
     } /* end for */
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the dataset */
@@ -864,7 +865,7 @@ test_path_absolute(hid_t fapl)
     hid_t	dset = -1;          /* dataset                              */
     size_t	i;                  /* miscellaneous counter                */
     char	cwdpath[1024];      /* working directory                    */
-    char	filename[1024];     /* file name                            */
+    char	filename[1536];     /* file name                            */
     int	    part[PART_SIZE];    /* raw data buffer (partial)            */
     int     whole[TOTAL_SIZE];  /* raw data buffer (total)              */
     hsize_t	cur_size;           /* current data space size              */
@@ -876,7 +877,7 @@ test_path_absolute(hid_t fapl)
         FAIL_STACK_ERROR
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the dcpl */
@@ -972,7 +973,7 @@ test_path_relative(hid_t fapl)
         FAIL_STACK_ERROR;
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the dataset */
@@ -1067,7 +1068,7 @@ test_path_relative_cwd(hid_t fapl)
         FAIL_STACK_ERROR;
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the dataset */
@@ -1209,7 +1210,7 @@ test_h5d_get_access_plist(hid_t fapl_id)
         TEST_ERROR
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(0) < 0)
+    if(reset_raw_data_files(FALSE) < 0)
         TEST_ERROR
 
     /* Create the file */

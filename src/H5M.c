@@ -993,6 +993,7 @@ H5Mdelete_key(hid_t map_id, hid_t key_mem_type_id, const void *key,
     herr_t                  ret_value = SUCCEED;    /* Return value */
 
     FUNC_ENTER_API(FAIL)
+    H5TRACE4("e", "ii*xi", map_id, key_mem_type_id, key, dxpl_id);
 
     /* Check arguments */
     if (key_mem_type_id < 0)
