@@ -102,7 +102,7 @@ endif ()
 CHECK_FUNCTION_EXISTS (difftime          ${HDF_PREFIX}_HAVE_DIFFTIME)
 
 # Find the library containing clock_gettime()
-if (NOT WINDOWS)
+if (MINGW OR NOT WINDOWS)
   CHECK_FUNCTION_EXISTS (clock_gettime CLOCK_GETTIME_IN_LIBC)
   CHECK_LIBRARY_EXISTS (rt clock_gettime "" CLOCK_GETTIME_IN_LIBRT)
   CHECK_LIBRARY_EXISTS (posix4 clock_gettime "" CLOCK_GETTIME_IN_LIBPOSIX4)
@@ -152,6 +152,21 @@ if (NOT WINDOWS)
       )
     endif ()
   endif ()
+endif ()
+
+#-----------------------------------------------------------------------------
+#  Check if ROS3 driver can be built
+#-----------------------------------------------------------------------------
+option (HDF5_ENABLE_ROS3_VFD "Build the ROS3 Virtual File Driver" OFF)
+  if (HDF5_ENABLE_ROS3_VFD)
+    find_package(CURL REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    if (${CURL_FOUND} AND ${OPENSSL_FOUND})
+      set (${HDF_PREFIX}_HAVE_ROS3_VFD 1)
+      list (APPEND LINK_LIBS ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES})
+    else ()
+      message (STATUS "The Read-Only S3 VFD was requested but cannot be built.\nPlease check that openssl and cURL are available on your\nsystem, and/or re-configure without option HDF5_ENABLE_ROS3_VFD.")
+    endif ()
 endif ()
 
 #-----------------------------------------------------------------------------

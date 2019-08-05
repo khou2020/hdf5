@@ -23,21 +23,6 @@
 /* Include test header files */
 #include "h5test.h"
 
-static const char *EXT_FNAME[] = {
-    "extern_1",
-    "extern_2",
-    "extern_3",
-    "extern_4",
-    "extern_dir/file_1",
-    "extern_5",
-    NULL
-};
-
-static const char *EXT_ENV_FNAME[] = {
-    "extern_env_dir/env_file_1",
-    NULL
-};
-
 /* A similar collection of files is used for the tests that
  * perform file I/O.
  */
@@ -46,5 +31,15 @@ static const char *EXT_ENV_FNAME[] = {
 #define TOTAL_SIZE          100
 #define GARBAGE_PER_FILE    10
 
-H5TEST_DLL herr_t reset_raw_data_files(int);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+H5TEST_DLL herr_t reset_raw_data_files(hbool_t is_env);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _EXTERNAL_COMMON_H */

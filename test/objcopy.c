@@ -986,15 +986,15 @@ compare_data(hid_t parent1, hid_t parent2, hid_t pid, hid_t tid, size_t nelmts,
                  * for each */
                 for(elmt=0; elmt<nelmts; elmt++) {
                     /* Check vlen lengths */
-                    if(((const hvl_t *)memb1)->len
-                            != ((const hvl_t *)memb2)->len)
+                    if(((const hvl_t *)((const void *)memb1))->len
+                            != ((const hvl_t *)((const void *)memb2))->len)
                         TEST_ERROR
 
                     /* Check vlen data */
                     if(!compare_data(parent1, parent2, pid, base_id,
-                            ((const hvl_t *)memb1)->len,
-                            ((const hvl_t *)memb1)->p,
-                            ((const hvl_t *)memb2)->p, obj_owner))
+                            ((const hvl_t *)((const void *)memb1))->len,
+                            ((const hvl_t *)((const void *)memb1))->p,
+                            ((const hvl_t *)((const void *)memb2))->p, obj_owner))
                         TEST_ERROR
 
                     /* Update member pointers */
@@ -5871,12 +5871,14 @@ compare_attribute_compound_vlstr(hid_t loc, hid_t loc2)
 {
     hid_t aid = -1, aid2 = -1;    /* Attribute IDs */
     hid_t tid = -1, tid2 = -1;    /* Datatype IDs */
+    hid_t sid = -1, sid2 = -1;    /* Dataspace IDs */
+    hid_t dxpl_id = -1;
     typedef struct {        /* Compound structure for the attribute */
     int i;
     char *v;
     } s1;
     s1 rbuf;            /* Buffer for data read */
-    s1 rbuf2;            /* Buffer for data read */
+    s1 rbuf2;           /* Buffer for data read */
 
     /* Open the attributes attached to the objects */
     if((aid = H5Aopen_by_idx(loc, ".", H5_INDEX_CRT_ORDER, H5_ITER_INC, (hsize_t)0, H5P_DEFAULT, H5P_DEFAULT)) < 0)
@@ -5888,6 +5890,12 @@ compare_attribute_compound_vlstr(hid_t loc, hid_t loc2)
     if((tid = H5Aget_type(aid)) < 0)
     FAIL_STACK_ERROR
     if((tid2 = H5Aget_type(aid2)) < 0)
+    FAIL_STACK_ERROR
+
+    /* Get the attributes' dataspaces */
+    if((sid = H5Aget_space(aid)) < 0)
+    FAIL_STACK_ERROR
+    if((sid2 = H5Aget_space(aid2)) < 0)
     FAIL_STACK_ERROR
 
     /* Read the attributes */
@@ -5904,6 +5912,19 @@ compare_attribute_compound_vlstr(hid_t loc, hid_t loc2)
     if(HDmemcmp(rbuf.v, rbuf2.v, HDstrlen(rbuf.v)))
     FAIL_STACK_ERROR
 
+    /* Reclaim vlen buffer */
+    if((dxpl_id = H5Pcreate(H5P_DATASET_XFER)) < 0) TEST_ERROR
+    if(H5Pset_vlen_mem_manager(dxpl_id, NULL, NULL, NULL, NULL) < 0) TEST_ERROR
+    if(H5Dvlen_reclaim(tid, sid, dxpl_id, &rbuf) < 0) TEST_ERROR
+    if(H5Dvlen_reclaim(tid, sid, dxpl_id, &rbuf2) < 0) TEST_ERROR
+    if(H5Pclose(dxpl_id) < 0) TEST_ERROR
+
+    /* Close the dataspaces */
+    if(H5Sclose(sid) < 0)
+    FAIL_STACK_ERROR
+    if(H5Sclose(sid2) < 0)
+    FAIL_STACK_ERROR
+
     /* Close the attributes */
     if(H5Aclose(aid) < 0)
     FAIL_STACK_ERROR
@@ -5915,8 +5936,13 @@ error:
     H5E_BEGIN_TRY {
         H5Aclose(aid);
         H5Aclose(aid2);
+        H5Dvlen_reclaim(tid, sid, H5P_DEFAULT, &rbuf);
+        H5Dvlen_reclaim(tid, sid, H5P_DEFAULT, &rbuf2);
+        H5Sclose(sid);
+        H5Sclose(sid2);
         H5Tclose(tid);
         H5Tclose(tid2);
+        H5Pclose(dxpl_id);
     } H5E_END_TRY;
     return FALSE;
 
@@ -13399,7 +13425,7 @@ test_copy_iterate(hid_t fcpl_src, hid_t fcpl_dst, hid_t src_fapl, hid_t dst_fapl
     hid_t fid1 = -1, fid2 = -1;                 /* File IDs */
     hid_t gid = -1;                             /* Group ID */
     int i;
-    char grp_name[8];
+    char grp_name[16];
     char src_filename[NAME_BUF_SIZE];
     char dst_filename[NAME_BUF_SIZE];
 

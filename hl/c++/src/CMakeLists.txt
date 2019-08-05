@@ -59,7 +59,7 @@ if (HDF5_EXPORTED_TARGETS)
     INSTALL_TARGET_PDB (${HDF5_HL_CPP_LIBSH_TARGET} ${HDF5_INSTALL_BIN_DIR} hlcpplibraries)
   endif ()
   if (NOT ONLY_SHARED_LIBS)
-    INSTALL_TARGET_PDB (${HDF5_HL_CPP_LIB_TARGET} ${HDF5_INSTALL_BIN_DIR} hlcpplibraries)
+    INSTALL_TARGET_PDB (${HDF5_HL_CPP_LIB_TARGET} ${HDF5_INSTALL_LIB_DIR} hlcpplibraries)
   endif ()
 
   install (
@@ -108,7 +108,7 @@ install (
     COMPONENT hlcpplibraries
 )
 
-if (NOT WIN32)
+if (NOT WIN32 AND NOT MINGW)
   set (_PKG_CONFIG_COMPILER ${CMAKE_CXX_COMPILER})
   configure_file (
       ${HDF_RESOURCES_DIR}/libh5cc.in

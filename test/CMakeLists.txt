@@ -22,6 +22,7 @@ set (TEST_LIB_HEADERS
     ${HDF5_TEST_SOURCE_DIR}/h5test.h
     ${HDF5_TEST_SOURCE_DIR}/cache_common.h
     ${HDF5_TEST_SOURCE_DIR}/external_common.h
+    ${HDF5_TEST_SOURCE_DIR}/external_fname.h
     ${HDF5_TEST_SOURCE_DIR}/swmr_common.h
 )
 
@@ -34,7 +35,7 @@ if (NOT ONLY_SHARED_LIBS)
   TARGET_C_PROPERTIES (${HDF5_TEST_LIB_TARGET} STATIC)
   target_link_libraries (${HDF5_TEST_LIB_TARGET}
       PUBLIC ${LINK_LIBS} ${HDF5_LIB_TARGET}
-      PRIVATE $<$<PLATFORM_ID:Windows>:ws2_32.lib>
+      PRIVATE $<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:MinGW>>:ws2_32.lib>
   )
   if (MINGW)
     target_link_libraries (${HDF5_TEST_LIB_TARGET} PRIVATE "wsock32.lib")
@@ -55,7 +56,7 @@ if (BUILD_SHARED_LIBS)
   TARGET_C_PROPERTIES (${HDF5_TEST_LIBSH_TARGET} SHARED)
   target_link_libraries (${HDF5_TEST_LIBSH_TARGET}
       PUBLIC ${LINK_LIBS} ${HDF5_LIBSH_TARGET}
-      PRIVATE $<$<PLATFORM_ID:Windows>:ws2_32.lib>
+      PRIVATE $<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:MinGW>>:ws2_32.lib>
   )
   if (MINGW)
     target_link_libraries (${HDF5_TEST_LIBSH_TARGET} PRIVATE "wsock32.lib")
@@ -266,6 +267,9 @@ set (H5_TESTS
     enc_dec_plist_cross_platform
     getname
     vfd
+    ros3
+    s3comms
+    hdfs
     ntypes
     dangle
     dtransform

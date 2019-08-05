@@ -15,6 +15,12 @@
  * Purpose:	Tests datasets stored in external raw files.
  */
 #include "external_common.h"
+#include "external_fname.h"
+
+static const char *EXT_ENV_FNAME[] = {
+    "extern_env_dir/env_file_1",
+    NULL
+};
 
 
 /*-------------------------------------------------------------------------
@@ -64,7 +70,7 @@ test_path_env(hid_t fapl)
         FAIL_STACK_ERROR
 
     /* Reset the raw data files */
-    if(reset_raw_data_files(1) < 0)
+    if(reset_raw_data_files(TRUE) < 0)
         TEST_ERROR
 
     /* Create the dataset */
