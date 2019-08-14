@@ -884,7 +884,7 @@ done:
  *-------------------------------------------------------------------------
  */
 herr_t
-H5Rdecode(hid_t loc_id, const void *buf, href_t *ref_ptr)
+H5Rdecode(hid_t loc_id, const void *buf, size_t *nbytes, href_t *ref_ptr)
 {
     H5VL_object_t *vol_obj = NULL;              /* Object token of loc_id */
     H5I_type_t obj_type;                        /* Object type of loc_id */
@@ -895,11 +895,13 @@ H5Rdecode(hid_t loc_id, const void *buf, href_t *ref_ptr)
     herr_t ret_value = SUCCEED;                 /* Return value */
 
     FUNC_ENTER_API(FAIL)
-    H5TRACE3("e", "i*x*Rr", loc_id, buf, ref_ptr);
+    H5TRACE4("e", "i*x*z*Rr", loc_id, buf, nbytes, ref_ptr);
 
     /* Check args */
     if(buf == NULL)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "empty buffer")
+    if(nbytes == NULL)
+        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "NULL pointer to nbytes")
     if(ref_ptr == NULL)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid reference pointer")
 
@@ -919,7 +921,7 @@ H5Rdecode(hid_t loc_id, const void *buf, href_t *ref_ptr)
     H5R_FILE_GET_NAME(vol_obj, obj_type, filename, filename_ptr, filename_len, FAIL);
 
     /* Create reference by decoding buffer */
-    if(H5R__decode(filename_ptr, (const unsigned char *)buf, NULL, ref) < 0)
+    if(H5R__decode(filename_ptr, (const unsigned char *)buf, nbytes, ref) < 0)
         HGOTO_ERROR(H5E_REFERENCE, H5E_CANTDECODE, FAIL, "can't decode reference")
 
     /* Set location ID if reference filename matches */

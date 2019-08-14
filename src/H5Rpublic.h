@@ -115,7 +115,7 @@ H5_DLL ssize_t  H5Rget_attr_name(const href_t *ref_ptr, char *name, size_t size)
 
 /* Serialization */
 H5_DLL herr_t   H5Rencode(const href_t *ref_ptr, void *buf, size_t *nalloc);
-H5_DLL herr_t   H5Rdecode(hid_t loc_id, const void *buf, href_t *ref_ptr);
+H5_DLL herr_t   H5Rdecode(hid_t loc_id, const void *buf, size_t *nbytes, href_t *ref_ptr);
 
 /* Symbols defined for compatibility with previous versions of the HDF5 API.
  *
