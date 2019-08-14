@@ -140,7 +140,7 @@ H5Rget_obj_type1(hid_t id, H5R_type_t ref_type, const void *ref)
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, H5G_UNKNOWN, "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(id, vol_obj_type, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5G_UNKNOWN, "not a file or file object")
 
         /* Retrieve VOL object */
@@ -232,7 +232,7 @@ H5Rdereference1(hid_t obj_id, H5R_type_t ref_type, const void *ref)
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, H5I_INVALID_HID, "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(obj_id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(obj_id, vol_obj_type, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "not a file or file object")
 
         /* Retrieve VOL object */
@@ -344,7 +344,7 @@ H5Rcreate(void *ref, hid_t loc_id, const char *name, H5R_type_t ref_type,
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, FAIL, "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(loc_id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(loc_id, vol_obj_type, FALSE)) < 0)
                 HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a file or file object")
 
         /* Retrieve VOL object */
@@ -429,7 +429,7 @@ H5Rget_obj_type2(hid_t id, H5R_type_t ref_type, const void *ref,
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, FAIL, "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(id, vol_obj_type, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a file or file object")
 
         /* Retrieve VOL object */
@@ -525,7 +525,7 @@ H5Rdereference2(hid_t obj_id, hid_t oapl_id, H5R_type_t ref_type,
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, H5I_INVALID_HID, "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(obj_id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(obj_id, vol_obj_type, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "not a file or file object")
 
         /* Retrieve VOL object */
@@ -608,7 +608,7 @@ H5Rget_region(hid_t id, H5R_type_t ref_type, const void *ref)
         HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, H5I_INVALID_HID, "unsupported VOL class")
 
     /* Get the file for the object */
-    if((file_id = H5F_get_file_id(id, vol_obj_type)) < 0)
+    if((file_id = H5F_get_file_id(id, vol_obj_type, FALSE)) < 0)
         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, H5I_INVALID_HID, "not a file or file object")
 
     /* Retrieve VOL object */
@@ -690,7 +690,7 @@ H5Rget_name(hid_t id, H5R_type_t ref_type, const void *ref, char *name,
             HGOTO_ERROR(H5E_REFERENCE, H5E_UNSUPPORTED, (-1), "unsupported VOL class")
 
         /* Get the file for the object */
-        if((file_id = H5F_get_file_id(id, vol_obj_type)) < 0)
+        if((file_id = H5F_get_file_id(id, vol_obj_type, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, (-1), "not a file or file object")
 
         /* Retrieve VOL object */

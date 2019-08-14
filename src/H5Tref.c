@@ -352,7 +352,7 @@ H5T__ref_mem_write(H5F_t *src_f, const void *src_buf, size_t src_size,
     /* Set location ID if reference filename matches */
     if(0 == HDstrcmp(H5F_OPEN_NAME(src_f), H5R_REF_FILENAME(dst_ref))) {
         /* Retrieve loc ID */
-        if((loc_id = H5F__get_file_id(src_f)) < 0)
+        if((loc_id = H5F__get_file_id(src_f, FALSE)) < 0)
             HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a file or file object")
 
         /* Attach loc ID to reference */
