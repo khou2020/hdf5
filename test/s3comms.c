@@ -11,7 +11,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /*
- * Read-Only S3 Virtual File Driver (VFD)                                   
+ * Read-Only S3 Virtual File Driver (VFD)
  *
  * Purpose:    Unit tests for the S3 Communications (s3comms) module.
  *
@@ -22,6 +22,8 @@
 #include "h5test.h"
 #include "H5FDs3comms.h"
 #include "H5MMprivate.h" /* memory management */
+
+#ifdef H5_HAVE_ROS3_VFD
 
 /*****************************************************************************
  *
@@ -361,8 +363,6 @@ if (strcmp((actual), (expected)) != 0) {       \
 #endif /* ifdef/else JSVERIFY_EXP_ACT */
 
 
-#ifdef H5_HAVE_ROS3_VFD
-
 #define S3_TEST_PROFILE_NAME "ros3_vfd_test"
 
 #define S3_TEST_RESOURCE_TEXT_RESTRICTED "t8.shakespeare.txt"
@@ -383,8 +383,6 @@ static char    s3_test_aws_access_key_id[64]            = "";
 static char    s3_test_aws_secret_access_key[128]       = "";
 static char    s3_test_bucket_url[S3_TEST_MAX_URL_SIZE] = "";
 static hbool_t s3_test_bucket_defined                   = FALSE;
-
-#endif /* H5_HAVE_ROS3_VFD */
 
 
 /*---------------------------------------------------------------------------
@@ -408,7 +406,6 @@ test_macro_format_credential(void)
      * test-local variables *
      ************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     char       dest[256];
     const char access[]   = "AKIAIOSFODNN7EXAMPLE";
     const char date[]     = "20130524";
@@ -416,16 +413,9 @@ test_macro_format_credential(void)
     const char service[]  = "s3";
     const char expected[] =
             "AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request";
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("test_macro_format_credential");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     FAIL_IF( S3COMMS_MAX_CREDENTIAL_SIZE <
              S3COMMS_FORMAT_CREDENTIAL(dest, access, date, region, service) )
 
@@ -433,12 +423,11 @@ test_macro_format_credential(void)
 
     PASSED();
     return 0;
-#endif /* H5_HAVE_ROS3_VFD */
 
 error:
     return -1;
 
-} /* test_macro_format_credential */
+} /* end test_macro_format_credential() */
 
 
 /*---------------------------------------------------------------------------
@@ -465,7 +454,6 @@ test_aws_canonical_request(void)
      * test-local structures *
      *************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     struct header {
         const char *name;
         const char *value;
@@ -520,16 +508,9 @@ test_aws_canonical_request(void)
     hrb_node_t      *node      = NULL; /* http headers list pointer */
     unsigned int     n_cases   = 3;
     char             sh_dest[64];       /* signed headers */
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("test_aws_canonical_request");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < n_cases; i++) {
         /* pre-test bookkeeping
          */
@@ -559,16 +540,22 @@ test_aws_canonical_request(void)
         /* test
          */
         JSVERIFY( SUCCEED,
-                  H5FD_s3comms_aws_canonical_request(cr_dest, sh_dest, hrb),
+                  H5FD_s3comms_aws_canonical_request(
+                          cr_dest,
+                          512,
+                          sh_dest,
+                          64,
+                          hrb),
                   " unable to compose canonical request" )
         JSVERIFY_STR( C->exp_headers, sh_dest, NULL )
         JSVERIFY_STR( C->exp_request, cr_dest, NULL )
 
         /* tear-down
          */
-        while (node != NULL)
+        while (node != NULL) {
             FAIL_IF( FAIL ==
                      H5FD_s3comms_hrb_node_set(&node, node->name, NULL));
+        }
         HDassert(NULL == node);
         FAIL_IF( FAIL == H5FD_s3comms_hrb_destroy(&hrb));
         HDassert(NULL == hrb);
@@ -581,14 +568,29 @@ test_aws_canonical_request(void)
 
      /*  malformed hrb and/or node-list
       */
-    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(cr_dest, sh_dest, NULL),
+    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(
+                      cr_dest,
+                      20,
+                      sh_dest,
+                      20,
+                      NULL),
               "http request object cannot be null" )
 
     hrb = H5FD_s3comms_hrb_init_request("GET", "/", "HTTP/1.1");
-    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(NULL, sh_dest, hrb),
+    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(
+                      NULL,
+                      20,
+                      sh_dest,
+                      20,
+                      hrb),
               "canonical request destination cannot be NULL" )
 
-    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(cr_dest, NULL, hrb),
+    JSVERIFY( FAIL, H5FD_s3comms_aws_canonical_request(
+                      cr_dest,
+                      20,
+                      NULL,
+                      20,
+                      hrb),
               "signed headers destination cannot be null" )
 
     FAIL_IF( FAIL == H5FD_s3comms_hrb_destroy(&hrb) )
@@ -604,13 +606,13 @@ error:
                (void)H5FD_s3comms_hrb_node_set(&node, node->name, NULL);
         HDassert( node == NULL );
     }
-    if (hrb != NULL)
+    if (hrb != NULL) {
         (void)H5FD_s3comms_hrb_destroy(&hrb);
+    }
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_aws_canonical_request */
+} /* end test_aws_canonical_request() */
 
 
 /*---------------------------------------------------------------------------
@@ -706,7 +708,7 @@ test_bytes_to_hex(void)
 error:
     return -1;
 
-} /* test_bytes_to_hex */
+} /* end test_bytes_to_hex() */
 
 
 /*---------------------------------------------------------------------------
@@ -725,7 +727,6 @@ error:
 static herr_t
 test_hrb_init_request(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
     /*********************
      * test-local macros *
      *********************/
@@ -769,7 +770,7 @@ test_hrb_init_request(void)
             "HTTP/1.1",
             FALSE,
         },
-        {   "slash prepented to resource path, if necessary",
+        {   "slash prepended to resource path, if necessary",
             NULL,
             "MYPATH/MYFILE.tiff",
             "/MYPATH/MYFILE.tiff",
@@ -788,29 +789,25 @@ test_hrb_init_request(void)
     unsigned int     i      = 0;
     unsigned int     ncases = 5;
     hrb_t           *req    = NULL;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("hrb_init_request");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < ncases; i++) {
         C = &cases[i];
-        req = H5FD_s3comms_hrb_init_request(C->verb,
-                                            C->resource,
-                                            C->version);
+        req = H5FD_s3comms_hrb_init_request(
+                C->verb,
+                C->resource,
+                C->version);
         if (cases[i].ret_null == TRUE) {
             FAIL_IF( req != NULL );
-        } else {
+        }
+        else {
             FAIL_IF( req == NULL );
             JSVERIFY( S3COMMS_HRB_MAGIC, req->magic, NULL )
             if (C->verb == NULL) {
                 JSVERIFY_STR( "GET", req->verb, NULL )
-            } else {
+            }
+            else {
                 JSVERIFY_STR( req->verb, C->verb, NULL )
             }
             JSVERIFY_STR( "HTTP/1.1",  req->version,  NULL )
@@ -823,7 +820,7 @@ test_hrb_init_request(void)
             FAIL_IF( NULL != req ); /* should annull pointer as well as free */
         }
 
-    } /* for each testcase */
+    } /* end for each testcase */
 
     PASSED();
     return 0;
@@ -832,9 +829,8 @@ error:
     (void)H5FD_s3comms_hrb_destroy(&req);
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_hrb_init_request */
+} /* end test_hrb_init_request() */
 
 
 /*---------------------------------------------------------------------------
@@ -853,7 +849,6 @@ error:
 static herr_t
 test_hrb_node_set(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
     /*************************
      * test-local structures *
      *************************/
@@ -1071,18 +1066,10 @@ test_hrb_node_set(void)
     };
     unsigned testcases_count = 16;
     unsigned test_i = 0;
-
     hrb_node_t *list = NULL;
-#endif /* H5_HAVE_ROS3_VFD */
 
-    TESTING("test_hrb_node_t");
+    TESTING("hrb_node_t (test_hrb_node_set)");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (test_i = 0; test_i < testcases_count; test_i++) {
         const hrb_node_t  *node = NULL;
         const testcase    *test = &(cases[test_i]);
@@ -1137,19 +1124,20 @@ test_hrb_node_set(void)
             FAIL_IF( SUCCEED !=
                      H5FD_s3comms_hrb_node_set(&list, list->name, NULL) )
         }
-    }
+    } /* end for each testcase */
 
     PASSED();
     return 0;
 
 error:
-    while (list != NULL)
+    while (list != NULL) {
         (void)H5FD_s3comms_hrb_node_set(&list, list->name, NULL);
+    }
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_hrb_node_t */
+} /* end test_hrb_node_t() */
+
 
 
 /*---------------------------------------------------------------------------
@@ -1173,7 +1161,6 @@ test_HMAC_SHA256(void)
      * test-local structures *
      *************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     struct testcase {
         herr_t               ret; /* SUCCEED/FAIL expected from call */
         const unsigned char  key[SHA256_DIGEST_LENGTH];
@@ -1221,16 +1208,9 @@ test_HMAC_SHA256(void)
     char *dest    = NULL;
     int   i       = 0;
     int   n_cases = 3;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("HMAC_SHA256");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < n_cases; i++) {
         if (cases[i].dest_size == 0) {
            dest = NULL;
@@ -1265,13 +1245,13 @@ test_HMAC_SHA256(void)
                           dest);
                 TEST_ERROR;
             }
-#else
+#else /* VERBOSE not defined */
             /* simple pass/fail test
              */
             JSVERIFY( 0,
                       strncmp(cases[i].exp, dest, HDstrlen(cases[i].exp)),
                       NULL);
-#endif
+#endif /* VERBOSE */
         }
         free(dest);
     }
@@ -1282,9 +1262,8 @@ test_HMAC_SHA256(void)
 error:
     free(dest);
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_HMAC_SHA256 */
+} /* end test_HMAC_SHA256() */
 
 
 /*----------------------------------------------------------------------------
@@ -1307,7 +1286,6 @@ test_nlowercase(void)
      * test-local structures *
      *************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     struct testcase {
         const char *in;
         size_t      len;
@@ -1338,16 +1316,9 @@ test_nlowercase(void)
     char *dest    = NULL;
     int   i       = 0;
     int   n_cases = 3;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("nlowercase");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < n_cases; i++) {
         dest = (char *)HDmalloc(sizeof(char) * 16);
 
@@ -1360,7 +1331,7 @@ test_nlowercase(void)
             JSVERIFY( 0, strncmp(dest, cases[i].exp, cases[i].len), NULL )
         }
         free(dest);
-    }
+    } /* end for each testcase */
 
     JSVERIFY( FAIL,
               H5FD_s3comms_nlowercase(NULL,
@@ -1374,9 +1345,8 @@ test_nlowercase(void)
 error:
     free(dest);
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_nlowercase */
+} /* end test_nlowercase() */
 
 
 /*---------------------------------------------------------------------------
@@ -1399,7 +1369,6 @@ test_parse_url(void)
      * test-local structures *
      *************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     typedef struct {
         const char *scheme;
         const char *host;
@@ -1540,16 +1509,9 @@ test_parse_url(void)
             "non-decimal PORT (01a3)",
         },
     };
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("url-parsing functionality");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     /*********
      * TESTS *
      *********/
@@ -1564,7 +1526,8 @@ test_parse_url(void)
         if (cases[i].exp_ret == FAIL) {
             /* on FAIL, `purl` should be untouched--remains NULL */
             FAIL_UNLESS( purl == NULL )
-        } else {
+        }
+        else {
             /* on SUCCEED, `purl` should be set */
             FAIL_IF( purl == NULL )
 
@@ -1612,7 +1575,7 @@ test_parse_url(void)
             } else {
                 FAIL_UNLESS( NULL == purl->query )
             }
-        } /* if parse-url return SUCCEED/FAIL */
+        } /* end if parse-url return SUCCEED/FAIL */
 
         /* per-test cleanup
          * well-behaved, even if `purl` is NULL
@@ -1620,7 +1583,7 @@ test_parse_url(void)
         FAIL_IF( FAIL == H5FD_s3comms_free_purl(purl) )
         purl = NULL;
 
-    } /* for each testcase */
+    } /* end for each testcase */
 
     PASSED();
     return 0;
@@ -1632,9 +1595,8 @@ error:
     (void)H5FD_s3comms_free_purl(purl);
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_parse_url */
+} /* end test_parse_url() */
 
 
 /*---------------------------------------------------------------------------
@@ -1662,7 +1624,6 @@ test_percent_encode_char(void)
      * test-local structures *
      *************************/
 
-#ifdef H5_HAVE_ROS3_VFD
     struct testcase {
         const char  c;
         const char *exp;
@@ -1692,16 +1653,9 @@ test_percent_encode_char(void)
     size_t dest_len = 0;
     int    i        = 0;
     int    n_cases  = 5;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("percent encode characters");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < n_cases; i++) {
         JSVERIFY( SUCCEED,
                   H5FD_s3comms_percent_encode_char(
@@ -1726,9 +1680,7 @@ test_percent_encode_char(void)
 
 error:
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
-
-} /* test_percent_encode_char */
+} /* end test_percent_encode_char() */
 
 
 /*---------------------------------------------------------------------------
@@ -1743,7 +1695,6 @@ error:
 static herr_t
 test_s3r_get_filesize(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
 
     /************************
      * test-local variables *
@@ -1751,16 +1702,9 @@ test_s3r_get_filesize(void)
 
     char url_raven[S3_TEST_MAX_URL_SIZE];
     s3r_t *handle = NULL;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("s3r_get_filesize");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     /* setup -- compose url to target resource
      */
     if (FALSE == s3_test_bucket_defined) {
@@ -1796,9 +1740,8 @@ error:
         (void)H5FD_s3comms_s3r_close(handle);
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_s3r_get_filesize */
+} /* end test_s3r_get_filesize() */
 
 
 /*---------------------------------------------------------------------------
@@ -1813,7 +1756,6 @@ error:
 static herr_t
 test_s3r_open(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
 
     /************************
      * test-local variables *
@@ -1829,16 +1771,9 @@ test_s3r_open(void)
     s3r_t         *handle       = NULL;
     hbool_t        curl_ready   = FALSE;
     parsed_url_t  *purl         = NULL;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("s3r_open");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     if (s3_test_credentials_loaded == 0) {
         SKIPPED();
         puts("    s3 credentials are not loaded");
@@ -1939,7 +1874,7 @@ test_s3r_open(void)
      *************************/
 
 #if S3_TEST_RUN_TIMEOUT
-printf("Opening on inactive port may hang for a minute; waiting for timeout\n");
+    HDprintf("Opening on inactive port may hang for a minute; waiting for timeout\n");
     handle = H5FD_s3comms_s3r_open(url_raven_badport, NULL, NULL, NULL);
     FAIL_IF( handle != NULL );
 #endif
@@ -2037,9 +1972,8 @@ error:
         curl_global_cleanup();
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_s3r_open */
+} /* end test_s3r_open() */
 
 
 /*---------------------------------------------------------------------------
@@ -2066,7 +2000,6 @@ error:
 static herr_t
 test_s3r_read(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
 
 #define S3COMMS_TEST_BUFFER_SIZE 256
 
@@ -2079,16 +2012,9 @@ test_s3r_read(void)
     s3r_t         *handle     = NULL;
     hbool_t        curl_ready = FALSE;
     unsigned int   i          = 0;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("test_s3r_read");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     /*
      * initial setup
      */
@@ -2263,9 +2189,8 @@ error:
     return -1;
 
 #undef S3COMMS_TEST_BUFFER_SIZE
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_s3r_read */
+} /* end test_s3r_read() */
 
 
 /*---------------------------------------------------------------------------
@@ -2286,7 +2211,6 @@ error:
 static herr_t
 test_signing_key(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
     /*************************
      * test-local structures *
      *************************/
@@ -2316,16 +2240,9 @@ test_signing_key(void)
     int            i      = 0;
     unsigned char *key    = NULL;
     int            ncases = 1;
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("signing_key");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     for (i = 0; i < ncases; i++) {
         key = (unsigned char *)HDmalloc(sizeof(unsigned char) * \
                                       SHA256_DIGEST_LENGTH);
@@ -2402,9 +2319,8 @@ error:
     }
 
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_signing_key */
+} /* end test_signing_key() */
 
 
 /*---------------------------------------------------------------------------
@@ -2431,7 +2347,6 @@ error:
 static herr_t
 test_tostringtosign(void)
 {
-#ifdef H5_HAVE_ROS3_VFD
     /************************
      * test-local variables *
      ************************/
@@ -2440,16 +2355,9 @@ test_tostringtosign(void)
     const char iso8601now[] = "20130524T000000Z";
     const char region[]     = "us-east-1";
     char s2s[512];
-#endif /* H5_HAVE_ROS3_VFD */
 
     TESTING("s3comms tostringtosign");
 
-#ifndef H5_HAVE_ROS3_VFD
-    SKIPPED();
-    puts("    ROS3 VFD is not enabled");
-    fflush(stdout);
-    return 0;
-#else
     JSVERIFY( SUCCEED,
               H5FD_s3comms_tostringtosign(s2s, canonreq, iso8601now, region),
               "unable to create string to sign" )
@@ -2474,9 +2382,8 @@ test_tostringtosign(void)
 
 error :
     return -1;
-#endif /* H5_HAVE_ROS3_VFD */
 
-} /* test_tostringtosign */
+} /* end test_tostringtosign() */
 
 
 /*----------------------------------------------------------------------------
@@ -2563,7 +2470,7 @@ test_trim(void)
         }
         free(str);
         str = NULL;
-    }
+    } /* end for each testcase */
 
     JSVERIFY( SUCCEED, H5FD_s3comms_trim(dest, NULL, 3, &dest_len),
               "should not fail when trimming a null string" );
@@ -2582,11 +2489,12 @@ test_trim(void)
     return 0;
 
 error:
-    if (str != NULL)
+    if (str != NULL) {
         free(str);
+    }
     return -1;
 
-} /* test_trim */
+} /* end test_trim() */
 
 
 /*----------------------------------------------------------------------------
@@ -2685,7 +2593,7 @@ test_uriencode(void)
 
         free(dest);
         dest = NULL;
-    }
+    } /* end for each testcase */
 
     /***************
      * ERROR CASES *
@@ -2713,8 +2621,9 @@ error:
     }
     return -1;
 
-} /* test_uriencode */
+} /* end test_uriencode() */
 
+#endif /* H5_HAVE_ROS3_VFD */
 
 
 
@@ -2738,12 +2647,13 @@ error:
 int
 main(void)
 {
-    int nerrors = 0;
 #ifdef H5_HAVE_ROS3_VFD
+    int nerrors = 0;
     const char *bucket_url_env = NULL;
-#endif /* H5_HAVE_ROS3_VFD */
 
     h5_reset();
+
+#endif /* H5_HAVE_ROS3_VFD */
 
     HDprintf("Testing S3Communications functionality.\n");
 
@@ -2774,12 +2684,11 @@ main(void)
     if (bucket_url_env == NULL || bucket_url_env[0] == '\0') {
         HDprintf("WARNING: S3 bucket url is not defined in enviornment " \
                  "variable 'HDF5_ROS3_TEST_BUCKET_URL'!\n");
-    } else {
+    }
+    else {
         HDstrncpy(s3_test_bucket_url, bucket_url_env, S3_TEST_MAX_URL_SIZE);
         s3_test_bucket_defined = TRUE;
     }
-
-#endif /* H5_HAVE_ROS3_VFD */
 
     /* tests ordered rougly by dependence */
     nerrors += test_macro_format_credential() < 0 ? 1 : 0;
@@ -2799,15 +2708,23 @@ main(void)
     nerrors += test_s3r_get_filesize()        < 0 ? 1 : 0;
     nerrors += test_s3r_read()                < 0 ? 1 : 0;
 
-    if(nerrors) {
+    if (nerrors) {
         HDprintf("***** %d S3comms TEST%s FAILED! *****\n",
                  nerrors,
                  nerrors > 1 ? "S" : "");
         return 1;
-    } /* end if */
+    }
 
     HDprintf("All S3comms tests passed.\n");
 
     return 0;
+
+#else
+
+    HDprintf("SKIPPED - read-only S3 VFD not built\n");
+    return EXIT_SUCCESS;
+
+#endif /* H5_HAVE_ROS3_VFD */
+
 } /* end main() */
 
