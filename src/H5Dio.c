@@ -296,6 +296,7 @@ done:
  *
  *-------------------------------------------------------------------------
  */
+extern void eval_add_time(int id, double t);
 herr_t
 H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     hid_t file_space_id, hid_t dxpl_id, const void *buf)
@@ -304,10 +305,13 @@ H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     const H5S_t            *mem_space = NULL;
     const H5S_t            *file_space = NULL;
     herr_t                  ret_value = SUCCEED;  /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iiiii*x", dset_id, mem_type_id, mem_space_id, file_space_id,
              dxpl_id, buf);
+
+    t1 = MPI_Wtime();
 
     /* Get dataset pointer and ensure it's associated with a file */
     if (NULL == (dset = (H5D_t *)H5I_object_verify(dset_id, H5I_DATASET)))
@@ -334,6 +338,9 @@ H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     /* Write the data */
     if (H5D__write(dset, mem_type_id, mem_space, file_space, buf) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_WRITEERROR, FAIL, "can't write data")
+
+    t2 = MPI_Wtime();
+    eval_add_time(0, t2 - t1);
 
 done:
     FUNC_LEAVE_API(ret_value)
@@ -660,6 +667,8 @@ H5D__write(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     hbool_t     io_op_init = FALSE;     /* Whether the I/O op has been initialized */
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
+
+    double t[0];
 
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
 

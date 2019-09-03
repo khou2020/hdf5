@@ -195,11 +195,11 @@ Darwin*)
     # to the latter if it's not found.
     HDF5_LIBTOOLIZE="${LIBTOOL_DIR}/glibtoolize"
     if [ ! -f $HDF5_LIBTOOLIZE ] ; then
-        HDF5_LIBTOOLIZE="${LIBTOOL_DIR}/libtoolize"
+        HDF5_LIBTOOLIZE="libtoolize"
     fi
     ;;
 *)
-    HDF5_LIBTOOLIZE="${LIBTOOL_DIR}/libtoolize"
+    HDF5_LIBTOOLIZE="libtoolize"
     ;;
 esac
 

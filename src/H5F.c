@@ -643,7 +643,37 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fflush() */
 
-
+#define NTIMER 1
+static double eval_tlocal[NTIMER];
+const char * const eval_tname[] = { "LongWord1", "Word2", "Word3", "Word4" };
+void eval_add_time(int id, double t){
+    eval_tlocal[id] += t;
+}
+// Note: This only work if everyone calls H5Fclose
+void eval_show_time(){
+    int i;
+    int np;
+    double tmax[NTIMER], tmin[NTIMER], tmean[NTIMER], tvar[NTIMER], tvar_local[NTIMER];
+
+    MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+    MPI_Reduce(eval_tlocal, tmax, NTIMER, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(eval_tlocal, tmin, NTIMER, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(eval_tlocal, tmean, NTIMER, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for(i = 0; i < NTIMER; i++){
+        tmean[i] /= np;
+        tvar_local[i] = (eval_tlocal[i] - tmean[i]) * (eval_tlocal[i] - tmean[i]);
+    }
+    MPI_Reduce(tvar_local, tvar, NTIMER, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    for(i = 0; i < NTIMER; i++){
+        printf("#%%$: hdf5_eval_%s_time_mean: %lf\n", eval_tname[i], tmean[i]);
+        printf("#%%$: hdf5_eval_%s_time_max: %lf\n", eval_tname[i], tmax[i]);
+        printf("#%%$: hdf5_eval_%s_time_min: %lf\n", eval_tname[i], tmin[i]);
+        printf("#%%$: hdf5_eval_%s_time_var: %lf\n\n", eval_tname[i], tvar[i]);
+    }
+}
+
 /*-------------------------------------------------------------------------
  * Function: H5Fclose
  *
@@ -674,6 +704,7 @@ H5Fclose(hid_t file_id)
     if(H5F__close(file_id) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "closing file ID failed")
 
+    eval_show_time();
 done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */
