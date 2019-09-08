@@ -168,9 +168,13 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     const H5S_t	   *file_space  = NULL;
     herr_t          ret_value   = SUCCEED;      /* Return value */
 
+    double t1, t2;
+
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iiiiix", dset_id, mem_type_id, mem_space_id, file_space_id,
              dxpl_id, buf);
+    
+    t1 = MPI_Wtime();
 
     /* Get dataset pointer */
     if (NULL == (dset = (H5D_t *)H5I_object_verify(dset_id, H5I_DATASET)))
@@ -199,6 +203,9 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
         HGOTO_ERROR(H5E_DATASET, H5E_READERROR, FAIL, "can't read data")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(20, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dread() */
 
@@ -455,8 +462,11 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     hbool_t     io_op_init = FALSE;     /* Whether the I/O op has been initialized */
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
+
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dataset && dataset->oloc.file);
@@ -545,7 +555,7 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
 
     /* Retrieve dataset properties */
     /* <none needed in the general case> */
-
+    
     /* If space hasn't been allocated and not using external storage,
      * return fill value to buffer if fill time is upon allocation, or
      * do nothing if fill time is never.  If the dataset is compact and
@@ -623,6 +633,9 @@ done:
         if(H5S_close(projected_mem_space) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTCLOSEOBJ, FAIL, "unable to shut down projected memory dataspace")
 
+    t2 = MPI_Wtime();
+    eval_add_time(21, t2 - t1);
+
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__read() */
 
@@ -668,9 +681,11 @@ H5D__write(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
 
-    double t[0];
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
+    
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dataset && dataset->oloc.file);
@@ -859,6 +874,9 @@ done:
     if(NULL != projected_mem_space)
         if(H5S_close(projected_mem_space) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTCLOSEOBJ, FAIL, "unable to shut down projected memory dataspace")
+
+    t2 = MPI_Wtime();
+    eval_add_time(1, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__write() */

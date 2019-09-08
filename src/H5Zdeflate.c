@@ -76,8 +76,10 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
     void	*outbuf = NULL;         /* Pointer to new buffer */
     int		status;                 /* Status from zlib operation */
     size_t	ret_value = 0;          /* Return value */
-
+double t1, t2;
     FUNC_ENTER_NOAPI(0)
+t1 = MPI_Wtime();
+
 
     /* Sanity check */
     HDassert(*buf_size > 0);
@@ -200,6 +202,8 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
 done:
     if(outbuf)
         H5MM_xfree(outbuf);
+    t2 = MPI_Wtime();
+    eval_add_time(24, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 }
 #endif /* H5_HAVE_FILTER_DEFLATE */

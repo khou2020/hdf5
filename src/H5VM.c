@@ -1583,7 +1583,7 @@ H5VM_memcpyvv(void *_dst,
     ssize_t ret_value = 0;      /* Return value (Total size of sequence in bytes) */
 
     FUNC_ENTER_NOAPI_NOINIT_NOERR
-
+    
     /* Sanity check */
     HDassert(_dst);
     HDassert(dst_curr_seq);

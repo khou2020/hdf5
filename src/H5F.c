@@ -643,19 +643,46 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fflush() */
 
-#define NTIMER 1
+#define NTIMER 26
 static double eval_tlocal[NTIMER];
-const char * const eval_tname[] = { "LongWord1", "Word2", "Word3", "Word4" };
+const char * const eval_tname[] = { "hdf5_eval_H5Dwrite", 
+                                    "    hdf5_eval_H5D__write", 
+                                    "        hdf5_eval_H5D__chunk_io_init", 
+                                    "        hdf5_eval_H5D__chunk_collective_write", 
+                                    "             hdf5_eval_H5D__chunk_collective_io", 
+                                    "                 hdf5_eval_H5D__link_chunk_filtered_collective_io", 
+                                    "                     hdf5_eval_H5D__construct_filtered_io_info_list",
+                                    "                         hdf5_eval_H5D__chunk_redistribute_shared_chunks", 
+                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks::Chunk_assignment", 
+                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks:Data_exchange", 
+                                    "                     hdf5_eval_H5D__filtered_collective_chunk_entry_io",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Background",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Self",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Unpack",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Filter",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Chunk_Alloc",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Type_Create",
+                                    "                     hdf5_eval_H5D__final_collective_io",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Update_Index",
+                                    "                 hdf5_eval_H5D__multi_chunk_filtered_collective_io",
+                                    "hdf5_eval_H5Dread",
+                                    "    hdf5_eval_H5D__read",
+                                    "        hdf5_eval_H5D__chunk_read",
+                                    "            hdf5_eval_H5D__chunk_lookup",
+                                    "            hdf5_eval_H5Z_filter_deflate",
+                                    "            hdf5_eval_H5D__select_read",
+                                    };
 void eval_add_time(int id, double t){
     eval_tlocal[id] += t;
 }
 // Note: This only work if everyone calls H5Fclose
 void eval_show_time(){
     int i;
-    int np;
+    int np, rank;
     double tmax[NTIMER], tmin[NTIMER], tmean[NTIMER], tvar[NTIMER], tvar_local[NTIMER];
 
     MPI_Comm_size(MPI_COMM_WORLD, &np);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     MPI_Reduce(eval_tlocal, tmax, NTIMER, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     MPI_Reduce(eval_tlocal, tmin, NTIMER, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
@@ -666,11 +693,13 @@ void eval_show_time(){
     }
     MPI_Reduce(tvar_local, tvar, NTIMER, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    for(i = 0; i < NTIMER; i++){
-        printf("#%%$: hdf5_eval_%s_time_mean: %lf\n", eval_tname[i], tmean[i]);
-        printf("#%%$: hdf5_eval_%s_time_max: %lf\n", eval_tname[i], tmax[i]);
-        printf("#%%$: hdf5_eval_%s_time_min: %lf\n", eval_tname[i], tmin[i]);
-        printf("#%%$: hdf5_eval_%s_time_var: %lf\n\n", eval_tname[i], tvar[i]);
+    if (rank == 0){
+        for(i = 0; i < NTIMER; i++){
+            printf("#+$: %s_time_mean: %lf\n", eval_tname[i], tmean[i]);
+            printf("#+$: %s_time_max: %lf\n", eval_tname[i], tmax[i]);
+            printf("#+$: %s_time_min: %lf\n", eval_tname[i], tmin[i]);
+            printf("#+$: %s_time_var: %lf\n\n", eval_tname[i], tvar[i]);
+        }
     }
 }
 

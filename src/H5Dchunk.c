@@ -1066,8 +1066,12 @@ H5D__chunk_io_init(const H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
     char bogus;                 /* "bogus" buffer to pass to selection iterator */
     unsigned u;                 /* Local index variable */
     herr_t ret_value = SUCCEED;	/* Return value		*/
+    
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* Get layout for dataset */
     fm->layout = &(dataset->shared->layout);
@@ -1329,6 +1333,9 @@ done:
         if(H5S_hyper_denormalize_offset((H5S_t *)file_space, old_offset) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't denormalize selection")
     } /* end if */
+
+    t2 = MPI_Wtime();
+    eval_add_time(2, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_io_init() */
@@ -2170,8 +2177,11 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     uint32_t    src_accessed_bytes = 0; /* Total accessed size in a chunk */
     hbool_t     skip_missing_chunks = FALSE;    /* Whether to skip missing chunks */
     herr_t	ret_value = SUCCEED;	/*return value		*/
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_STATIC
+    
+    t1 = MPI_Wtime();
 
     /* Sanity check */
     HDassert(io_info);
@@ -2241,6 +2251,8 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
             void *chunk = NULL;             /* Pointer to locked chunk buffer */
             htri_t cacheable;               /* Whether the chunk is cacheable */
 
+            t3 = MPI_Wtime();
+
             /* Set chunk's [scaled] coordinates */
             io_info->store->chunk.scaled = chunk_info->scaled;
 
@@ -2276,6 +2288,9 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
                 chk_io_info = &nonexistent_io_info;
             } /* end else */
 
+            t4 = MPI_Wtime();
+            eval_add_time(24, t4 - t3);
+
             /* Perform the actual read operation */
             if((io_info->io_ops.single_read)(chk_io_info, type_info,
                     (hsize_t)chunk_info->chunk_points, chunk_info->fspace, chunk_info->mspace) < 0)
@@ -2291,6 +2306,9 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     } /* end while */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(22, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_read() */
 
@@ -2874,7 +2892,9 @@ H5D__chunk_lookup(const H5D_t *dset, const hsize_t *scaled,
     hbool_t found = FALSE;              /* In cache? */
     herr_t ret_value = SUCCEED;	        /* Return value */
 
-    FUNC_ENTER_PACKAGE
+double t1, t2;
+FUNC_ENTER_PACKAGE
+t1 = MPI_Wtime();
 
     /* Sanity checks */
     HDassert(dset);
@@ -2989,6 +3009,8 @@ H5D__chunk_lookup(const H5D_t *dset, const hsize_t *scaled,
     } /* end else */
 
 done:
+t2 = MPI_Wtime();
+eval_add_time(23, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_lookup() */
 

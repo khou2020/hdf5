@@ -106,7 +106,7 @@ H5D__select_io(const H5D_io_info_t *io_info, size_t elmt_size,
     herr_t ret_value = SUCCEED; /* Return value */
 
     FUNC_ENTER_STATIC
-
+    
     /* Check args */
     HDassert(io_info);
     HDassert(io_info->dset);
@@ -273,8 +273,9 @@ H5D__select_read(const H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     hsize_t nelmts, const H5S_t *file_space, const H5S_t *mem_space)
 {
     herr_t ret_value = SUCCEED; /* Return value */
-
+    double t1, t2;
     FUNC_ENTER_PACKAGE
+    t1 = MPI_Wtime();
 
     /* Call generic selection operation */
     H5_CHECK_OVERFLOW(nelmts, hsize_t, size_t);
@@ -283,6 +284,8 @@ H5D__select_read(const H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
         HGOTO_ERROR(H5E_DATASPACE, H5E_READERROR, FAIL, "read error")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(25, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__select_read() */
 
