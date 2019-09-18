@@ -2177,7 +2177,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     uint32_t    src_accessed_bytes = 0; /* Total accessed size in a chunk */
     hbool_t     skip_missing_chunks = FALSE;    /* Whether to skip missing chunks */
     herr_t	ret_value = SUCCEED;	/*return value		*/
-    double t1, t2, t3, t4;
+    double t1, t2;
 
     FUNC_ENTER_STATIC
     
@@ -2251,8 +2251,6 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
             void *chunk = NULL;             /* Pointer to locked chunk buffer */
             htri_t cacheable;               /* Whether the chunk is cacheable */
 
-            t3 = MPI_Wtime();
-
             /* Set chunk's [scaled] coordinates */
             io_info->store->chunk.scaled = chunk_info->scaled;
 
@@ -2288,9 +2286,6 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
                 chk_io_info = &nonexistent_io_info;
             } /* end else */
 
-            t4 = MPI_Wtime();
-            eval_add_time(24, t4 - t3);
-
             /* Perform the actual read operation */
             if((io_info->io_ops.single_read)(chk_io_info, type_info,
                     (hsize_t)chunk_info->chunk_points, chunk_info->fspace, chunk_info->mspace) < 0)
@@ -2307,7 +2302,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(22, t2 - t1);
+    eval_add_time(23, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_read() */
@@ -3010,7 +3005,7 @@ t1 = MPI_Wtime();
 
 done:
 t2 = MPI_Wtime();
-eval_add_time(23, t2 - t1);
+eval_add_time(24, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_lookup() */
 

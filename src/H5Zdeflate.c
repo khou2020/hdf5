@@ -203,7 +203,7 @@ done:
     if(outbuf)
         H5MM_xfree(outbuf);
     t2 = MPI_Wtime();
-    eval_add_time(24, t2 - t1);
+    eval_add_time(25, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 }
 #endif /* H5_HAVE_FILTER_DEFLATE */

@@ -285,7 +285,7 @@ H5D__select_read(const H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(25, t2 - t1);
+    eval_add_time(26, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__select_read() */
 

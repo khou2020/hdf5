@@ -462,7 +462,7 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     hbool_t     io_op_init = FALSE;     /* Whether the I/O op has been initialized */
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
-    double t1, t2, t3, t4;
+    double t1, t2, t3;
 
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
 
@@ -601,6 +601,9 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     /* Allocate the chunk map */
     if(NULL == (fm = H5FL_CALLOC(H5D_chunk_map_t)))
         HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "can't allocate chunk map")
+
+    t3 = MPI_Wtime();
+    eval_add_time(22, t3 - t1);
 
     /* Call storage method's I/O initialization routine */
     if(io_info.layout_ops.io_init && (*io_info.layout_ops.io_init)(&io_info, &type_info, nelmts, file_space, mem_space, fm) < 0)
