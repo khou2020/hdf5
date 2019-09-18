@@ -603,7 +603,7 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
         HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "can't allocate chunk map")
 
     t3 = MPI_Wtime();
-    eval_add_time(22, t2 - t1);
+    eval_add_time(22, t3 - t1);
 
     /* Call storage method's I/O initialization routine */
     if(io_info.layout_ops.io_init && (*io_info.layout_ops.io_init)(&io_info, &type_info, nelmts, file_space, mem_space, fm) < 0)
@@ -1141,8 +1141,11 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     const H5D_type_info_t *type_info)
 {
     herr_t	ret_value = SUCCEED;	/* Return value	*/
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dset);
@@ -1268,6 +1271,9 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(23, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__ioinfo_adjust() */
 #endif /*H5_HAVE_PARALLEL*/

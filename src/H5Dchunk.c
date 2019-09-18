@@ -2302,7 +2302,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(23, t2 - t1);
+    eval_add_time(24, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_read() */
@@ -3005,7 +3005,7 @@ t1 = MPI_Wtime();
 
 done:
 t2 = MPI_Wtime();
-eval_add_time(24, t2 - t1);
+eval_add_time(25, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_lookup() */
 
