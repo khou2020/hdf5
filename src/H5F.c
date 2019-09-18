@@ -643,7 +643,7 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fflush() */
 
-#define NTIMER 26
+#define NTIMER 28
 static double eval_tlocal[NTIMER];
 const char * const eval_tname[] = { "hdf5_eval_H5Dwrite", 
                                     "    hdf5_eval_H5D__write", 
@@ -667,7 +667,8 @@ const char * const eval_tname[] = { "hdf5_eval_H5Dwrite",
                                     "                 hdf5_eval_H5D__multi_chunk_filtered_collective_io",
                                     "hdf5_eval_H5Dread",
                                     "    hdf5_eval_H5D__read",
-                                    "    hdf5_eval_H5D__read_chunk_arg",
+                                    "        hdf5_eval_H5D__read_check_arg",
+                                    "        hdf5_eval_H5D__ioinfo_adjust",
                                     "        hdf5_eval_H5D__chunk_read",
                                     "            hdf5_eval_H5D__chunk_lookup",
                                     "            hdf5_eval_H5Z_filter_deflate",
