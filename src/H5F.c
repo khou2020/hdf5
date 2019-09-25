@@ -704,7 +704,13 @@ void eval_show_time(){
         }
     }
 }
-
+void eval_reset_time(){
+    int i;
+    
+    for(i = 0; i < NTIMER; i++){
+        eval_tlocal[i] = 0;
+    }
+}
 /*-------------------------------------------------------------------------
  * Function: H5Fclose
  *
@@ -736,6 +742,7 @@ H5Fclose(hid_t file_id)
         HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "closing file ID failed")
 
     eval_show_time();
+    eval_reset_time();
 done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */
