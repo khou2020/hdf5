@@ -403,6 +403,7 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
     H5F_t   *new_file = NULL;               /* file struct for new file                 */
     hid_t   ret_value;                      /* return value                             */
     double t1, t2;
+    char *env_str;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
@@ -458,6 +459,12 @@ done:
         HDONE_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, H5I_INVALID_HID, "problems closing file")
 
     t2 = MPI_Wtime();
+
+    env_str = getenv("hdf5_eval_reset_time");
+    if (env_str != NULL && *env_str != '0') {                        
+        eval_reset_time();
+    }      
+
     eval_add_time(28, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -489,6 +496,7 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
     H5F_t       *new_file = NULL;                   /* file struct for new file                 */
     hid_t       ret_value;                          /* return value                             */
     double t1, t2;
+    char *env_str;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "*sIui", filename, flags, fapl_id);
@@ -529,6 +537,12 @@ done:
         HDONE_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, H5I_INVALID_HID, "problems closing file")
 
     t2 = MPI_Wtime();
+
+    env_str = getenv("hdf5_eval_reset_time");
+    if (env_str != NULL && *env_str != '0') {                        
+        eval_reset_time();
+    }     
+
     eval_add_time(29, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -754,6 +768,7 @@ H5Fclose(hid_t file_id)
 {
     herr_t      ret_value = SUCCEED;
     double t1, t2;
+    char *env_str;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
@@ -768,12 +783,20 @@ H5Fclose(hid_t file_id)
     if(H5F__close(file_id) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "closing file ID failed")
 
+done:
     t2 = MPI_Wtime();
     eval_add_time(30, t2 - t1);
 
-    eval_show_time();
-    eval_reset_time();
-done:
+    env_str = getenv("hdf5_eval_show_time");
+    if (env_str != NULL && *env_str != '0') {                        
+        eval_show_time();
+    }      
+
+    env_str = getenv("hdf5_eval_reset_time");
+    if (env_str != NULL && *env_str != '0') {                        
+        eval_reset_time();
+    }   
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */
 
