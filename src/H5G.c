@@ -333,7 +333,7 @@ done:
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
 
     t2 = MPI_Wtime();
-    eval_add_time(31, t2 - t1);
+    eval_add_time(30, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gcreate2() */
@@ -488,7 +488,7 @@ done:
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
 
     t2 = MPI_Wtime();
-    eval_add_time(32, t2 - t1);
+    eval_add_time(31, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gopen2() */
@@ -706,7 +706,7 @@ H5Gclose(hid_t group_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(33, t2 - t1);
+    eval_add_time(32, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gclose() */

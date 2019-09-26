@@ -465,7 +465,7 @@ done:
         eval_reset_time();
     }      
 
-    eval_add_time(28, t2 - t1);
+    eval_add_time(27, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fcreate() */
@@ -543,7 +543,7 @@ done:
         eval_reset_time();
     }     
 
-    eval_add_time(29, t2 - t1);
+    eval_add_time(28, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fopen() */
@@ -669,7 +669,7 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fflush() */
 
-#define NTIMER 40
+#define NTIMER 42
 static double eval_tlocal[NTIMER];
 const char * const eval_tname[] = { "hdf5_eval_H5Dwrite", 
                                     "    hdf5_eval_H5D__write", 
@@ -697,7 +697,6 @@ const char * const eval_tname[] = { "hdf5_eval_H5Dwrite",
                                     "        hdf5_eval_H5D__ioinfo_adjust",
                                     "        hdf5_eval_H5D__chunk_read",
                                     "            hdf5_eval_H5D__chunk_lookup",
-                                    "            hdf5_eval_H5Z_filter_deflate",
                                     "            hdf5_eval_H5D__select_read",
                                     "hdf5_eval_H5Fcreate",
                                     "hdf5_eval_H5Fopen",
@@ -711,6 +710,9 @@ const char * const eval_tname[] = { "hdf5_eval_H5Dwrite",
                                     "hdf5_eval_H5Acreate",
                                     "hdf5_eval_H5Aopen",
                                     "hdf5_eval_H5Aclose",
+                                    "hdf5_eval_H5Z_filter_deflate",
+                                    "    hdf5_eval_H5Z_filter_deflate_reverse",
+                                    "    hdf5_eval_H5Z_filter_deflate_forward",
                                     };
 void eval_add_time(int id, double t){
     eval_tlocal[id] += t;
@@ -785,7 +787,7 @@ H5Fclose(hid_t file_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(30, t2 - t1);
+    eval_add_time(29, t2 - t1);
 
     env_str = getenv("hdf5_eval_show_time");
     if (env_str != NULL && *env_str != '0') {                        
