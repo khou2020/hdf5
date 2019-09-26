@@ -35,7 +35,7 @@
 #include "H5MMprivate.h"        /* Memory management                    */
 #include "H5Pprivate.h"         /* Property lists                       */
 #include "H5Tprivate.h"         /* Datatypes                            */
-
+#include "mpi.h"
 
 /****************/
 /* Local Macros */
