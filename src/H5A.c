@@ -252,9 +252,12 @@ H5Acreate2(hid_t loc_id, const char *attr_name, hid_t type_id, hid_t space_id,
     H5T_t		*type;                  /* Datatype to use for attribute */
     H5S_t		*space;                 /* Dataspace to use for attribute */
     hid_t		ret_value;              /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE6("i", "i*siiii", loc_id, attr_name, type_id, space_id, acpl_id, aapl_id);
+    
+    t1 = MPI_Wtime();
 
     /* check arguments */
     if(H5I_ATTR == H5I_get_type(loc_id))
@@ -286,6 +289,9 @@ done:
     /* Cleanup on failure */
     if(ret_value < 0 && attr && H5A__close(attr) < 0)
         HDONE_ERROR(H5E_ATTR, H5E_CANTFREE, FAIL, "can't close attribute")
+
+    t2 = MPI_Wtime();
+    eval_add_time(37, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* H5Acreate2() */
@@ -331,7 +337,7 @@ H5Acreate_by_name(hid_t loc_id, const char *obj_name, const char *attr_name,
     H5T_t		*type;                  /* Datatype to use for attribute */
     H5S_t		*space;                 /* Dataspace to use for attribute */
     hid_t		ret_value;              /* Return value */
-
+    
     FUNC_ENTER_API(FAIL)
     H5TRACE8("i", "i*s*siiiii", loc_id, obj_name, attr_name, type_id, space_id,
              acpl_id, aapl_id, lapl_id);
@@ -404,9 +410,12 @@ H5Aopen(hid_t loc_id, const char *attr_name, hid_t aapl_id)
     H5G_loc_t    	loc;            /* Object location */
     H5A_t               *attr = NULL;   /* Attribute opened */
     hid_t		ret_value;
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE3("i", "i*si", loc_id, attr_name, aapl_id);
+
+    t1 = MPI_Wtime();
 
     /* check arguments */
     if(H5I_ATTR == H5I_get_type(loc_id))
@@ -433,6 +442,9 @@ done:
     if(ret_value < 0)
         if(attr && H5A__close(attr) < 0)
             HDONE_ERROR(H5E_ATTR, H5E_CANTFREE, FAIL, "can't close attribute")
+
+    t2 = MPI_Wtime();
+    eval_add_time(38, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* H5Aopen() */
@@ -1514,9 +1526,12 @@ herr_t
 H5Aclose(hid_t attr_id)
 {
     herr_t ret_value = SUCCEED;   /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", attr_id);
+
+    t1 = MPI_Wtime();
 
     /* check arguments */
     if(NULL == H5I_object_verify(attr_id, H5I_ATTR))
@@ -1527,6 +1542,9 @@ H5Aclose(hid_t attr_id)
         HGOTO_ERROR(H5E_ATTR, H5E_CANTDEC, FAIL, "can't close attribute")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(39, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* H5Aclose() */
 

@@ -402,9 +402,12 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
 {
     H5F_t   *new_file = NULL;               /* file struct for new file                 */
     hid_t   ret_value;                      /* return value                             */
+    double t1, t2;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
+
+    t1 = MPI_Wtime();
 
     /* Check/fix arguments */
     if (!filename || !*filename)
@@ -454,6 +457,9 @@ done:
     if(ret_value < 0 && new_file && H5F_try_close(new_file, NULL) < 0)
         HDONE_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, H5I_INVALID_HID, "problems closing file")
 
+    t2 = MPI_Wtime();
+    eval_add_time(28, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fcreate() */
 
@@ -482,9 +488,12 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
 {
     H5F_t       *new_file = NULL;                   /* file struct for new file                 */
     hid_t       ret_value;                          /* return value                             */
+    double t1, t2;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "*sIui", filename, flags, fapl_id);
+
+    t1 = MPI_Wtime();
 
     /* Check/fix arguments. */
     if(!filename || !*filename)
@@ -518,6 +527,9 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
 done:
     if(ret_value < 0 && new_file && H5F_try_close(new_file, NULL) < 0)
         HDONE_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, H5I_INVALID_HID, "problems closing file")
+
+    t2 = MPI_Wtime();
+    eval_add_time(29, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fopen() */
@@ -643,7 +655,7 @@ done:
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fflush() */
 
-#define NTIMER 28
+#define NTIMER 40
 static double eval_tlocal[NTIMER];
 const char * const eval_tname[] = { "hdf5_eval_H5Dwrite", 
                                     "    hdf5_eval_H5D__write", 
@@ -673,6 +685,18 @@ const char * const eval_tname[] = { "hdf5_eval_H5Dwrite",
                                     "            hdf5_eval_H5D__chunk_lookup",
                                     "            hdf5_eval_H5Z_filter_deflate",
                                     "            hdf5_eval_H5D__select_read",
+                                    "hdf5_eval_H5Fcreate",
+                                    "hdf5_eval_H5Fopen",
+                                    "hdf5_eval_H5Fclose",
+                                    "hdf5_eval_H5Gcreate",
+                                    "hdf5_eval_H5Gopen",
+                                    "hdf5_eval_H5Gclose",
+                                    "hdf5_eval_H5Dcreate",
+                                    "hdf5_eval_H5Dopen",
+                                    "hdf5_eval_H5Dclose",
+                                    "hdf5_eval_H5Acreate",
+                                    "hdf5_eval_H5Aopen",
+                                    "hdf5_eval_H5Aclose",
                                     };
 void eval_add_time(int id, double t){
     eval_tlocal[id] += t;
@@ -729,9 +753,12 @@ herr_t
 H5Fclose(hid_t file_id)
 {
     herr_t      ret_value = SUCCEED;
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
+    
+    t1 = MPI_Wtime();
 
     /* Check arguments */
     if(H5I_FILE != H5I_get_type(file_id))
@@ -740,6 +767,9 @@ H5Fclose(hid_t file_id)
     /* Close the file */
     if(H5F__close(file_id) < 0)
         HGOTO_ERROR(H5E_FILE, H5E_CANTCLOSEFILE, FAIL, "closing file ID failed")
+
+    t2 = MPI_Wtime();
+    eval_add_time(30, t2 - t1);
 
     eval_show_time();
     eval_reset_time();

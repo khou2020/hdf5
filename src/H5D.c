@@ -109,10 +109,13 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
     H5D_t	   *dset = NULL;        /* New dataset's info */
     const H5S_t    *space;              /* Dataspace for dataset */
     hid_t           ret_value;          /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE7("i", "i*siiiii", loc_id, name, type_id, space_id, lcpl_id, dcpl_id,
              dapl_id);
+
+    t1 = MPI_Wtime();
 
     /* Check arguments */
     if(H5G_loc(loc_id, &loc) < 0)
@@ -150,6 +153,9 @@ done:
     if(ret_value < 0)
         if(dset && H5D_close(dset) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, FAIL, "unable to release dataset")
+
+    t2 = MPI_Wtime();
+    eval_add_time(34, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dcreate2() */
@@ -273,9 +279,12 @@ H5Dopen2(hid_t loc_id, const char *name, hid_t dapl_id)
     H5D_t       *dset = NULL;
     H5G_loc_t   loc;                    /* Object location of group */
     hid_t       ret_value;
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE3("i", "i*si", loc_id, name, dapl_id);
+    
+    t1 = MPI_Wtime();
 
     /* Check args */
     if(H5G_loc(loc_id, &loc) < 0)
@@ -300,6 +309,9 @@ done:
         if(dset && H5D_close(dset) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, FAIL, "unable to release dataset")
 
+    t2 = MPI_Wtime();
+    eval_add_time(35, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dopen2() */
 
@@ -322,9 +334,13 @@ herr_t
 H5Dclose(hid_t dset_id)
 {
     herr_t  ret_value = SUCCEED;    /* Return value                     */
+    double t1, t2;
+
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", dset_id);
+    
+    t1 = MPI_Wtime();
 
     /* Check args */
     if(NULL == H5I_object_verify(dset_id, H5I_DATASET))
@@ -338,6 +354,9 @@ H5Dclose(hid_t dset_id)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTDEC, FAIL, "can't decrement count on dataset ID")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(36, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dclose() */
 

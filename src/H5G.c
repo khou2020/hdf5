@@ -290,9 +290,12 @@ H5Gcreate2(hid_t loc_id, const char *name, hid_t lcpl_id, hid_t gcpl_id,
     H5G_loc_t	    loc;                /* Location to create group */
     H5G_t	   *grp = NULL;         /* New group created */
     hid_t	    ret_value;          /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE5("i", "i*siii", loc_id, name, lcpl_id, gcpl_id, gapl_id);
+
+    t1 = MPI_Wtime();
 
     /* Check arguments */
     if(H5G_loc(loc_id, &loc) < 0)
@@ -328,6 +331,9 @@ done:
     if(ret_value < 0)
         if(grp && H5G_close(grp) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
+
+    t2 = MPI_Wtime();
+    eval_add_time(31, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gcreate2() */
@@ -451,9 +457,12 @@ H5Gopen2(hid_t loc_id, const char *name, hid_t gapl_id)
     H5G_t       *grp = NULL;            /* Group opened */
     H5G_loc_t	loc;                    /* Location of parent for group */
     hid_t       ret_value;              /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "i*si", loc_id, name, gapl_id);
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     if(H5G_loc(loc_id, &loc) < 0)
@@ -477,6 +486,9 @@ done:
     if(ret_value < 0)
         if(grp && H5G_close(grp) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
+
+    t2 = MPI_Wtime();
+    eval_add_time(32, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gopen2() */
@@ -674,9 +686,12 @@ herr_t
 H5Gclose(hid_t group_id)
 {
     herr_t  ret_value = SUCCEED;    /* Return value                     */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", group_id);
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     if(NULL == H5I_object_verify(group_id,H5I_GROUP))
@@ -690,6 +705,9 @@ H5Gclose(hid_t group_id)
     	HGOTO_ERROR(H5E_SYM, H5E_CANTRELEASE, FAIL, "unable to close group")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(33, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gclose() */
 
