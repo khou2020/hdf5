@@ -720,8 +720,13 @@ void eval_add_time(int id, double t){
 // Note: This only work if everyone calls H5Fclose
 void eval_show_time(){
     int i;
-    int np, rank;
+    int np, rank, flag;
     double tmax[NTIMER], tmin[NTIMER], tmean[NTIMER], tvar[NTIMER], tvar_local[NTIMER];
+
+    MPI_Initialized(&flag);
+    if (!flag){
+        MPI_Init(NULL, NULL);
+    }
 
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -742,6 +747,10 @@ void eval_show_time(){
             printf("#+$: %s_time_min: %lf\n", eval_tname[i], tmin[i]);
             printf("#+$: %s_time_var: %lf\n\n", eval_tname[i], tvar[i]);
         }
+    }
+
+    if (!flag){
+        MPI_Finalize();
     }
 }
 void eval_reset_time(){
