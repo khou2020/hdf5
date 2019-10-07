@@ -49,6 +49,7 @@
 /****************/
 /* Local Macros */
 /****************/
+#include "eval.h"
 
 /* Macros to represent different IO options */
 #define H5D_ONE_LINK_CHUNK_IO          0
@@ -903,7 +904,12 @@ H5D__chunk_collective_io(H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(4, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__chunk_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__chunk_collective_io_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_io */
@@ -928,14 +934,20 @@ H5D__chunk_collective_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_i
     H5D_chunk_map_t *fm)
 {
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+
+    t1 = MPI_Wtime();
 
     /* Call generic selection operation */
     if(H5D__chunk_collective_io(io_info, type_info, fm) < 0)
         HGOTO_ERROR(H5E_DATASPACE, H5E_READERROR, FAIL, "read error")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_collective_read, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_read() */
 
@@ -972,7 +984,7 @@ H5D__chunk_collective_write(H5D_io_info_t *io_info, const H5D_type_info_t *type_
 done:
     
     t2 = MPI_Wtime();
-    eval_add_time(3, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5D__chunk_collective_write, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_write() */
@@ -1426,7 +1438,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
             HMPI_GOTO_ERROR(FAIL, "MPI_Allgather failed", mpi_code)
 
         t4 = MPI_Wtime();
-        eval_add_time(15, t4 - t3);
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Chunk_Alloc_w, t4 - t3);
 
         /* If this process has any chunks selected, create a MPI type for collectively
          * writing out the chunks to file. Otherwise, the process contributes to the
@@ -1469,7 +1481,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
         io_info->store = &ctg_store;
 
         t3 = MPI_Wtime();
-        eval_add_time(16, t3 - t4);
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Type_Create_w, t3 - t4);
 
         /* Perform I/O */
         if (H5D__final_collective_io(io_info, type_info, mpi_buf_count, file_type, mem_type) < 0)
@@ -1488,7 +1500,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
         } /* end for */
 
         t4 = MPI_Wtime();
-        eval_add_time(18, t4 - t3);
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w, t4 - t3);
     } /* end if */
 
 done:
@@ -1513,7 +1525,12 @@ done:
         HMPI_DONE_ERROR(FAIL, "MPI_Type_free failed", mpi_code)
 
     t2 = MPI_Wtime();
-    eval_add_time(5, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__link_chunk_filtered_collective_io() */
@@ -2018,7 +2035,13 @@ done:
         H5MM_free(mem_type_is_derived_array);
 
     t2 = MPI_Wtime();
-    eval_add_time(19, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_r, t2 - t1);
+    }
+
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__multi_chunk_filtered_collective_io() */
@@ -2174,7 +2197,12 @@ if(H5DEBUG(D))
     HDfprintf(H5DEBUG(D),"ret_value before leaving final_collective_io=%d\n",ret_value);
 #endif
     t2 = MPI_Wtime();
-    eval_add_time(17, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__final_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__final_collective_io_r, t2 - t1);
+    }
 
       FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__final_collective_io */
@@ -2714,7 +2742,12 @@ H5D__construct_filtered_io_info_list(const H5D_io_info_t *io_info, const H5D_typ
 done:
     
     t2 = MPI_Wtime();
-    eval_add_time(6, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__construct_filtered_io_info_list_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__construct_filtered_io_info_list_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__construct_filtered_io_info_list() */
@@ -3029,9 +3062,16 @@ done:
 
     t3 = MPI_Wtime();
 
-    eval_add_time(7, t3 - t1);
-    eval_add_time(8, t2 - t1);
-    eval_add_time(9, t3 - t2);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_w, t3 - t1);
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Chunk_assignment_w, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Data_exchange_w, t3 - t2);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_r, t3 - t1);
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Chunk_assignment_r, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Data_exchange_r, t3 - t2);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_redistribute_shared_chunks() */
@@ -3240,7 +3280,12 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
     } /* end else */
 
     t4 = MPI_Wtime();
-    eval_add_time(11, t4 - t3);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Background_w, t4 - t3);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Background_r, t4 - t3);
+    }
 
     /* Initialize iterator for memory selection */
     if (NULL == (mem_iter = (H5S_sel_iter_t *) H5MM_malloc(sizeof(H5S_sel_iter_t))))
@@ -3283,7 +3328,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
                    HGOTO_ERROR(H5E_DATASET, H5E_READERROR, FAIL, "couldn't scatter to read buffer")
 
             t4 = MPI_Wtime();
-            eval_add_time(12, t4 - t3);
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r, t4 - t3);
 
             break;
 
@@ -3323,7 +3368,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             mem_iter_init = FALSE;
 
             t4 = MPI_Wtime();
-            eval_add_time(12, t4 - t3);
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_w, t4 - t3);
 
             if (MPI_SUCCESS != (mpi_code = MPI_Waitall(chunk_entry->async_info.num_receive_requests,
                     chunk_entry->async_info.receive_requests_array, MPI_STATUSES_IGNORE)))
@@ -3363,7 +3408,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             } /* end for */
 
             t3 = MPI_Wtime();
-            eval_add_time(13, t3 - t4);
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_w, t3 - t4);
 
             /* Filter the chunk */
             if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, 0, &filter_mask,
@@ -3372,7 +3417,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
                 HGOTO_ERROR(H5E_PLINE, H5E_CANTFILTER, FAIL, "output pipeline failed")
 
             t4 = MPI_Wtime();
-            eval_add_time(14, t4 - t3);
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_w, t4 - t3);
 
 #if H5_SIZEOF_SIZE_T > 4
             /* Check for the chunk expanding too much to encode in a 32-bit value */
@@ -3405,7 +3450,12 @@ done:
             HDONE_ERROR(H5E_DATASPACE, H5E_CANTFREE, FAIL, "can't close dataspace")
 
     t2 = MPI_Wtime();
-    eval_add_time(10, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__filtered_collective_chunk_entry_io() */
