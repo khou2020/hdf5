@@ -118,6 +118,7 @@ H5F_block_read(H5F_t *f, H5FD_mem_t type, haddr_t addr, size_t size,
         HGOTO_ERROR(H5E_IO, H5E_READERROR, FAIL, "read through page buffer failed")
 
 done:
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5F_block_read() */
 

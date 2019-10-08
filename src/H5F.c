@@ -40,7 +40,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 /******************/
 /* Local Typedefs */
 /******************/
@@ -465,7 +465,7 @@ done:
         eval_reset_time();
     }      
 
-    eval_add_time(27, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fcreate() */
@@ -543,7 +543,7 @@ done:
         eval_reset_time();
     }     
 
-    eval_add_time(28, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fopen() */
@@ -671,33 +671,7 @@ done:
 
 #define NTIMER 42
 static double eval_tlocal[NTIMER];
-const char * const eval_tname[] = { "hdf5_eval_H5Dwrite", 
-                                    "    hdf5_eval_H5D__write", 
-                                    "        hdf5_eval_H5D__chunk_io_init", 
-                                    "        hdf5_eval_H5D__chunk_collective_write", 
-                                    "             hdf5_eval_H5D__chunk_collective_io", 
-                                    "                 hdf5_eval_H5D__link_chunk_filtered_collective_io", 
-                                    "                     hdf5_eval_H5D__construct_filtered_io_info_list",
-                                    "                         hdf5_eval_H5D__chunk_redistribute_shared_chunks", 
-                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks::Chunk_assignment", 
-                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks:Data_exchange", 
-                                    "                     hdf5_eval_H5D__filtered_collective_chunk_entry_io",
-                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Background",
-                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Self",
-                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Unpack",
-                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Filter",
-                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Chunk_Alloc",
-                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Type_Create",
-                                    "                     hdf5_eval_H5D__final_collective_io",
-                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Update_Index",
-                                    "                 hdf5_eval_H5D__multi_chunk_filtered_collective_io",
-                                    "hdf5_eval_H5Dread",
-                                    "    hdf5_eval_H5D__read",
-                                    "        hdf5_eval_H5D__read_check_arg",
-                                    "        hdf5_eval_H5D__ioinfo_adjust",
-                                    "        hdf5_eval_H5D__chunk_read",
-                                    "            hdf5_eval_H5D__chunk_lookup",
-                                    "            hdf5_eval_H5D__select_read",
+const char * const eval_tname[] = { 
                                     "hdf5_eval_H5Fcreate",
                                     "hdf5_eval_H5Fopen",
                                     "hdf5_eval_H5Fclose",
@@ -710,9 +684,41 @@ const char * const eval_tname[] = { "hdf5_eval_H5Dwrite",
                                     "hdf5_eval_H5Acreate",
                                     "hdf5_eval_H5Aopen",
                                     "hdf5_eval_H5Aclose",
-                                    "hdf5_eval_H5Z_filter_deflate",
-                                    "    hdf5_eval_H5Z_filter_deflate_reverse",
-                                    "    hdf5_eval_H5Z_filter_deflate_forward",
+                                    "hdf5_eval_H5Dwrite", 
+                                    "    hdf5_eval_H5D__write", 
+                                    "        hdf5_eval_H5D__chunk_io_init_w", 
+                                    "        hdf5_eval_H5D__ioinfo_adjust_w",
+                                    "        hdf5_eval_H5D__chunk_collective_write", 
+                                    "             hdf5_eval_H5D__chunk_collective_io_w", 
+                                    "                 hdf5_eval_H5D__link_chunk_filtered_collective_io_w", 
+                                    "                     hdf5_eval_H5D__construct_filtered_io_info_list_w",
+                                    "                         hdf5_eval_H5D__chunk_redistribute_shared_chunks_w", 
+                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks::Chunk_assignment_w", 
+                                    "                             hdf5_eval_H5D__chunk_redistribute_shared_chunks:Data_exchange_w", 
+                                    "                     hdf5_eval_H5D__filtered_collective_chunk_entry_io_w",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Background_w",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Self_w",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Unpack_w",
+                                    "                         hdf5_eval_H5D__filtered_collective_chunk_entry_io::Filter_w",
+                                    "                             hdf5_eval_H5Z_filter_deflate_comp",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Chunk_Alloc_w",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Type_Create_w",
+                                    "                     hdf5_eval_H5D__final_collective_io_w",
+                                    "                     hdf5_eval_H5D__link_chunk_filtered_collective_io::Update_Index_w",
+                                    "                 hdf5_eval_H5D__multi_chunk_filtered_collective_io_w",
+                                    "hdf5_eval_H5Dread",
+                                    "    hdf5_eval_H5D__read",
+                                    "        hdf5_eval_H5D__read::check_arg",
+                                    "        hdf5_eval_H5D__chunk_io_init_r", 
+                                    "        hdf5_eval_H5D__ioinfo_adjust_r",
+                                    "        hdf5_eval_H5D__chunk_collective_read", 
+                                    "             hdf5_eval_H5D__chunk_collective_io_r", 
+                                    "                 hdf5_eval_H5D__multi_chunk_filtered_collective_io_r",
+                                    "        hdf5_eval_H5D__chunk_read",
+                                    "            hdf5_eval_H5D__chunk_lookup",
+                                    "            hdf5_eval_H5D__select_read",
+                                    "hdf5_eval_H5Z_filter_deflate_decomp",
+
                                     };
 
 
@@ -799,7 +805,7 @@ H5Fclose(hid_t file_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(29, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
 
     env_str = getenv("hdf5_eval_show_time");
     if (env_str != NULL && *env_str != '0') {                        

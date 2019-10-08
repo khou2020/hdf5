@@ -32,7 +32,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 
 /******************/
 /* Local Typedefs */
@@ -155,7 +155,7 @@ done:
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, FAIL, "unable to release dataset")
 
     t2 = MPI_Wtime();
-    eval_add_time(33, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Dcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dcreate2() */
@@ -310,7 +310,7 @@ done:
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, FAIL, "unable to release dataset")
 
     t2 = MPI_Wtime();
-    eval_add_time(34, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Dopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dopen2() */
@@ -355,7 +355,7 @@ H5Dclose(hid_t dset_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(35, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Dclose, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dclose() */

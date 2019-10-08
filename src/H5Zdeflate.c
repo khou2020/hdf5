@@ -32,6 +32,10 @@
 #include H5_ZLIB_HEADER /* "zlib.h" */
 #endif
 
+
+#include "eval.h"
+
+
 /* Local function prototypes */
 static size_t H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
                                  const unsigned cd_values[], size_t nbytes, size_t *buf_size, void **buf);
@@ -74,7 +78,7 @@ H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
     void *outbuf = NULL;  /* Pointer to new buffer */
     int status;           /* Status from zlib operation */
     size_t ret_value = 0; /* Return value */
-    double t1, t2, t3, t4;
+    double t1, t2;
 
     FUNC_ENTER_NOAPI(0)
 
@@ -94,8 +98,6 @@ H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
         /* Input; uncompress */
         z_stream z_strm;           /* zlib parameters */
         size_t nalloc = *buf_size; /* Number of bytes for output (compressed) buffer */
-
-        t3 = MPI_Wtime();
 
         /* Allocate space for the compressed buffer */
         if (NULL == (outbuf = H5MM_malloc(nalloc)))
@@ -162,10 +164,6 @@ H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
 
         /* Finish uncompressing the stream */
         (void)inflateEnd(&z_strm);
-
-        t4 = MPI_Wtime();
-        eval_add_time(40, t4 - t3);
-
     } /* end if */
     else
     {
@@ -179,8 +177,6 @@ H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
         uLongf z_dst_nbytes = (uLongf)H5Z_DEFLATE_SIZE_ADJUST(nbytes);
         uLong z_src_nbytes = (uLong)nbytes;
         int aggression; /* Compression aggression setting */
-
-        t3 = MPI_Wtime();
         
         /* Set the compression aggression level */
         H5_CHECKED_ASSIGN(aggression, int, cd_values[0], unsigned);
@@ -212,16 +208,18 @@ H5Z_filter_deflate(unsigned flags, size_t cd_nelmts,
             *buf_size = nbytes;
             ret_value = z_dst_nbytes;
         } /* end else */
-
-        t4 = MPI_Wtime();
-        eval_add_time(41, t4 - t3);
     }     /* end else */
 
 done:
     if (outbuf)
         H5MM_xfree(outbuf);
     t2 = MPI_Wtime();
-    eval_add_time(39, t2 - t1);
+    if (flags & H5Z_FLAG_REVERSE){
+        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_decomp, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_comp, t2 - t1);
+    }
     FUNC_LEAVE_NOAPI(ret_value)
 }
 #endif /* H5_HAVE_FILTER_DEFLATE */

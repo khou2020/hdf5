@@ -37,7 +37,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 
 /******************/
 /* Local Typedefs */
@@ -291,7 +291,7 @@ done:
         HDONE_ERROR(H5E_ATTR, H5E_CANTFREE, FAIL, "can't close attribute")
 
     t2 = MPI_Wtime();
-    eval_add_time(36, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Acreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* H5Acreate2() */
@@ -444,7 +444,7 @@ done:
             HDONE_ERROR(H5E_ATTR, H5E_CANTFREE, FAIL, "can't close attribute")
 
     t2 = MPI_Wtime();
-    eval_add_time(37, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Aopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* H5Aopen() */
@@ -1543,7 +1543,7 @@ H5Aclose(hid_t attr_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(38, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5Aclose, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* H5Aclose() */

@@ -66,6 +66,7 @@
 /****************/
 /* Local Macros */
 /****************/
+#include "eval.h"
 
 /* Macros for iterating over chunks to operate on */
 #define H5D_CHUNK_GET_FIRST_NODE(map) (map->use_single ? (H5SL_node_t *)(1) : H5SL_first(map->sel_chunks))
@@ -1335,7 +1336,12 @@ done:
     } /* end if */
 
     t2 = MPI_Wtime();
-    eval_add_time(2, t2 - t1);
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_io_init() */
@@ -2302,7 +2308,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(24, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5D__chunk_read, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_read() */
@@ -3005,7 +3011,7 @@ t1 = MPI_Wtime();
 
 done:
 t2 = MPI_Wtime();
-eval_add_time(25, t2 - t1);
+eval_add_time(EVAL_TIMER_H5D__chunk_lookup, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_lookup() */
 
@@ -3432,8 +3438,11 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
     hbool_t             disable_filters = FALSE; /* Whether to disable filters (when adding to cache) */
     void		*chunk = NULL;		/*the file chunk	*/
     void		*ret_value = NULL;	/* Return value         */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* Sanity checks */
     HDassert(io_info);
@@ -3788,6 +3797,14 @@ done:
         if(chunk)
             chunk = H5D__chunk_mem_xfree(chunk, pline);
 
+    t2 = MPI_Wtime();
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__chunk_lock_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__chunk_lock_r, t2 - t1);
+    }
+    
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_lock() */
 
