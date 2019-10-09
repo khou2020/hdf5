@@ -3632,8 +3632,19 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                  * size in memory, so allocate memory big enough. */
                 if(NULL == (chunk = H5D__chunk_mem_alloc(my_chunk_alloc, (udata->new_unfilt_chunk ? old_pline : pline))))
                     HGOTO_ERROR(H5E_RESOURCE, H5E_NOSPACE, NULL, "memory allocation failed for raw data chunk")
+                
+                t3 = MPI_Wtime();
+
                 if(H5F_block_read(dset->oloc.file, H5FD_MEM_DRAW, chunk_addr, my_chunk_alloc, chunk) < 0)
                     HGOTO_ERROR(H5E_IO, H5E_READERROR, NULL, "unable to read raw data chunk")
+                
+                t4 = MPI_Wtime();
+                if (io_info->op_type == H5D_IO_OP_WRITE){
+                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
+                }
+                else{
+                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_r, t4 - t3);
+                }
 
                 if(old_pline && old_pline->nused) {
                     H5Z_EDC_t err_detect;       /* Error detection info */
@@ -3814,7 +3825,7 @@ done:
     else{
         eval_add_time(EVAL_TIMER_H5D__chunk_lock_r, t2 - t1);
     }
-
+    
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_lock() */
 

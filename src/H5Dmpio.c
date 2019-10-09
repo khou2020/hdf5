@@ -3062,16 +3062,9 @@ done:
 
     t3 = MPI_Wtime();
 
-    if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_w, t3 - t1);
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Chunk_assignment_w, t2 - t1);
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Data_exchange_w, t3 - t2);
-    }
-    else{
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_r, t3 - t1);
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Chunk_assignment_r, t2 - t1);
-        eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Data_exchange_r, t3 - t2);
-    }
+    eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks, t3 - t1);
+    eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Chunk_assignment, t2 - t1);
+    eval_add_time(EVAL_TIMER_H5D__chunk_redistribute_shared_chunks_Data_exchange, t3 - t2);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_redistribute_shared_chunks() */
@@ -3240,8 +3233,6 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
     if (NULL == (chunk_entry->buf = H5MM_malloc(buf_size)))
         HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "couldn't allocate chunk data buffer")
 
-    t3 = MPI_Wtime();
-
     /* If this is not a full chunk overwrite or this is a read operation, the chunk must be
      * read from the file and unfiltered.
      */
@@ -3254,6 +3245,8 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
          * cause issues with collective metadata reads enabled. In the future,
          * this should be refactored to use collective chunk reads - JTH */
 
+        t3 = MPI_Wtime();
+
         /* Get the original state of parallel I/O transfer mode */
         if(H5CX_get_io_xfer_mode(&xfer_mode) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get MPI-I/O transfer mode")
@@ -3262,6 +3255,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
         if(H5CX_set_io_xfer_mode(H5FD_MPIO_INDEPENDENT) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't set MPI-I/O transfer mode")
 
+        
         if(H5F_block_read(io_info->dset->oloc.file, H5FD_MEM_DRAW, chunk_entry->chunk_states.chunk_current.offset,
                 chunk_entry->chunk_states.new_chunk.length, chunk_entry->buf) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_READERROR, FAIL, "unable to read raw data chunk")
@@ -3270,22 +3264,31 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
         if(H5CX_set_io_xfer_mode(xfer_mode) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't set MPI-I/O transfer mode")
 
+        t4 = MPI_Wtime();
+        if (io_info->op_type == H5D_IO_OP_WRITE){
+            eval_add_time(EVAL_TIMER_H5F_block_read_fcoll_w, t4 - t3);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5F_block_read_fcoll_r, t4 - t3);
+        }
+
         if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, H5Z_FLAG_REVERSE,
                 &filter_mask, err_detect, filter_cb, (size_t *)&chunk_entry->chunk_states.new_chunk.length,
                 &buf_size, &chunk_entry->buf) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTFILTER, FAIL, "couldn't unfilter chunk for modifying")
+        
+        t3 = MPI_Wtime();
+        if (io_info->op_type == H5D_IO_OP_WRITE){
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_w, t3 - t4);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r, t3 - t4);
+        }
+
     } /* end if */
     else {
         chunk_entry->chunk_states.new_chunk.length = true_chunk_size;
     } /* end else */
-
-    t4 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Background_w, t4 - t3);
-    }
-    else{
-        eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Background_r, t4 - t3);
-    }
 
     /* Initialize iterator for memory selection */
     if (NULL == (mem_iter = (H5S_sel_iter_t *) H5MM_malloc(sizeof(H5S_sel_iter_t))))

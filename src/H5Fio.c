@@ -97,11 +97,8 @@ H5F_block_read(H5F_t *f, H5FD_mem_t type, haddr_t addr, size_t size,
 {
     H5FD_mem_t  map_type;               /* Mapped memory type */
     herr_t      ret_value = SUCCEED;    /* Return value */
-    double t1, t2;
 
     FUNC_ENTER_NOAPI(FAIL)
-
-    t1 = MPI_Wtime();
 
     /* Sanity checks */
     HDassert(f);
@@ -121,8 +118,6 @@ H5F_block_read(H5F_t *f, H5FD_mem_t type, haddr_t addr, size_t size,
         HGOTO_ERROR(H5E_IO, H5E_READERROR, FAIL, "read through page buffer failed")
 
 done:
-    t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5F_block_read, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5F_block_read() */
