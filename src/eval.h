@@ -58,19 +58,21 @@
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Background_r + 1)
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r + 1)
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_r + 1)
-#define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_r + 1)
-#define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Chunk_Alloc_r (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
+#define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Chunk_Alloc_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_r + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Type_Create_r (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Chunk_Alloc_r + 1)
 #define EVAL_TIMER_H5D__final_collective_io_r (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Type_Create_r + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_r (EVAL_TIMER_H5D__final_collective_io_r + 1)
 #define EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_r (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_r + 1)
 #define EVAL_TIMER_H5D__chunk_read 57
-#define EVAL_TIMER_H5D__chunk_lookup (EVAL_TIMER_H5D__chunk_read + 1)
-#define EVAL_TIMER_H5D__select_read (EVAL_TIMER_H5D__chunk_lookup + 1)
-
-#define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5D__select_read + 1)
-
-
+#define EVAL_TIMER_H5D__chunk_lookup_r (EVAL_TIMER_H5D__chunk_read + 1)
+#define EVAL_TIMER_H5D__chunk_lock_r (EVAL_TIMER_H5D__chunk_lookup_r + 1)
+#define EVAL_TIMER_H5F_block_read (EVAL_TIMER_H5D__chunk_lock_r + 1)
+#define EVAL_TIMER_H5D__select_read (EVAL_TIMER_H5F_block_read + 1)
+#define EVAL_TIMER_H5D__chunk_unlock_r (EVAL_TIMER_H5D__select_read + 1)
+#define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_r + 1)
 #define NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
+
+#define EVAL_TIMER_H5D__chunk_lock_w 100
+#define EVAL_TIMER_H5D__chunk_unlock_w (EVAL_TIMER_H5D__chunk_lock_w + 1)
 
 extern void eval_add_time(int id, double t);

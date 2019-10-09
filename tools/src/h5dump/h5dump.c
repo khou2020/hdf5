@@ -1364,6 +1364,8 @@ main(int argc, const char *argv[])
     void               *tools_edata;
     char               *fname = NULL;
 
+    MPI_Init(NULL, NULL);
+
     h5tools_setprogname(PROGRAMNAME);
     h5tools_setstatus(EXIT_SUCCESS);
     h5tools_dump_header_format = &h5tools_standardformat;
@@ -1643,6 +1645,8 @@ done:
     /* To Do:  clean up XML table */
 
     H5Eset_auto2(H5E_DEFAULT, func, edata);
+
+    MPI_Finalize();
 
     leave(h5tools_getstatus());
 }

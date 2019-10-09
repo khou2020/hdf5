@@ -408,6 +408,7 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
 
+    eval_init_mpi();
     t1 = MPI_Wtime();
 
     /* Check/fix arguments */
@@ -722,7 +723,26 @@ const char * const eval_tname[] = {
                                     };
 
 
-
+static eval_need_finalize = 0;
+static eval_fcnt = 0;
+void eval_init_mpi(){
+    int flag;
+    MPI_Initialized(&flag);
+    if (!flag){
+        MPI_Init(NULL, NULL);
+        eval_need_finalize = 1;
+    }
+    eval_fcnt++;
+}
+void eval_free_mpi(){
+    eval_fcnt--;
+    if (eval_fcnt == 0){
+        if (eval_need_finalize){
+            MPI_Finalize();
+            eval_need_finalize = 0;
+        }
+    }
+}
 void eval_add_time(int id, double t){
     eval_tlocal[id] += t;
 }
@@ -793,6 +813,8 @@ H5Fclose(hid_t file_id)
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
     
+    eval_init_mpi();
+
     t1 = MPI_Wtime();
 
     /* Check arguments */
@@ -816,6 +838,8 @@ done:
     if (env_str != NULL && *env_str != '0') {                        
         eval_reset_time();
     }   
+
+    eval_free_mpi();
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */
