@@ -318,7 +318,6 @@ static herr_t H5D__chunk_prune_fill(H5D_chunk_it_ud1_t *udata, hbool_t new_unfil
 #ifdef H5_HAVE_PARALLEL
 static herr_t H5D__chunk_collective_fill(const H5D_t *dset, 
     H5D_chunk_coll_info_t *chunk_info, size_t chunk_size, const void *fill_buf);
-static int H5D__chunk_cmp_addr(const void *addr1, const void *addr2);
 #endif /* H5_HAVE_PARALLEL */
 
 static int
@@ -4745,12 +4744,8 @@ H5D__chunk_collective_fill(const H5D_t *dset, H5D_chunk_coll_info_t *chunk_info,
 
         /* make sure that the addresses in the datatype are
            monotonically non decreasing */
-        if(i && (chunk_disp_array[i] < chunk_disp_array[i - 1])) {
-            HDqsort(chunk_info->addr, chunk_info->num_io, sizeof(haddr_t), H5D__chunk_cmp_addr);
-
-            /* Restart iteration */
-            i = 0;
-        } /* end if */
+        if(i)
+            HDassert(chunk_disp_array[i] > chunk_disp_array[i - 1]);
     } /* end if */
 
     /* calculate if there are any leftover blocks after evenly
@@ -4817,20 +4812,6 @@ done:
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_fill() */
-
-
-static int
-H5D__chunk_cmp_addr(const void *addr1, const void *addr2)
-{
-    haddr_t _addr1 = HADDR_UNDEF, _addr2 = HADDR_UNDEF;
-
-    FUNC_ENTER_STATIC_NOERR
-
-    _addr1 = *((const haddr_t *) addr1);
-    _addr2 = *((const haddr_t *) addr2);
-
-    FUNC_LEAVE_NOAPI(H5F_addr_cmp(_addr1, _addr2))
-} /* end H5D__chunk_cmp_addr() */
 #endif /* H5_HAVE_PARALLEL */
 
 
