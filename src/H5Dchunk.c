@@ -318,6 +318,7 @@ static herr_t H5D__chunk_prune_fill(H5D_chunk_it_ud1_t *udata, hbool_t new_unfil
 #ifdef H5_HAVE_PARALLEL
 static herr_t H5D__chunk_collective_fill(const H5D_t *dset, 
     H5D_chunk_coll_info_t *chunk_info, size_t chunk_size, const void *fill_buf);
+static int H5D__chunk_cmp_addr(const void *addr1, const void *addr2);
 #endif /* H5_HAVE_PARALLEL */
 
 static int
@@ -4696,6 +4697,7 @@ H5D__chunk_collective_fill(const H5D_t *dset, H5D_chunk_coll_info_t *chunk_info,
     MPI_Datatype mem_type, file_type;
     H5FD_mpio_xfer_t prev_xfer_mode;    /* Previous data xfer mode */
     hbool_t     have_xfer_mode = FALSE; /* Whether the previous xffer mode has been retrieved */
+    hbool_t     need_addr_sort = FALSE;
     int         i;                  /* Local index variable */
     herr_t ret_value = SUCCEED;     /* Return value */
 
@@ -4744,9 +4746,24 @@ H5D__chunk_collective_fill(const H5D_t *dset, H5D_chunk_coll_info_t *chunk_info,
 
         /* make sure that the addresses in the datatype are
            monotonically non decreasing */
-        if(i)
-            HDassert(chunk_disp_array[i] > chunk_disp_array[i - 1]);
+        if(i && (chunk_disp_array[i] < chunk_disp_array[i - 1])) {
+            need_addr_sort = TRUE;
+            break;
+        }
     } /* end if */
+
+    if(need_addr_sort) {
+        HDqsort(chunk_info->addr, chunk_info->num_io, sizeof(haddr_t), H5D__chunk_cmp_addr);
+
+        /* Re-iterate after sorting the chunks by non-decreasing address order */
+        for(i = 0 ; i < blocks ; i++) {
+            /* store the chunk address as an MPI_Aint */
+            chunk_disp_array[i] = (MPI_Aint)(chunk_info->addr[i + mpi_rank*blocks]);
+
+            /* MSC - should not need this if MPI_type_create_hindexed_block is working */
+            block_lens[i] = block_len;
+        } /* end if */
+    }
 
     /* calculate if there are any leftover blocks after evenly
        distributing. If there are, then round robin the distribution
@@ -4812,6 +4829,20 @@ done:
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_fill() */
+
+
+static int
+H5D__chunk_cmp_addr(const void *addr1, const void *addr2)
+{
+    haddr_t _addr1 = HADDR_UNDEF, _addr2 = HADDR_UNDEF;
+
+    FUNC_ENTER_STATIC_NOERR
+
+    _addr1 = *((const haddr_t *) addr1);
+    _addr2 = *((const haddr_t *) addr2);
+
+    FUNC_LEAVE_NOAPI(H5F_addr_cmp(_addr1, _addr2))
+} /* end H5D__chunk_cmp_addr() */
 #endif /* H5_HAVE_PARALLEL */
 
 
