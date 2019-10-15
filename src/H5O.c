@@ -42,7 +42,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 
 /******************/
 /* Local Typedefs */
@@ -789,8 +789,12 @@ H5Ovisit2(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5O_iterate_t op, void *op_data, unsigned fields)
 {
     herr_t      ret_value;              /* Return value */
-
+    double t1, t2;
+    
     FUNC_ENTER_API(FAIL)
+
+    t1 = MPI_Wtime();
+
     H5TRACE6("e", "iIiIox*xIu", obj_id, idx_type, order, op, op_data, fields);
 
     /* Check args */
@@ -808,6 +812,9 @@ H5Ovisit2(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object visitation failed")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Ovisit2, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit2() */
 
@@ -1229,8 +1236,12 @@ H5Ovisit(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5O_iterate_t op, void *op_data)
 {
     herr_t      ret_value;              /* Return value */
-
+    double t1, t2;
+    
     FUNC_ENTER_API(FAIL)
+
+    t1 = MPI_Wtime();
+
     H5TRACE5("e", "iIiIox*x", obj_id, idx_type, order, op, op_data);
 
     /* Check args */
@@ -1246,6 +1257,9 @@ H5Ovisit(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object visitation failed")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Ovisit, t2 - t1);
+    
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit() */
 

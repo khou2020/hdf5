@@ -727,6 +727,8 @@ const char * const eval_tname[] = {
                                     "                    hdf5_eval_H5D__chunk_lock::Filter_r(DECOMPRESSION)",
                                     "                hdf5_eval_H5D__select_read",
                                     "                hdf5_eval_H5D__chunk_unlock_r",
+                                    "hdf5_eval_H5Ovisit",
+                                    "hdf5_eval_H5Ovisit2",
                                     "hdf5_eval_H5Z_filter_deflate_comp",
                                     "hdf5_eval_H5Z_filter_deflate_decomp",
                                     };

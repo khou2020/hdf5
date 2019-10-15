@@ -63,8 +63,10 @@
 #define EVAL_TIMER_H5D__select_read (EVAL_TIMER_H5D__chunk_lock_filter_r + 1)
 #define EVAL_TIMER_H5D__chunk_unlock_r (EVAL_TIMER_H5D__select_read + 1)
 
+#define EVAL_TIMER_H5Ovisit (EVAL_TIMER_H5D__chunk_unlock_r + 1)
+#define EVAL_TIMER_H5Ovisit2 (EVAL_TIMER_H5Ovisit + 1)
 
-#define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5D__chunk_unlock_r + 1)
+#define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5Ovisit2 + 1)
 #define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
 
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
