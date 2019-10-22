@@ -68,18 +68,14 @@
 #define EVAL_TIMER_H5D__chunk_lock_filter_r (EVAL_TIMER_H5F_block_read_lock_r + 1)
 #define EVAL_TIMER_H5D__select_read (EVAL_TIMER_H5D__chunk_lock_filter_r + 1)
 #define EVAL_TIMER_H5D__chunk_unlock_r (EVAL_TIMER_H5D__select_read + 1)
-
 #define EVAL_TIMER_H5Ovisit (EVAL_TIMER_H5D__chunk_unlock_r + 1)
 #define EVAL_TIMER_H5Ovisit2 (EVAL_TIMER_H5Ovisit + 1)
-
 #define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5Ovisit2 + 1)
 #define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
 
+
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
 
-
-
-extern void eval_add_time(int id, double t);
 
 #define EVAL_TIMER_DUMMY 100
 #define EVAL_TIMER_H5D__chunk_lock_w EVAL_TIMER_DUMMY
@@ -93,3 +89,7 @@ extern void eval_add_time(int id, double t);
 #define EVAL_TIMER_H5O_obj_create_other EVAL_TIMER_DUMMY
 #define EVAL_TIMER_H5L_link_object_other EVAL_TIMER_DUMMY
 #define EVAL_TIMER_H5L__create_real_other EVAL_TIMER_DUMMY
+
+void eval_init_mpi();
+void eval_free_mpi();
+void eval_add_time(int id, double t);

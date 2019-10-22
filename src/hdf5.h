@@ -37,6 +37,7 @@
 #include "H5Spublic.h"          /* Dataspaces                               */
 #include "H5Tpublic.h"          /* Datatypes                                */
 #include "H5Zpublic.h"          /* Data filters                             */
+#include "H5Vpublic.h"          /* Profiling                                */
 
 /* Predefined file drivers */
 #include "H5FDcore.h"           /* Files stored entirely in memory              */
