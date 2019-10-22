@@ -675,6 +675,12 @@ const char * const eval_tname[] = {
                                     "hdf5_eval_H5Gopen",
                                     "hdf5_eval_H5Gclose",
                                     "hdf5_eval_H5Dcreate",
+                                    "    hdf5_eval_H5D__create_named",
+                                    "        hdf5_eval_H5L_link_object_dataset",
+                                    "            hdf5_eval_H5L__create_real_dataset",
+                                    "                hdf5_eval_H5L__link_cb_dataset",
+                                    "                    hdf5_eval_H5O_obj_create_dataset",
+                                    "                    hdf5_eval_H5G_obj_insert_dataset",
                                     "hdf5_eval_H5Dopen",
                                     "hdf5_eval_H5Dclose",
                                     "hdf5_eval_H5Acreate",
@@ -751,6 +757,9 @@ void eval_free_mpi(){
     }
 }
 void eval_add_time(int id, double t){
+    if (id > 100){
+        return;
+    }
     eval_tlocal[id] += t;
     eval_tlocal[id]++;
 }

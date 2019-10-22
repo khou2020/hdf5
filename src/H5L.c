@@ -37,7 +37,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 #define H5L_MIN_TABLE_SIZE 32 /* Minimum size of the user-defined link type table if it is allocated */
 
 
@@ -1536,8 +1536,11 @@ H5L_link_object(const H5G_loc_t *new_loc, const char *new_name,
 {
     H5O_link_t lnk;                     /* Link to insert */
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_NOAPI_NOINIT
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     HDassert(new_loc);
@@ -1557,6 +1560,16 @@ H5L_link_object(const H5G_loc_t *new_loc, const char *new_name,
         HGOTO_ERROR(H5E_LINK, H5E_CANTINIT, FAIL, "unable to create new link to object")
 
 done:
+    t2 = MPI_Wtime();
+    switch (ocrt_info->obj_type){
+        case H5O_TYPE_DATASET:
+            eval_add_time(EVAL_TIMER_H5L_link_object_dataset, t2 - t1);
+            break;
+        default:
+            //eval_add_time(EVAL_TIMER_H5L_link_object_other, t2 - t1);
+            break;
+    }
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5L_link_object() */
 
@@ -1584,8 +1597,11 @@ H5L__link_cb(H5G_loc_t *grp_loc/*in*/, const char *name, const H5O_link_t H5_ATT
     hbool_t temp_loc_init = FALSE;  /* Temporary location for UD callback (temp_loc) has been initialized */
     hbool_t obj_created = FALSE;    /* Whether an object was created (through a hard link) */
     herr_t ret_value = SUCCEED;     /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* Check if the name in this group resolved to a valid location */
     /* (which is not what we want) */
@@ -1713,6 +1729,16 @@ done:
      * location for the object */
     *own_loc = H5G_OWN_NONE;
 
+    t2 = MPI_Wtime();
+    switch (udata->ocrt_info->obj_type){
+        case H5O_TYPE_DATASET:
+            eval_add_time(EVAL_TIMER_H5L__link_cb_dataset, t2 - t1);
+            break;
+        default:
+            //eval_add_time(EVAL_TIMER_H5L__link_cb_other, t2 - t1);
+            break;
+    }
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5L__link_cb() */
 
@@ -1746,9 +1772,12 @@ H5L__create_real(const H5G_loc_t *link_loc, const char *link_name,
     H5P_genplist_t *lc_plist = NULL;   /* Link creation property list */
     H5L_trav_cr_t udata;               /* User data for callback */
     herr_t ret_value = SUCCEED;        /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
 
+    t1 = MPI_Wtime();
+    
     /* Check args */
     HDassert(link_loc);
     HDassert(link_name && *link_name);
@@ -1802,6 +1831,15 @@ done:
     if(norm_link_name)
         H5MM_xfree(norm_link_name);
 
+    t2 = MPI_Wtime();
+    switch (ocrt_info->obj_type){
+        case H5O_TYPE_DATASET:
+            eval_add_time(EVAL_TIMER_H5L__create_real_dataset, t2 - t1);
+            break;
+        default:
+            //eval_add_time(EVAL_TIMER_H5L__create_real_other, t2 - t1);
+            break;
+    }
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5L__create_real() */
 

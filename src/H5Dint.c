@@ -36,7 +36,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 
 /******************/
 /* Local Typedefs */
@@ -301,8 +301,11 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
     H5O_obj_create_t ocrt_info;         /* Information for object creation */
     H5D_obj_create_t dcrt_info;         /* Information for dataset creation */
     H5D_t       *ret_value = NULL;      /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+
+    t1 = MPI_Wtime();
 
     /* Check arguments */
     HDassert(loc);
@@ -333,6 +336,9 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
     ret_value = (H5D_t *)ocrt_info.new_obj;
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create_named, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create_named() */
 

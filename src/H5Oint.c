@@ -48,7 +48,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "eval.h"
 
 /******************/
 /* Local Typedefs */
@@ -2434,8 +2434,11 @@ H5O_obj_create(H5F_t *f, H5O_type_t obj_type, void *crt_info, H5G_loc_t *obj_loc
 {
     size_t u;                           /* Local index variable */
     void *ret_value = NULL;             /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_NOAPI(NULL)
+
+    t1 = MPI_Wtime();
 
     /* Sanity checks */
     HDassert(f);
@@ -2459,6 +2462,16 @@ H5O_obj_create(H5F_t *f, H5O_type_t obj_type, void *crt_info, H5G_loc_t *obj_loc
     HDassert(ret_value);
 
 done:
+    t2 = MPI_Wtime();
+    switch (obj_type){
+        case H5O_TYPE_DATASET:
+            eval_add_time(EVAL_TIMER_H5O_obj_create_dataset, t2 - t1);
+            break;
+        default:
+            //eval_add_time(EVAL_TIMER_H5O_obj_create_other, t2 - t1);
+            break;
+    }
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5O_obj_create() */
 
