@@ -461,11 +461,6 @@ done:
 
     t2 = MPI_Wtime();
 
-    env_str = getenv("hdf5_eval_reset_time");
-    if (env_str != NULL && *env_str != '0') {                        
-        eval_reset_time();
-    }      
-
     eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -541,7 +536,7 @@ done:
 
     env_str = getenv("hdf5_eval_reset_time");
     if (env_str != NULL && *env_str != '0') {                        
-        eval_reset_time();
+        H5Vreset();
     }     
 
     eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
@@ -671,6 +666,7 @@ done:
 } /* end H5Fflush() */
 
 static double eval_tlocal[EVAL_NTIMER];
+static double eval_clocal[EVAL_NTIMER];
 const char * const eval_tname[] = { 
                                     "hdf5_eval_H5Fcreate",
                                     "hdf5_eval_H5Fopen",
@@ -722,11 +718,11 @@ const char * const eval_tname[] = {
                                     "                 hdf5_eval_H5D__link_chunk_filtered_collective_io_r", 
                                     "        hdf5_eval_H5D__chunk_read(INDEPENDENT_READ)",
                                     "            hdf5_eval_H5D__chunk_lookup_r",
-                                    "                hdf5_eval_H5D__chunk_lock_r",
-                                    "                    hdf5_eval_H5F_block_read@H5D__chunk_lock_r(READ_RAW_DATA)",
-                                    "                    hdf5_eval_H5D__chunk_lock::Filter_r(DECOMPRESSION)",
-                                    "                hdf5_eval_H5D__select_read",
-                                    "                hdf5_eval_H5D__chunk_unlock_r",
+                                    "            hdf5_eval_H5D__chunk_lock_r",
+                                    "                hdf5_eval_H5F_block_read@H5D__chunk_lock_r(READ_RAW_DATA)",
+                                    "                hdf5_eval_H5D__chunk_lock::Filter_r(DECOMPRESSION)",
+                                    "            hdf5_eval_H5D__select_read",
+                                    "            hdf5_eval_H5D__chunk_unlock_r",
                                     "hdf5_eval_H5Ovisit",
                                     "hdf5_eval_H5Ovisit2",
                                     "hdf5_eval_H5Z_filter_deflate_comp",
@@ -756,9 +752,10 @@ void eval_free_mpi(){
 }
 void eval_add_time(int id, double t){
     eval_tlocal[id] += t;
+    eval_tlocal[id]++;
 }
 // Note: This only work if everyone calls H5Fclose
-void eval_show_time(){
+void H5Vprint(){
     int i;
     int np, rank, flag;
     double tmax[EVAL_NTIMER], tmin[EVAL_NTIMER], tmean[EVAL_NTIMER], tvar[EVAL_NTIMER], tvar_local[EVAL_NTIMER];
@@ -789,17 +786,37 @@ void eval_show_time(){
         }
     }
 
+    MPI_Reduce(eval_clocal, tmax, EVAL_NTIMER, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(eval_clocal, tmin, EVAL_NTIMER, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(eval_clocal, tmean, EVAL_NTIMER, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for(i = 0; i < EVAL_NTIMER; i++){
+        tmean[i] /= np;
+        tvar_local[i] = (eval_clocal[i] - tmean[i]) * (eval_clocal[i] - tmean[i]);
+    }
+    MPI_Reduce(tvar_local, tvar, EVAL_NTIMER, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0){
+        for(i = 0; i < EVAL_NTIMER; i++){
+            printf("#+$: %s_count_mean: %lf\n", eval_tname[i], tmean[i]);
+            printf("#+$: %s_count_max: %lf\n", eval_tname[i], tmax[i]);
+            printf("#+$: %s_count_min: %lf\n", eval_tname[i], tmin[i]);
+            printf("#+$: %s_count_var: %lf\n\n", eval_tname[i], tvar[i]);
+        }
+    }
+
     if (!flag){
         MPI_Finalize();
     }
 }
-void eval_reset_time(){
+void H5Vreset(){
     int i;
     
     for(i = 0; i < EVAL_NTIMER; i++){
         eval_tlocal[i] = 0;
+        eval_clocal[i] = 0;
     }
 }
+
 /*-------------------------------------------------------------------------
  * Function: H5Fclose
  *
@@ -823,8 +840,6 @@ H5Fclose(hid_t file_id)
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
-    
-    eval_init_mpi();
 
     t1 = MPI_Wtime();
 
@@ -839,16 +854,6 @@ H5Fclose(hid_t file_id)
 done:
     t2 = MPI_Wtime();
     eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
-
-    env_str = getenv("hdf5_eval_show_time");
-    if (env_str != NULL && *env_str != '0') {                        
-        eval_show_time();
-    }      
-
-    env_str = getenv("hdf5_eval_reset_time");
-    if (env_str != NULL && *env_str != '0') {                        
-        eval_reset_time();
-    }   
 
     eval_free_mpi();
 
