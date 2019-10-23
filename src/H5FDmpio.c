@@ -32,7 +32,7 @@
 #include "H5Iprivate.h"		/* IDs			  		*/
 #include "H5MMprivate.h"	/* Memory management			*/
 #include "H5Pprivate.h"         /* Property lists                       */
-
+#include "H5V.h"
 #ifdef H5_HAVE_PARALLEL
 
 /*
@@ -1020,8 +1020,8 @@ H5FD_mpio_open(const char *name, unsigned flags, hid_t fapl_id,
     } /* end if */
 
     /* Broadcast file size */
-    if(MPI_SUCCESS != (mpi_code = MPI_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, comm_dup)))
-        HMPI_GOTO_ERROR(NULL, "MPI_Bcast failed", mpi_code)
+    if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, comm_dup)))
+        HMPI_GOTO_ERROR(NULL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
 
     /* Determine if the file should be truncated */
     if(size && (flags & H5F_ACC_TRUNC)) {
@@ -1489,9 +1489,14 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
             /*
              * Set the file view when we are using MPI derived types
              */
-            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
-                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-
+            {
+                double t1, t2;
+                t1 = MPI_Wtime();
+                if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+                t2 = MPI_Wtime();
+                eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+            }
             /* When using types, use the address as the displacement for
              * MPI_File_set_view and reset the address for the read to zero
              */
@@ -1520,41 +1525,70 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
             if(H5CX_get_mpio_rank0_bcast()) {
 #ifdef H5FDmpio_DEBUG
                 if(H5FD_mpio_Debug[(int)'r'])
-                    HDfprintf(stdout, "%s: doing read-rank0-and-MPI_Bcast\n", FUNC);
+                    HDfprintf(stdout, "%s: doing read-rank0-and-HDF_MPI_EVAL_Bcast\n", FUNC);
 #endif
                 /* Indicate path we've taken */
                 rank0_bcast = TRUE;
 
                 /* Read on rank 0 Bcast to other ranks */
                 if(file->mpi_rank == 0)
-                    if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-                        HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
-                if(MPI_SUCCESS != (mpi_code = MPI_Bcast(buf, size_i, buf_type, 0, file->comm)))
-                    HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
+                    {
+                        double t1, t2;
+                        t1 = MPI_Wtime();
+                        if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                            HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
+                        t2 = MPI_Wtime();
+                        eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
+                    }
+                if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(buf, size_i, buf_type, 0, file->comm)))
+                    HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
             } /* end if */
             else
-                if(MPI_SUCCESS != (mpi_code = MPI_File_read_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-                    HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at_all failed", mpi_code)
+                {
+                    double t1, t2;
+                    t1 = MPI_Wtime();
+                    if(MPI_SUCCESS != (mpi_code = MPI_File_read_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                        HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at_all failed", mpi_code)
+                    t2 = MPI_Wtime();
+                    eval_add_time(EVAL_TIMER_MPI_File_read_at_all, t2 - t1);
+                }
         } /* end if */
         else {
 #ifdef H5FDmpio_DEBUG
             if(H5FD_mpio_Debug[(int)'r'])
                 HDfprintf(stdout, "%s: doing MPI independent IO\n", FUNC);
 #endif
-
-            if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-                HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
+            {
+                double t1, t2;
+                t1 = MPI_Wtime();
+                if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
+                t2 = MPI_Wtime();
+                eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
+            }
         } /* end else */
 
         /*
          * Reset the file view when we used MPI derived types
          */
-        if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g, file->info)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g, file->info)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+        }
     } /* end if */
     else
-        if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
+        }
 
     /* Only retrieve bytes read if this rank _actually_ participated in I/O */
     if(!rank0_bcast || (rank0_bcast && file->mpi_rank == 0) ) {
@@ -1574,8 +1608,8 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
      *          of the data.  (QAK - 2019/1/2)
      */
     if(rank0_bcast)
-        if(MPI_SUCCESS != MPI_Bcast(&bytes_read, 1, MPI_LONG_LONG, 0, file->comm))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", 0)
+        if(MPI_SUCCESS != HDF_MPI_EVAL_Bcast(&bytes_read, 1, MPI_LONG_LONG, 0, file->comm))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", 0)
 
     /* Get the type's size */
 #if MPI_VERSION >= 3
@@ -1803,9 +1837,14 @@ H5FD_mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
         /*
          * Set the file view when we are using MPI derived types
          */
-        if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+        }
         /* When using types, use the address as the displacement for
          * MPI_File_set_view and reset the address for the read to zero
          */
@@ -1830,8 +1869,14 @@ H5FD_mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
             if(H5FD_mpio_Debug[(int)'t'])
                 fprintf(stdout, "H5FD_mpio_write: doing MPI collective IO\n");
 #endif
-            if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-                HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
+            {
+                double t1, t2;
+                t1 = MPI_Wtime();
+                if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
+                t2 = MPI_Wtime();
+                eval_add_time(EVAL_TIMER_MPI_File_write_at_all, t2 - t1);
+            }
         } /* end if */
         else {
             if(type != H5FD_MEM_DRAW)
@@ -1839,17 +1884,35 @@ H5FD_mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
 #ifdef H5FDmpio_DEBUG
             if(H5FD_mpio_Debug[(int)'t'])
                 fprintf(stdout, "H5FD_mpio_write: doing MPI independent IO\n");
-#endif
-            if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-                HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
+#endif  
+            {
+                double t1, t2;
+                t1 = MPI_Wtime();
+                if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
+                t2 = MPI_Wtime();
+                eval_add_time(EVAL_TIMER_MPI_File_write_at, t2 - t1);
+            }
         } /* end else */
 
         /* Reset the file view when we used MPI derived types */
-        if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g,  file->info)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g,  file->info)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+        }
     } else {
-        if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_write_at, t2 - t1);
+        }
     }
 
     /* How many bytes were actually written? */
@@ -2020,8 +2083,8 @@ H5FD_mpio_truncate(H5FD_t *_file, hid_t H5_ATTR_UNUSED dxpl_id, hbool_t H5_ATTR_
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_get_size failed", mpi_code)
 
         /* Broadcast file size */
-        if(MPI_SUCCESS != (mpi_code = MPI_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, file->comm)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
+        if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, file->comm)))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
 
         if(H5FD_mpi_haddr_to_MPIOff(file->eoa, &needed_eof) < 0)
             HGOTO_ERROR(H5E_INTERNAL, H5E_BADRANGE, FAIL, "cannot convert from haddr_t to MPI_Offset")

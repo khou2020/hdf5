@@ -423,9 +423,15 @@ H5FD_mpio_wait_for_left_neighbor(H5FD_t *_file)
 
     /* p0 has no left neighbor; all other procs wait for msg */
     if (file->mpi_rank != 0) {
-        if (MPI_SUCCESS != (mpi_code=MPI_Recv( &msgbuf, 1, MPI_CHAR,
-			file->mpi_rank-1, MPI_ANY_TAG, file->comm, &rcvstat )))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Recv failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if (MPI_SUCCESS != (mpi_code=MPI_Recv( &msgbuf, 1, MPI_CHAR,
+                file->mpi_rank-1, MPI_ANY_TAG, file->comm, &rcvstat )))
+                HMPI_GOTO_ERROR(FAIL, "MPI_Recv failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_Imrecv, t2 - t1);
+        }
     }
 
 done:
@@ -473,8 +479,14 @@ H5FD_mpio_signal_right_neighbor(H5FD_t *_file)
     HDassert(H5FD_MPIO==file->pub.driver_id);
 
     if(file->mpi_rank != (file->mpi_size - 1))
+    {
+        double t1, t2;
+        t1 = MPI_Wtime();
         if(MPI_SUCCESS != (mpi_code=MPI_Send(&msgbuf, 0/*empty msg*/, MPI_CHAR, file->mpi_rank + 1, 0, file->comm)))
             HMPI_GOTO_ERROR(FAIL, "MPI_Send failed", mpi_code)
+        t2 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_MPI_Send, t2 - t1);
+    }
 
 done:
     FUNC_LEAVE_NOAPI(ret_value)

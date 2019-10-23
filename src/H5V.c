@@ -1,8 +1,11 @@
+#include <stdlib.h>
 #include "mpi.h"
 #include "H5V.h"
 
 static double eval_tlocal[EVAL_NTIMER];
 static double eval_clocal[EVAL_NTIMER];
+
+
 const char * const eval_tname[] = { 
                                     "hdf5_eval_H5Fcreate",
                                     "hdf5_eval_H5Fopen",
@@ -16,6 +19,8 @@ const char * const eval_tname[] = {
                                     "            hdf5_eval_H5L__create_real_dataset",
                                     "                hdf5_eval_H5L__link_cb_dataset",
                                     "                    hdf5_eval_H5O_obj_create_dataset",
+                                    "                        hdf5_eval_H5O__dset_create",
+                                    "                            hdf5_eval_H5D__create",
                                     "                    hdf5_eval_H5G_obj_insert_dataset",
                                     "hdf5_eval_H5Dopen",
                                     "hdf5_eval_H5Dclose",
@@ -69,6 +74,22 @@ const char * const eval_tname[] = {
                                     "hdf5_eval_H5Ovisit2",
                                     "hdf5_eval_H5Z_filter_deflate_comp",
                                     "hdf5_eval_H5Z_filter_deflate_decomp",
+                                    "hdf5_eval_MPI_Allgather",
+                                    "hdf5_eval_MPI_Allgatherv",
+                                    "hdf5_eval_MPI_Allreduce",
+                                    "hdf5_eval_MPI_Bcast",
+                                    "hdf5_eval_MPI_Gather",
+                                    "hdf5_eval_MPI_Gatherv",
+                                    "hdf5_eval_MPI_Send",
+                                    "hdf5_eval_MPI_Isend",
+                                    "hdf5_eval_MPI_Recv",
+                                    "hdf5_eval_MPI_Imrecv",
+                                    "hdf5_eval_MPI_Mprobe",
+                                    "hdf5_eval_MPI_File_read_at",
+                                    "hdf5_eval_MPI_File_read_at_all",
+                                    "hdf5_eval_MPI_File_write_at",
+                                    "hdf5_eval_MPI_File_write_at_all",
+                                    "hdf5_eval_MPI_File_set_view",
                                     };
 
 
@@ -98,7 +119,7 @@ void eval_add_time(int id, double t){
         return;
     }
     eval_tlocal[id] += t;
-    eval_tlocal[id]++;
+    eval_clocal[id]++;
 }
 
 void H5Venable(){
@@ -169,4 +190,18 @@ void H5Vreset(){
         eval_tlocal[i] = 0;
         eval_clocal[i] = 0;
     }
+}
+
+int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
+    int ret;
+    double t1, t2;
+
+    t1 = MPI_Wtime();
+
+    ret = MPI_Bcast(buffer, count, datatype, root, comm);
+    
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
+
+    return ret;
 }

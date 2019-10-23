@@ -47,7 +47,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -309,8 +309,8 @@ H5AC__broadcast_candidate_list(H5AC_t *cache_ptr, unsigned *num_entries_ptr,
      * any, we are done.
      */
     num_entries = (unsigned)H5SL_count(aux_ptr->candidate_slist_ptr);
-    if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
-        HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+    if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
+        HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
 
     if(num_entries > 0) {
         size_t		 buf_size = 0;
@@ -327,8 +327,8 @@ H5AC__broadcast_candidate_list(H5AC_t *cache_ptr, unsigned *num_entries_ptr,
 
         /* Now broadcast the list of candidate entries */
         buf_size = sizeof(haddr_t) * num_entries;
-        if(MPI_SUCCESS != (mpi_result = MPI_Bcast((void *)haddr_buf_ptr, (int)buf_size, MPI_BYTE, 0, aux_ptr->mpi_comm)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+        if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast((void *)haddr_buf_ptr, (int)buf_size, MPI_BYTE, 0, aux_ptr->mpi_comm)))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
     } /* end if */
 
     /* Pass the number of entries and the buffer pointer 
@@ -436,8 +436,8 @@ H5AC__broadcast_clean_list(H5AC_t * cache_ptr)
      * any, we are done.
      */
     num_entries = (unsigned)H5SL_count(aux_ptr->c_slist_ptr);
-    if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
-        HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+    if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
+        HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
 
     if(num_entries > 0) {
         H5AC_addr_list_ud_t udata;
@@ -459,8 +459,8 @@ H5AC__broadcast_clean_list(H5AC_t * cache_ptr)
             HGOTO_ERROR(H5E_CACHE, H5E_CANTFREE, FAIL, "Can't build address list for clean entries")
 
         /* Now broadcast the list of cleaned entries */
-        if(MPI_SUCCESS != (mpi_result = MPI_Bcast((void *)addr_buf_ptr, (int)buf_size, MPI_BYTE, 0, aux_ptr->mpi_comm)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+        if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast((void *)addr_buf_ptr, (int)buf_size, MPI_BYTE, 0, aux_ptr->mpi_comm)))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
     } /* end if */
 
     /* if it is defined, call the sync point done callback.  Note
@@ -1465,8 +1465,8 @@ H5AC__receive_haddr_list(MPI_Comm mpi_comm, unsigned *num_entries_ptr,
      * can set up a buffer to receive them.  If there aren't
      * any, we are done.
      */
-    if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, mpi_comm)))
-        HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+    if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&num_entries, 1, MPI_UNSIGNED, 0, mpi_comm)))
+        HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
 
     if(num_entries > 0) {
         size_t buf_size;
@@ -1477,8 +1477,8 @@ H5AC__receive_haddr_list(MPI_Comm mpi_comm, unsigned *num_entries_ptr,
             HGOTO_ERROR(H5E_CACHE, H5E_CANTALLOC, FAIL, "memory allocation failed for haddr buffer")
 
         /* Now receive the list of candidate entries */
-        if(MPI_SUCCESS != (mpi_result = MPI_Bcast((void *)haddr_buf_ptr, (int)buf_size, MPI_BYTE, 0, mpi_comm)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+        if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast((void *)haddr_buf_ptr, (int)buf_size, MPI_BYTE, 0, mpi_comm)))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
     } /* end if */
 
     /* finally, pass the number of entries and the buffer pointer 

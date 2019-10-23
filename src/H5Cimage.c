@@ -46,7 +46,7 @@
 #include "H5FLprivate.h"	/* Free Lists                           */
 #include "H5MFprivate.h"	/* File memory management		*/
 #include "H5MMprivate.h"	/* Memory management			*/
-
+#include "H5V.h"
 
 /****************/
 /* Local Macros */
@@ -1069,11 +1069,11 @@ H5C__read_cache_image(H5F_t *f, H5C_t *cache_ptr)
 
 	        /* Broadcast cache image */
             if ( MPI_SUCCESS != 
-                 (mpi_result = MPI_Bcast(cache_ptr->image_buffer, 
+                 (mpi_result = HDF_MPI_EVAL_Bcast(cache_ptr->image_buffer, 
                                          (int)cache_ptr->image_len, MPI_BYTE, 
                                          0, aux_ptr->mpi_comm)) )
 
-                HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+                HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
 
         } /* end if */
     } /* end if */
@@ -1081,11 +1081,11 @@ H5C__read_cache_image(H5F_t *f, H5C_t *cache_ptr)
 
         /* Retrieve the contents of the metadata cache image from process 0 */
         if ( MPI_SUCCESS != 
-             (mpi_result = MPI_Bcast(cache_ptr->image_buffer, 
+             (mpi_result = HDF_MPI_EVAL_Bcast(cache_ptr->image_buffer, 
                                      (int)cache_ptr->image_len, MPI_BYTE, 
                                      0, aux_ptr->mpi_comm)) )
 
-            HMPI_GOTO_ERROR(FAIL, "can't receive cache image MPI_Bcast", \
+            HMPI_GOTO_ERROR(FAIL, "can't receive cache image HDF_MPI_EVAL_Bcast", \
                             mpi_result)
     } /* end else-if */
 } /* end block */
@@ -1445,14 +1445,14 @@ H5C__prep_image_for_file_close(H5F_t *f, hbool_t *image_generated)
                 aux_ptr->p0_image_len = (unsigned)cache_ptr->image_data_len;
                 p0_image_len = aux_ptr->p0_image_len;
 
-                if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&p0_image_len, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
-                    HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+                if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&p0_image_len, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
+                    HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
 
                 HDassert(p0_image_len == aux_ptr->p0_image_len);
             } /* end if */
             else {
-                if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&p0_image_len, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
-                    HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+                if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&p0_image_len, 1, MPI_UNSIGNED, 0, aux_ptr->mpi_comm)))
+                    HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
                 
                 aux_ptr->p0_image_len = p0_image_len;
             } /* end else */
