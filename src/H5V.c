@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "mpi.h"
 #include "H5V.h"
 
@@ -16,6 +17,8 @@ const char * const eval_tname[] = {
                                     "            hdf5_eval_H5L__create_real_dataset",
                                     "                hdf5_eval_H5L__link_cb_dataset",
                                     "                    hdf5_eval_H5O_obj_create_dataset",
+                                    "                        hdf5_eval_H5O__dset_create",
+                                    "                            hdf5_eval_H5D__create",
                                     "                    hdf5_eval_H5G_obj_insert_dataset",
                                     "hdf5_eval_H5Dopen",
                                     "hdf5_eval_H5Dclose",

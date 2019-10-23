@@ -1150,9 +1150,12 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     hbool_t             efl_copied = FALSE;     /* Flag to indicate that external file list message was copied */
     H5G_loc_t           dset_loc;               /* Dataset location */
     H5D_t              *ret_value = NULL;       /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
 
+    t1 = MPI_Wtime();
+    
     /* check args */
     HDassert(file);
     HDassert(H5I_DATATYPE == H5I_get_type(type_id));
@@ -1349,6 +1352,9 @@ done:
         new_dset->oloc.file = NULL;
         new_dset = H5FL_FREE(H5D_t, new_dset);
     } /* end if */
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create() */

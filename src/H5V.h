@@ -19,13 +19,15 @@
 #define EVAL_TIMER_H5L__create_real_dataset (EVAL_TIMER_H5L_link_object_dataset + 1)
 #define EVAL_TIMER_H5L__link_cb_dataset (EVAL_TIMER_H5L__create_real_dataset + 1)
 #define EVAL_TIMER_H5O_obj_create_dataset (EVAL_TIMER_H5L__link_cb_dataset + 1)
-#define EVAL_TIMER_H5G_obj_insert_dataset (EVAL_TIMER_H5O_obj_create_dataset + 1)
+#define EVAL_TIMER_H5O__dset_create (EVAL_TIMER_H5O_obj_create_dataset + 1)
+#define EVAL_TIMER_H5D__create (EVAL_TIMER_H5O__dset_create + 1)
+#define EVAL_TIMER_H5G_obj_insert_dataset (EVAL_TIMER_H5D__create + 1)
 #define EVAL_TIMER_H5Dopen (EVAL_TIMER_H5G_obj_insert_dataset + 1)
 #define EVAL_TIMER_H5Dclose (EVAL_TIMER_H5Dopen + 1)
 #define EVAL_TIMER_H5Acreate (EVAL_TIMER_H5Dclose + 1)
 #define EVAL_TIMER_H5Aopen (EVAL_TIMER_H5Acreate + 1)
 #define EVAL_TIMER_H5Aclose (EVAL_TIMER_H5Aopen + 1)
-#define EVAL_TIMER_H5Dwrite 18
+#define EVAL_TIMER_H5Dwrite 30
 #define EVAL_TIMER_H5D__write (EVAL_TIMER_H5Dwrite + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_w (EVAL_TIMER_H5D__write + 1)
 #define EVAL_TIMER_H5D__ioinfo_adjust_w (EVAL_TIMER_H5D__chunk_io_init_w + 1)
@@ -47,7 +49,7 @@
 #define EVAL_TIMER_H5D__final_collective_io_w (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Type_Create_w + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w (EVAL_TIMER_H5D__final_collective_io_w + 1)
 #define EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_w (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w + 1)
-#define EVAL_TIMER_H5Dread 40
+#define EVAL_TIMER_H5Dread 42
 #define EVAL_TIMER_H5D__read (EVAL_TIMER_H5Dread + 1)
 #define EVAL_TIMER_H5D__read_check_arg (EVAL_TIMER_H5D__read + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_r (EVAL_TIMER_H5D__read_check_arg + 1)
@@ -61,7 +63,7 @@
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r (EVAL_TIMER_H5F_block_read_fcoll_r + 1)
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_r (EVAL_TIMER_H5D__chunk_collective_io_r + 1)
-#define EVAL_TIMER_H5D__chunk_read 54
+#define EVAL_TIMER_H5D__chunk_read 56
 #define EVAL_TIMER_H5D__chunk_lookup_r (EVAL_TIMER_H5D__chunk_read + 1)
 #define EVAL_TIMER_H5D__chunk_lock_r (EVAL_TIMER_H5D__chunk_lookup_r + 1)
 #define EVAL_TIMER_H5F_block_read_lock_r (EVAL_TIMER_H5D__chunk_lock_r + 1)
