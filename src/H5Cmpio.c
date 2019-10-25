@@ -50,7 +50,7 @@
 /****************/
 #define H5C_APPLY_CANDIDATE_LIST__DEBUG 0
 
-
+#include "H5V.h"
 /******************/
 /* Local Typedefs */
 /******************/
@@ -1044,19 +1044,38 @@ H5C__collective_write(H5F_t *f)
         /* just to match up with the 1st MPI_File_set_view from 
          * H5FD_mpio_write() 
          */
-        if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+        }
 
         /* just to match up with MPI_File_write_at_all from H5FD_mpio_write() */
         HDmemset(&mpi_stat, 0, sizeof(MPI_Status));
-        if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(mpi_fh, (MPI_Offset)0, NULL, 0, MPI_BYTE, &mpi_stat)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(mpi_fh, (MPI_Offset)0, NULL, 0, MPI_BYTE, &mpi_stat)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_write_at_all, t2 - t1);
+            eval_add_size(EVAL_TIMER_MPI_File_write_at_all, 0, MPI_BYTE);
+        }
 
         /* just to match up with the 2nd MPI_File_set_view (reset) in 
          * H5FD_mpio_write() 
          */
-        if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
+        }
     } /* end else */
 
 done:

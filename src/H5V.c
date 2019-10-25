@@ -4,7 +4,28 @@
 
 static double eval_tlocal[EVAL_NTIMER];
 static double eval_clocal[EVAL_NTIMER];
+
+static double eval_maxlocal[EVAL_NMPI];
+static double eval_minlocal[EVAL_NMPI];
+static double eval_sumlocal[EVAL_NMPI];
+
 const char * const eval_tname[] = { 
+                                    "hdf5_eval_MPI_Allgather",
+                                    "hdf5_eval_MPI_Allgatherv",
+                                    "hdf5_eval_MPI_Allreduce",
+                                    "hdf5_eval_MPI_Bcast",
+                                    "hdf5_eval_MPI_Gather",
+                                    "hdf5_eval_MPI_Gatherv",
+                                    "hdf5_eval_MPI_Send",
+                                    "hdf5_eval_MPI_Isend",
+                                    "hdf5_eval_MPI_Recv",
+                                    "hdf5_eval_MPI_Imrecv",
+                                    "hdf5_eval_MPI_Mprobe",
+                                    "hdf5_eval_MPI_File_read_at",
+                                    "hdf5_eval_MPI_File_read_at_all",
+                                    "hdf5_eval_MPI_File_write_at",
+                                    "hdf5_eval_MPI_File_write_at_all",
+                                    "hdf5_eval_MPI_File_set_view",
                                     "hdf5_eval_H5Fcreate",
                                     "hdf5_eval_H5Fopen",
                                     "hdf5_eval_H5Fclose",
@@ -97,11 +118,32 @@ void eval_free_mpi(){
     }
 }
 void eval_add_time(int id, double t){
-    if (eval_enable && (id > 100)){
+    if (eval_enable && (id > EVAL_NTIMER)){
         return;
     }
     eval_tlocal[id] += t;
-    eval_tlocal[id]++;
+    eval_clocal[id]++;
+}
+
+void eval_add_size(int id, int count, MPI_Datatype type){
+    int esize;
+    double size;
+    
+    if (eval_enable && (id > EVAL_NMPI)){
+        return;
+    }
+    
+    esize = 0;
+    MPI_Type_size(type, &esize);
+    size = (double)(esize * count);
+
+    eval_sumlocal[id] += size;
+    if (eval_maxlocal[id] < size){
+        eval_maxlocal[id] = size;
+    }
+    if ((eval_minlocal[id] > size) || (eval_minlocal[id] == 0)){
+        eval_minlocal[id] = size;
+    }
 }
 
 void H5Venable(){
@@ -161,6 +203,60 @@ void H5Vprint(){
         }
     }
 
+    MPI_Reduce(eval_sumlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(eval_sumlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(eval_sumlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for(i = 0; i < EVAL_NMPI; i++){
+        tmean[i] /= np;
+        tvar_local[i] = (eval_sumlocal[i] - tmean[i]) * (eval_sumlocal[i] - tmean[i]);
+    }
+    MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0){
+        for(i = 0; i < EVAL_NMPI; i++){
+            printf("#+$: %s_size_sum_mean: %lf\n", eval_tname[i], tmean[i]);
+            printf("#+$: %s_size_sum_max: %lf\n", eval_tname[i], tmax[i]);
+            printf("#+$: %s_size_sum_min: %lf\n", eval_tname[i], tmin[i]);
+            printf("#+$: %s_size_sum_var: %lf\n\n", eval_tname[i], tvar[i]);
+        }
+    }
+
+    MPI_Reduce(eval_maxlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(eval_maxlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(eval_maxlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for(i = 0; i < EVAL_NMPI; i++){
+        tmean[i] /= np;
+        tvar_local[i] = (eval_maxlocal[i] - tmean[i]) * (eval_maxlocal[i] - tmean[i]);
+    }
+    MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0){
+        for(i = 0; i < EVAL_NMPI; i++){
+            printf("#+$: %s_size_max_mean: %lf\n", eval_tname[i], tmean[i]);
+            printf("#+$: %s_size_max_max: %lf\n", eval_tname[i], tmax[i]);
+            printf("#+$: %s_size_max_min: %lf\n", eval_tname[i], tmin[i]);
+            printf("#+$: %s_size_max_var: %lf\n\n", eval_tname[i], tvar[i]);
+        }
+    }
+
+    MPI_Reduce(eval_minlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(eval_minlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(eval_minlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for(i = 0; i < EVAL_NMPI; i++){
+        tmean[i] /= np;
+        tvar_local[i] = (eval_minlocal[i] - tmean[i]) * (eval_minlocal[i] - tmean[i]);
+    }
+    MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0){
+        for(i = 0; i < EVAL_NMPI; i++){
+            printf("#+$: %s_size_min_mean: %lf\n", eval_tname[i], tmean[i]);
+            printf("#+$: %s_size_min_max: %lf\n", eval_tname[i], tmax[i]);
+            printf("#+$: %s_size_min_min: %lf\n", eval_tname[i], tmin[i]);
+            printf("#+$: %s_size_min_var: %lf\n\n", eval_tname[i], tvar[i]);
+        }
+    }
+
     if (!flag){
         MPI_Finalize();
     }
@@ -172,4 +268,26 @@ void H5Vreset(){
         eval_tlocal[i] = 0;
         eval_clocal[i] = 0;
     }
+
+    for(i = 0; i < EVAL_NMPI; i++){
+        eval_sumlocal[i] = 0;
+        eval_maxlocal[i] = 0;
+        eval_minlocal[i] = 0;
+    }
+}
+
+int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
+    int ret;
+    double t1, t2;
+
+    t1 = MPI_Wtime();
+
+    ret = MPI_Bcast(buffer, count, datatype, root, comm);
+    
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
+    
+    eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);
+
+    return ret;
 }

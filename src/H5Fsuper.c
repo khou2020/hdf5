@@ -37,7 +37,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -394,8 +394,8 @@ H5F__super_read(H5F_t *f, H5P_genplist_t *fa_plist, hbool_t initial_read)
         } /* end if */
 
         /* Broadcast superblock address to other processes */
-        if(MPI_SUCCESS != (mpi_result = MPI_Bcast(&super_addr, sizeof(super_addr), MPI_BYTE, 0, this_comm)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_result)
+        if(MPI_SUCCESS != (mpi_result = HDF_MPI_EVAL_Bcast(&super_addr, sizeof(super_addr), MPI_BYTE, 0, this_comm)))
+            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_result)
     } /* end if */
     else {
     /* Locate the signature as per per the serial library */

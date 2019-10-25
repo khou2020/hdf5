@@ -100,7 +100,7 @@
 #else /* H5C_DO_MEMORY_SANITY_CHECKS */
 #define H5C_IMAGE_EXTRA_SPACE 0
 #endif /* H5C_DO_MEMORY_SANITY_CHECKS */
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -2294,8 +2294,8 @@ H5C_protect(H5F_t *		f,
                 HDassert(entry_ptr->image_ptr);
 
                 H5_CHECKED_ASSIGN(buf_size, int, entry_ptr->size, size_t);
-                if(MPI_SUCCESS != (mpi_code = MPI_Bcast(entry_ptr->image_ptr, buf_size, MPI_BYTE, 0, comm)))
-                    HMPI_GOTO_ERROR(NULL, "MPI_Bcast failed", mpi_code)
+                if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(entry_ptr->image_ptr, buf_size, MPI_BYTE, 0, comm)))
+                    HMPI_GOTO_ERROR(NULL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
 
                 /* Mark the entry as collective and insert into the collective list */
                 entry_ptr->coll_access = TRUE;
@@ -6602,8 +6602,8 @@ H5C_load_entry(H5F_t *              f,
                 int buf_size;
 
                 H5_CHECKED_ASSIGN(buf_size, int, len, size_t);
-                if(MPI_SUCCESS != (mpi_code = MPI_Bcast(image, buf_size, MPI_BYTE, 0, comm)))
-                    HMPI_GOTO_ERROR(NULL, "MPI_Bcast failed", mpi_code)
+                if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(image, buf_size, MPI_BYTE, 0, comm)))
+                    HMPI_GOTO_ERROR(NULL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
             } /* end if */
 #endif /* H5_HAVE_PARALLEL */
 
@@ -6648,8 +6648,8 @@ H5C_load_entry(H5F_t *              f,
                             int buf_size;
 
                             H5_CHECKED_ASSIGN(buf_size, int, actual_len - len, size_t);
-                            if(MPI_SUCCESS != (mpi_code = MPI_Bcast(image + len, buf_size, MPI_BYTE, 0, comm)))
-                                HMPI_GOTO_ERROR(NULL, "MPI_Bcast failed", mpi_code)
+                            if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(image + len, buf_size, MPI_BYTE, 0, comm)))
+                                HMPI_GOTO_ERROR(NULL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
                         } /* end if */
 #endif /* H5_HAVE_PARALLEL */
                     } /* end if */
