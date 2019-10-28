@@ -858,8 +858,11 @@ H5D__update_oh_info(H5F_t *file, H5D_t *dset, hid_t dapl_id)
     hbool_t             use_at_least_v18;       /* Flag indicating to use at least v18 format versions */
     hbool_t             use_minimized_header = FALSE; /* Flag to use minimized dataset object headers */
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+    
+    t1 = MPI_Wtime();
 
     /* Sanity checking */
     HDassert(file);
@@ -1034,6 +1037,9 @@ done:
             /* Destroy the layout information for the dataset */
             if(dset->shared->layout.ops->dest && (dset->shared->layout.ops->dest)(dset) < 0)
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
+    
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__update_oh_info, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__update_oh_info() */
@@ -1150,7 +1156,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     hbool_t             efl_copied = FALSE;     /* Flag to indicate that external file list message was copied */
     H5G_loc_t           dset_loc;               /* Dataset location */
     H5D_t              *ret_value = NULL;       /* Return value */
-    double t1, t2;
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_PACKAGE
 
@@ -1202,12 +1208,17 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     /* Set the dataset's checked_filters flag to enable writing */
     new_dset->shared->checked_filters = TRUE;
 
+    t3 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create_metadata, t3 - t1);
+
     /* Check if the dataset has a non-default DCPL & get important values, if so */
     if(new_dset->shared->dcpl_id != H5P_DATASET_CREATE_DEFAULT) {
         H5O_layout_t    *layout;        /* Dataset's layout information */
         H5O_pline_t     *pline;         /* Dataset's I/O pipeline information */
         H5O_fill_t      *fill;          /* Dataset's fill value info */
         H5O_efl_t       *efl;           /* Dataset's external file list info */
+        
+        t3 = MPI_Wtime();
 
         /* Check if the filters in the DCPL can be applied to this dataset */
         if(H5Z_can_apply(new_dset->shared->dcpl_id, new_dset->shared->type_id) < 0)
@@ -1250,6 +1261,9 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
         /* Don't allow compact datasets to allocate space later */
         if(layout->type == H5D_COMPACT && fill->alloc_time != H5D_ALLOC_TIME_EARLY)
             HGOTO_ERROR(H5E_DATASET, H5E_BADVALUE, NULL, "compact dataset must have early space allocation")
+
+        t4 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5D__create_property, t4 - t3);
     } /* end if */
 
     /* Set the version for the I/O pipeline message */

@@ -856,8 +856,11 @@ H5D__chunk_construct(H5F_t H5_ATTR_UNUSED *f, H5D_t *dset)
 {
     unsigned u;                 /* Local index variable */
     herr_t ret_value = SUCCEED; /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();    
 
     /* Sanity checks */
     HDassert(f);
@@ -898,6 +901,9 @@ H5D__chunk_construct(H5F_t H5_ATTR_UNUSED *f, H5D_t *dset)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, FAIL, "unable to reset chunked storage index")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_construct, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_construct() */
 
