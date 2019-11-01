@@ -1,6 +1,6 @@
 #pragma once
 #include "mpi.h"
-
+#include "H5public.h"
 
 // NOTE: macro dependency can't be too long to overflow the stack
 

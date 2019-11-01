@@ -150,15 +150,17 @@ void eval_add_size(int id, int count, MPI_Datatype type){
     }
 }
 
-void H5Venable(){
+herr_t H5Venable(){
     eval_enable = 1;
+    return 0;
 }
-void H5Vdisable(){
+herr_t H5Vdisable(){
     eval_enable = 0;
+    return 0;
 }
 
 // Note: This only work if everyone calls H5Fclose
-void H5Vprint(){
+herr_t H5Vprint(){
     int i;
     int np, rank, flag;
     double tmax[EVAL_NTIMER], tmin[EVAL_NTIMER], tmean[EVAL_NTIMER], tvar[EVAL_NTIMER], tvar_local[EVAL_NTIMER];
@@ -264,8 +266,10 @@ void H5Vprint(){
     if (!flag){
         MPI_Finalize();
     }
+
+    return 0;
 }
-void H5Vreset(){
+herr_t H5Vreset(){
     int i;
     
     for(i = 0; i < EVAL_NTIMER; i++){
@@ -278,6 +282,8 @@ void H5Vreset(){
         eval_maxlocal[i] = 0;
         eval_minlocal[i] = 0;
     }
+
+    return 0;
 }
 
 int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
