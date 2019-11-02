@@ -103,24 +103,7 @@ const char * const eval_tname[] = {
 static eval_need_finalize = 0;
 static eval_fcnt = 0;
 static eval_enable = 0;
-void eval_init_mpi(){
-    int flag;
-    MPI_Initialized(&flag);
-    if (!flag){
-        MPI_Init(NULL, NULL);
-        eval_need_finalize = 1;
-    }
-    eval_fcnt++;
-}
-void eval_free_mpi(){
-    eval_fcnt--;
-    if (eval_fcnt == 0){
-        if (eval_need_finalize){
-            MPI_Finalize();
-            eval_need_finalize = 0;
-        }
-    }
-}
+
 void eval_add_time(int id, double t){
     if (eval_enable && (id > EVAL_NTIMER)){
         return;

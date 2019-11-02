@@ -408,7 +408,6 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
 
-    eval_init_mpi();
     t1 = MPI_Wtime();
 
     /* Check/fix arguments */
@@ -702,8 +701,6 @@ H5Fclose(hid_t file_id)
 done:
     t2 = MPI_Wtime();
     eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
-
-    eval_free_mpi();
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */

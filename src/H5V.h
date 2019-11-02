@@ -115,8 +115,6 @@
 #define EVAL_TIMER_H5L_link_object_other EVAL_TIMER_DUMMY
 #define EVAL_TIMER_H5L__create_real_other EVAL_TIMER_DUMMY
 
-void eval_init_mpi();
-void eval_free_mpi();
 void eval_add_time(int id, double t);
 void eval_add_size(int id, int count, MPI_Datatype type);
 int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm );
