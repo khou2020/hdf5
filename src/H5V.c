@@ -9,6 +9,13 @@ static double eval_maxlocal[EVAL_NMPI];
 static double eval_minlocal[EVAL_NMPI];
 static double eval_sumlocal[EVAL_NMPI];
 
+
+
+
+
+
+
+
 const char * const eval_tname[] = { 
                                     "hdf5_eval_MPI_Allgather",
                                     "hdf5_eval_MPI_Allgatherv",
@@ -44,6 +51,11 @@ const char * const eval_tname[] = {
                                     "                                hdf5_eval_H5D__create.property",
                                     "                                hdf5_eval_H5D__chunk_construct",
                                     "                                hdf5_eval_H5D__update_oh_info",
+                                    "                                    hdf5_eval_H5D__layout_oh_create",
+                                    "                                        hdf5_eval_H5D__alloc_storage",
+                                    "                                            hdf5_eval_H5D__init_storage",
+                                    "                                                hdf5_eval_H5D__chunk_allocate",
+                                    "                                                    hdf5_eval_H5D__chunk_collective_fill",
                                     "                    hdf5_eval_H5G_obj_insert_dataset",
                                     "hdf5_eval_H5Dopen",
                                     "hdf5_eval_H5Dclose",

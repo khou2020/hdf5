@@ -31,7 +31,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -467,8 +467,11 @@ H5D__layout_oh_create(H5F_t *file, H5O_t *oh, H5D_t *dset, hid_t dapl_id)
     unsigned layout_mesg_flags;         /* Flags for inserting layout message */
     hbool_t             layout_init = FALSE;    /* Flag to indicate that chunk information was initialized */
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
+    
+    t1 = MPI_Wtime();
 
     /* Sanity checking */
     HDassert(file);
@@ -581,6 +584,9 @@ done:
             /* Destroy any cached layout information for the dataset */
             if(dset->shared->layout.ops->dest && (dset->shared->layout.ops->dest)(dset) < 0)
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
+    
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__layout_oh_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__layout_oh_create() */

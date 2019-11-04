@@ -41,13 +41,18 @@
 #define EVAL_TIMER_H5D__create_property (EVAL_TIMER_H5D__create_metadata + 1)
 #define EVAL_TIMER_H5D__chunk_construct (EVAL_TIMER_H5D__create_property + 1)
 #define EVAL_TIMER_H5D__update_oh_info (EVAL_TIMER_H5D__chunk_construct + 1)
-#define EVAL_TIMER_H5G_obj_insert_dataset (EVAL_TIMER_H5D__update_oh_info + 1)
-#define EVAL_TIMER_H5Dopen (EVAL_TIMER_H5G_obj_insert_dataset + 1)
+#define EVAL_TIMER_H5D__layout_oh_create (EVAL_TIMER_H5D__update_oh_info + 1)
+#define EVAL_TIMER_H5D__alloc_storage (EVAL_TIMER_H5D__layout_oh_create + 1)
+#define EVAL_TIMER_H5D__init_storage (EVAL_TIMER_H5D__alloc_storage + 1)
+#define EVAL_TIMER_H5D__chunk_allocate (EVAL_TIMER_H5D__init_storage + 1)
+#define EVAL_TIMER_H5D__chunk_collective_fill (EVAL_TIMER_H5D__chunk_allocate + 1)
+#define EVAL_TIMER_H5G_obj_insert_dataset (EVAL_TIMER_H5D__chunk_collective_fill + 1)
+#define EVAL_TIMER_H5Dopen 40
 #define EVAL_TIMER_H5Dclose (EVAL_TIMER_H5Dopen + 1)
 #define EVAL_TIMER_H5Acreate (EVAL_TIMER_H5Dclose + 1)
 #define EVAL_TIMER_H5Aopen (EVAL_TIMER_H5Acreate + 1)
 #define EVAL_TIMER_H5Aclose (EVAL_TIMER_H5Aopen + 1)
-#define EVAL_TIMER_H5Dwrite 40
+#define EVAL_TIMER_H5Dwrite 45
 #define EVAL_TIMER_H5D__write (EVAL_TIMER_H5Dwrite + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_w (EVAL_TIMER_H5D__write + 1)
 #define EVAL_TIMER_H5D__ioinfo_adjust_w (EVAL_TIMER_H5D__chunk_io_init_w + 1)
@@ -69,7 +74,7 @@
 #define EVAL_TIMER_H5D__final_collective_io_w (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Type_Create_w + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w (EVAL_TIMER_H5D__final_collective_io_w + 1)
 #define EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_w (EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w + 1)
-#define EVAL_TIMER_H5Dread 62
+#define EVAL_TIMER_H5Dread 67
 #define EVAL_TIMER_H5D__read (EVAL_TIMER_H5Dread + 1)
 #define EVAL_TIMER_H5D__read_check_arg (EVAL_TIMER_H5D__read + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_r (EVAL_TIMER_H5D__read_check_arg + 1)
@@ -83,7 +88,7 @@
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r (EVAL_TIMER_H5F_block_read_fcoll_r + 1)
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_r (EVAL_TIMER_H5D__chunk_collective_io_r + 1)
-#define EVAL_TIMER_H5D__chunk_read 76
+#define EVAL_TIMER_H5D__chunk_read 81
 #define EVAL_TIMER_H5D__chunk_lookup_r (EVAL_TIMER_H5D__chunk_read + 1)
 #define EVAL_TIMER_H5D__chunk_lock_r (EVAL_TIMER_H5D__chunk_lookup_r + 1)
 #define EVAL_TIMER_H5F_block_read_lock_r (EVAL_TIMER_H5D__chunk_lock_r + 1)
@@ -102,7 +107,7 @@
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
 #define EVAL_NMPI (EVAL_TIMER_MPI_File_set_view + 1)
 
-#define EVAL_TIMER_DUMMY 100
+#define EVAL_TIMER_DUMMY 150
 #define EVAL_TIMER_H5D__chunk_lock_w EVAL_TIMER_DUMMY
 #define EVAL_TIMER_H5D__chunk_unlock_w EVAL_TIMER_DUMMY
 #define EVAL_TIMER_H5F_block_read_lock_w EVAL_TIMER_DUMMY

@@ -2246,8 +2246,11 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
     hbool_t must_init_space = FALSE;     /* Flag to indicate that space should be initialized */
     hbool_t addr_set = FALSE;            /* Flag to indicate that the dataset's storage address was set */
     herr_t  ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+    
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dset);
@@ -2390,6 +2393,9 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__alloc_storage, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__alloc_storage() */
 
@@ -2409,8 +2415,11 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
 {
     const H5D_t *dset = io_info->dset;     /* dataset pointer */
     herr_t ret_value = SUCCEED;            /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+    
+    t1 = MPI_Wtime();
 
     HDassert(dset);
 
@@ -2462,6 +2471,9 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
     } /* end switch */ /*lint !e788 All appropriate cases are covered */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__init_storage, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__init_storage() */
 

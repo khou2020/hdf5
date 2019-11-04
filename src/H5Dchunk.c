@@ -4088,8 +4088,11 @@ H5D__chunk_allocate(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_
     unsigned    nunfilt_edge_chunk_dims = 0; /* Number of dimensions on an edge */
     const H5O_storage_chunk_t *sc = &(layout->storage.u.chunk);
     herr_t	ret_value = SUCCEED;	/* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
+    
+    t1 = MPI_Wtime();
 
     /* Check args */
     HDassert(dset && H5D_CHUNKED == layout->type);
@@ -4491,6 +4494,9 @@ done:
         H5MM_free(chunk_info.addr);
 #endif
 
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_allocate, t2 - t1);
+
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__chunk_allocate() */
 
@@ -4706,8 +4712,11 @@ H5D__chunk_collective_fill(const H5D_t *dset, H5D_chunk_coll_info_t *chunk_info,
     hbool_t     need_addr_sort = FALSE;
     int         i;                  /* Local index variable */
     herr_t ret_value = SUCCEED;     /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* Get the MPI communicator */
     if(MPI_COMM_NULL == (mpi_comm = H5F_mpi_get_comm(dset->oloc.file)))
@@ -4832,6 +4841,9 @@ done:
         HMPI_DONE_ERROR(FAIL, "MPI_Type_free failed", mpi_code)
     H5MM_xfree(chunk_disp_array);
     H5MM_xfree(block_lens);
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_collective_fill, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_fill() */
