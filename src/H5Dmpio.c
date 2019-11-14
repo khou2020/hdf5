@@ -772,8 +772,11 @@ H5D__contig_collective_write(H5D_io_info_t *io_info, const H5D_type_info_t *type
 {
     H5D_mpio_actual_io_mode_t actual_io_mode = H5D_MPIO_CONTIGUOUS_COLLECTIVE;
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+
+    t1 = MPI_Wtime();
 
     /* Sanity check */
     HDassert(H5FD_MPIO == H5F_DRIVER_ID(io_info->dset->oloc.file));
@@ -788,6 +791,9 @@ H5D__contig_collective_write(H5D_io_info_t *io_info, const H5D_type_info_t *type
     H5CX_set_mpio_actual_io_mode(actual_io_mode);
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__contig_collective_write, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__contig_collective_write() */
 
@@ -1541,7 +1547,8 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
         if (H5D__final_collective_io(io_info, type_info, mpi_buf_count, file_type, mem_type) < 0)
             HGOTO_ERROR(H5E_IO, H5E_CANTGET, FAIL, "couldn't finish MPI-IO")
 
-        t3 = MPI_Wtime();
+        t4 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_collective_io_w, t4 - t3);
 
         /* Participate in the collective re-insertion of all chunks modified
          * in this iteration into the chunk index
@@ -1555,8 +1562,8 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
                 HGOTO_ERROR(H5E_DATASET, H5E_CANTINSERT, FAIL, "unable to insert chunk address into index")
         } /* end for */
 
-        t4 = MPI_Wtime();
-        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w, t4 - t3);
+        t3 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Update_Index_w, t3 - t4);
     } /* end if */
 
 done:
@@ -2140,9 +2147,12 @@ H5D__inter_collective_io(H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
     MPI_Datatype        mpi_file_type, mpi_buf_type;
     int                 mpi_code;       /* MPI return code */
     herr_t       ret_value = SUCCEED;   /* return value */
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_STATIC
 
+    t1 = MPI_Wtime();
+    
     if((file_space != NULL) && (mem_space != NULL)) {
         int  mpi_file_count;         /* Number of file "objects" to transfer */
         hsize_t *permute_map = NULL; /* array that holds the mapping from the old, 
@@ -2205,9 +2215,17 @@ if(H5DEBUG(D))
     HDfprintf(H5DEBUG(D),"before final collective IO \n");
 #endif
 
+    t1 = MPI_Wtime();
     /* Perform final collective I/O operation */
     if(H5D__final_collective_io(io_info, type_info, (hsize_t)mpi_buf_count, mpi_file_type, mpi_buf_type) < 0)
         HGOTO_ERROR(H5E_IO, H5E_CANTGET, FAIL, "couldn't finish collective MPI-IO")
+    t4 = MPI_Wtime();
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_r, t2 - t1);
+    }
 
 done:
     /* Free the MPI buf and file types, if they were derived */
@@ -2220,6 +2238,14 @@ done:
 if(H5DEBUG(D))
     HDfprintf(H5DEBUG(D),"before leaving inter_collective_io ret_value = %d\n",ret_value);
 #endif
+
+    t2 = MPI_Wtime();
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_r, t2 - t1);
+    }
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__inter_collective_io() */
