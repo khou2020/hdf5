@@ -300,3 +300,20 @@ int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root
 
     return ret;
 }
+
+
+void H5V_ShowHints(MPI_Info *mpiHints) {
+    char key[MPI_MAX_INFO_VAL];
+    char value[MPI_MAX_INFO_VAL];
+    int flag, i, nkeys;
+
+    MPI_Info_get_nkeys(*mpiHints, &nkeys);
+
+    for (i = 0; i < nkeys; i++) {
+            MPI_Info_get_nthkey(*mpiHints, i, key);
+
+            MPI_Info_get(*mpiHints, key, MPI_MAX_INFO_VAL - 1,
+                                    value, &flag);
+            printf("\t%s = %s\n", key, value);
+    }
+}
