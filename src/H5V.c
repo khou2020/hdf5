@@ -149,6 +149,13 @@ void eval_add_size(int id, int count, MPI_Datatype type){
     }
 }
 
+void eval_add_size2(int id, size_t size){
+    eval_sumlocal[id] += size;
+    if (eval_maxlocal[id] < eval_sumlocal[id]){
+        eval_maxlocal[id] = eval_sumlocal[id];
+    }
+}
+
 herr_t H5Venable(){
     eval_enable = 1;
     return 0;

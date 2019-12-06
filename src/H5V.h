@@ -7,7 +7,8 @@
 
 
 
-#define EVAL_TIMER_MPI_Allgather 0
+#define EVAL_TIMER_H5MM_malloc 0
+#define EVAL_TIMER_MPI_Allgather (EVAL_TIMER_H5MM_malloc + 1)
 #define EVAL_TIMER_MPI_Allgatherv (EVAL_TIMER_MPI_Allgather + 1)
 #define EVAL_TIMER_MPI_Allreduce (EVAL_TIMER_MPI_Allgatherv + 1)
 #define EVAL_TIMER_MPI_Bcast (EVAL_TIMER_MPI_Allreduce + 1)
@@ -23,7 +24,7 @@
 #define EVAL_TIMER_MPI_File_write_at (EVAL_TIMER_MPI_File_read_at_all + 1)
 #define EVAL_TIMER_MPI_File_write_at_all (EVAL_TIMER_MPI_File_write_at + 1)
 #define EVAL_TIMER_MPI_File_set_view (EVAL_TIMER_MPI_File_write_at_all + 1)
-#define EVAL_TIMER_H5Fcreate 16
+#define EVAL_TIMER_H5Fcreate 17
 #define EVAL_TIMER_H5Fopen (EVAL_TIMER_H5Fcreate + 1)
 #define EVAL_TIMER_H5Fclose (EVAL_TIMER_H5Fopen + 1)
 #define EVAL_TIMER_H5Gcreate (EVAL_TIMER_H5Fclose + 1)
@@ -47,12 +48,12 @@
 #define EVAL_TIMER_H5D__chunk_allocate (EVAL_TIMER_H5D__init_storage + 1)
 #define EVAL_TIMER_H5D__chunk_collective_fill (EVAL_TIMER_H5D__chunk_allocate + 1)
 #define EVAL_TIMER_H5G_obj_insert_dataset (EVAL_TIMER_H5D__chunk_collective_fill + 1)
-#define EVAL_TIMER_H5Dopen 40
+#define EVAL_TIMER_H5Dopen 41
 #define EVAL_TIMER_H5Dclose (EVAL_TIMER_H5Dopen + 1)
 #define EVAL_TIMER_H5Acreate (EVAL_TIMER_H5Dclose + 1)
 #define EVAL_TIMER_H5Aopen (EVAL_TIMER_H5Acreate + 1)
 #define EVAL_TIMER_H5Aclose (EVAL_TIMER_H5Aopen + 1)
-#define EVAL_TIMER_H5Dwrite 45
+#define EVAL_TIMER_H5Dwrite 46
 #define EVAL_TIMER_H5D__write (EVAL_TIMER_H5Dwrite + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_w (EVAL_TIMER_H5D__write + 1)
 #define EVAL_TIMER_H5D__ioinfo_adjust_w (EVAL_TIMER_H5D__chunk_io_init_w + 1)
@@ -78,7 +79,7 @@
 #define EVAL_TIMER_H5D__inter_collective_io_w (EVAL_TIMER_H5D__contig_collective_write + 1)
 #define EVAL_TIMER_H5D__inter_collective_io_collective_io_w (EVAL_TIMER_H5D__inter_collective_io_w + 1)
 #define EVAL_TIMER_H5D__final_collective_io_w (EVAL_TIMER_H5D__inter_collective_io_collective_io_w + 1)
-#define EVAL_TIMER_H5Dread 71
+#define EVAL_TIMER_H5Dread 72
 #define EVAL_TIMER_H5D__read (EVAL_TIMER_H5Dread + 1)
 #define EVAL_TIMER_H5D__read_check_arg (EVAL_TIMER_H5D__read + 1)
 #define EVAL_TIMER_H5D__chunk_io_init_r (EVAL_TIMER_H5D__read_check_arg + 1)
@@ -92,7 +93,7 @@
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r (EVAL_TIMER_H5F_block_read_fcoll_r + 1)
 #define EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_r (EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_r + 1)
 #define EVAL_TIMER_H5D__link_chunk_filtered_collective_io_r (EVAL_TIMER_H5D__chunk_collective_io_r + 1)
-#define EVAL_TIMER_H5D__chunk_read 85
+#define EVAL_TIMER_H5D__chunk_read 86
 #define EVAL_TIMER_H5D__chunk_lookup_r (EVAL_TIMER_H5D__chunk_read + 1)
 #define EVAL_TIMER_H5D__chunk_lock_r (EVAL_TIMER_H5D__chunk_lookup_r + 1)
 #define EVAL_TIMER_H5F_block_read_lock_r (EVAL_TIMER_H5D__chunk_lock_r + 1)
@@ -103,10 +104,6 @@
 #define EVAL_TIMER_H5Ovisit2 (EVAL_TIMER_H5Ovisit + 1)
 #define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5Ovisit2 + 1)
 #define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
-
-
-
-
 
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
 #define EVAL_NMPI (EVAL_TIMER_MPI_File_set_view + 1)
@@ -129,5 +126,6 @@
 
 void eval_add_time(int id, double t);
 void eval_add_size(int id, int count, MPI_Datatype type);
+void eval_add_size2(int id, size_t size);
 int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm );
 void H5V_ShowHints(MPI_Info *mpiHints);

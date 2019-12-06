@@ -1487,7 +1487,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
 
         t4 = MPI_Wtime();
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Chunk_Alloc_w, t4 - t3);
-        
+
         if (NULL == (num_chunks_selected_array = (size_t *) H5MM_malloc((size_t) mpi_size * sizeof(size_t))))
             HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "couldn't allocate num chunks selected array")
 
@@ -2224,10 +2224,10 @@ if(H5DEBUG(D))
         HGOTO_ERROR(H5E_IO, H5E_CANTGET, FAIL, "couldn't finish collective MPI-IO")
     t4 = MPI_Wtime();
     if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_w, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_w, t4 - t1);
     }
     else{
-        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_r, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_r, t4 - t1);
     }
 
 done:

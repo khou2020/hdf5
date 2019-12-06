@@ -46,6 +46,7 @@
 #define H5MM_BLOCK_FROM_BUF(mem) ((H5MM_block_t *)((unsigned char *)mem - (offsetof(H5MM_block_t, b) + H5MM_HEAD_GUARD_SIZE)))
 #endif /* H5_MEMORY_ALLOC_SANITY_CHECK */
 
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -315,11 +316,14 @@ H5MM_malloc(size_t size)
 
             /* Set buffer to return */
             ret_value = block->b + H5MM_HEAD_GUARD_SIZE;
+
+            eval_add_size2(EVAL_TIMER_H5MM_malloc, alloc_size);
         } /* end if */
         else
             ret_value = NULL;
 #else /* H5_MEMORY_ALLOC_SANITY_CHECK */
         ret_value = HDmalloc(size);
+        eval_add_size2(EVAL_TIMER_H5MM_malloc, size);
 #endif /* H5_MEMORY_ALLOC_SANITY_CHECK */
     } /* end if */
     else
@@ -552,11 +556,14 @@ H5MM_xfree(void *mem)
             block->u.info.in_use = FALSE;
 
             /* Free the block (finally!) */
+            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
             HDfree(block);
         }
         else
+            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
             HDfree(mem);
 #else /* H5_MEMORY_ALLOC_SANITY_CHECK */
+        eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
         HDfree(mem);
 #endif /* H5_MEMORY_ALLOC_SANITY_CHECK */
     } /* end if */
