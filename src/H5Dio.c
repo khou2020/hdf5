@@ -1142,7 +1142,7 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     const H5D_type_info_t *type_info)
 {
     herr_t	ret_value = SUCCEED;	/* Return value	*/
-    double t1, t2;
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_STATIC
 
@@ -1166,6 +1166,14 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
         H5CX_set_mpio_actual_io_mode(H5D_MPIO_NO_COLLECTIVE);
     } /* end if */
 
+    t3 = MPI_Wtime();
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Reset_w, t3 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Reset_r, t3 - t1);
+    }
+
     /* Make any parallel I/O adjustments */
     if(io_info->using_mpi_vfd) {
         H5FD_mpio_xfer_t xfer_mode; /* Parallel transfer for this request */
@@ -1175,14 +1183,34 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
         if(H5CX_get_io_xfer_mode(&xfer_mode) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get MPI-I/O transfer mode")
 
+        t4 = MPI_Wtime();
+
         /* Get MPI communicator */
         if(MPI_COMM_NULL == (io_info->comm = H5F_mpi_get_comm(dset->oloc.file)))
             HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "can't retrieve MPI communicator")
 
+        t3 = MPI_Wtime();
+        if (io_info->op_type == H5D_IO_OP_WRITE){
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Get_comm_w, t3 - t4);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Get_comm_r, t3 - t4);
+        }
+
+        t4 = MPI_Wtime();
+
         /* Check if we can set direct MPI-IO read/write functions */
         if((opt = H5D__mpio_opt_possible(io_info, file_space, mem_space, type_info)) < 0)
             HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "invalid check for direct IO dataspace ")
-
+        
+        t3 = MPI_Wtime();
+        if (io_info->op_type == H5D_IO_OP_WRITE){
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Chk_coll_w, t3 - t4);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Chk_coll_r, t3 - t4);
+        }
+        
         /* Check if we can use the optimized parallel I/O routines */
         if(opt == TRUE) {
             /* Override the I/O op pointers to the MPI-specific routines */

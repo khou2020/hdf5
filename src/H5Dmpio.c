@@ -1436,6 +1436,14 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
      */
     H5CX_set_mpio_actual_io_mode(H5D_MPIO_CHUNK_COLLECTIVE);
 
+    t3 = MPI_Wtime();
+    if (io_info->op_type == H5D_IO_OP_WRITE){
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Init_w, t3 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Init_r, t3 - t1);
+    }
+
     /* Build a list of selected chunks in the collective io operation */
     if (H5D__construct_filtered_io_info_list(io_info, type_info, fm, &chunk_list, &chunk_list_num_entries) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, FAIL, "couldn't construct filtered I/O info list")
@@ -1465,7 +1473,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
                 if (H5D__filtered_collective_chunk_entry_io(&chunk_list[i], io_info, type_info, fm) < 0)
                     HGOTO_ERROR(H5E_DATASET, H5E_WRITEERROR, FAIL, "couldn't process chunk entry")
 
-        
+        t4 = MPI_Wtime();
 
         /* Gather the new chunk sizes to all processes for a collective reallocation
          * of the chunks in the file.
@@ -1475,6 +1483,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGATHER, FAIL, "couldn't gather new chunk sizes")
 
         t3 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Gather_chunk_size_w, t3 - t4);
 
         /* Collectively re-allocate the modified chunks (from each process) in the file */
         for (i = 0; i < collective_chunk_list_num_entries; i++) {
@@ -1500,8 +1509,10 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
             t2 = MPI_Wtime();
             eval_add_time(EVAL_TIMER_MPI_Allgather, t2 - t1);
             eval_add_size(EVAL_TIMER_MPI_Allgather, 1, MPI_UNSIGNED_LONG_LONG);
+            eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Gather_num_entry_w, t2 - t1);
         }
 
+        t4 = MPI_Wtime();
 
         /* If this process has any chunks selected, create a MPI type for collectively
          * writing out the chunks to file. Otherwise, the process contributes to the
@@ -1570,6 +1581,8 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
     } /* end if */
 
 done:
+    t3 = MPI_Wtime();
+
     /* Free resources used by a process which had some selection */
     if (chunk_list) {
         for (i = 0; i < chunk_list_num_entries; i++)
@@ -1593,9 +1606,11 @@ done:
     t2 = MPI_Wtime();
     if (io_info->op_type == H5D_IO_OP_WRITE){
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_w, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Finalize_w, t2 - t3);
     }
     else{
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_r, t2 - t1);
+        eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Finalize_r, t2 - t3);
     }
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -3150,8 +3165,16 @@ H5D__chunk_redistribute_shared_chunks(const H5D_io_info_t *io_info, const H5D_ty
             HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "couldn't allocate send statuses buffer")
 
         H5_CHECK_OVERFLOW(num_send_requests, size_t, int);
-        if (MPI_SUCCESS != (mpi_code = MPI_Waitall((int) num_send_requests, send_requests, send_statuses)))
-            HMPI_GOTO_ERROR(FAIL, "MPI_Waitall failed", mpi_code)
+        {
+            double t1, t2;
+            t1 = MPI_Wtime();
+            if (MPI_SUCCESS != (mpi_code = MPI_Waitall((int) num_send_requests, send_requests, send_statuses)))
+                HMPI_GOTO_ERROR(FAIL, "MPI_Waitall failed", mpi_code)
+            else{
+                t2 = MPI_Wtime();
+                eval_add_time(EVAL_TIMER_MPI_Waitall, t2 - t1);
+            }
+        }
     } /* end if */
 
 done:
@@ -3497,9 +3520,21 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             t4 = MPI_Wtime();
             eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Self_w, t4 - t3);
 
-            if (MPI_SUCCESS != (mpi_code = MPI_Waitall(chunk_entry->async_info.num_receive_requests,
-                    chunk_entry->async_info.receive_requests_array, MPI_STATUSES_IGNORE)))
-                HMPI_GOTO_ERROR(FAIL, "MPI_Waitall failed", mpi_code)
+            {
+                double t1, t2;
+                t1 = MPI_Wtime();
+
+                if (MPI_SUCCESS != (mpi_code = MPI_Waitall(chunk_entry->async_info.num_receive_requests,
+                        chunk_entry->async_info.receive_requests_array, MPI_STATUSES_IGNORE)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_Waitall failed", mpi_code)
+                else{
+                    t2 = MPI_Wtime();
+                    eval_add_time(EVAL_TIMER_MPI_Waitall, t2 - t1);
+                }
+            }
+
+            t3 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Waitall_w, t3 - t4);
 
             /* For each asynchronous receive call previously posted, receive the chunk modification
              * buffer from another rank and update the chunk data
@@ -3534,8 +3569,8 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
                 H5MM_free(chunk_entry->async_info.receive_buffer_array[i]);
             } /* end for */
 
-            t3 = MPI_Wtime();
-            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_w, t3 - t4);
+            t4 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_w, t4 - t3);
 
             /* Filter the chunk */
             if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, 0, &filter_mask,
@@ -3543,8 +3578,8 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
                     &buf_size, &chunk_entry->buf) < 0)
                 HGOTO_ERROR(H5E_PLINE, H5E_CANTFILTER, FAIL, "output pipeline failed")
 
-            t4 = MPI_Wtime();
-            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_w, t4 - t3);
+            t3 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_w, t3 - t4);
 
 #if H5_SIZEOF_SIZE_T > 4
             /* Check for the chunk expanding too much to encode in a 32-bit value */
