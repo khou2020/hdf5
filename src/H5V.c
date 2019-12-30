@@ -136,7 +136,7 @@ static eval_fcnt = 0;
 static eval_enable = 0;
 
 void eval_add_time(int id, double t){
-    if (eval_enable && (id > EVAL_NTIMER)){
+    if ((!eval_enable) && (id > EVAL_NTIMER)){
         return;
     }
     eval_tlocal[id] += t;
@@ -147,7 +147,7 @@ void eval_add_size(int id, int count, MPI_Datatype type){
     int esize;
     double size;
     
-    if (eval_enable && (id > EVAL_NMPI)){
+    if ((!eval_enable) && (id > EVAL_NMPI)){
         return;
     }
     
@@ -327,15 +327,19 @@ int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root
 void H5V_ShowHints(MPI_Info *mpiHints) {
     char key[MPI_MAX_INFO_VAL];
     char value[MPI_MAX_INFO_VAL];
-    int flag, i, nkeys;
+    int flag, i, nkeys, rank; 
 
-    MPI_Info_get_nkeys(*mpiHints, &nkeys);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    for (i = 0; i < nkeys; i++) {
+    if (rank == 0){
+        MPI_Info_get_nkeys(*mpiHints, &nkeys);
+
+        for (i = 0; i < nkeys; i++) {
             MPI_Info_get_nthkey(*mpiHints, i, key);
 
             MPI_Info_get(*mpiHints, key, MPI_MAX_INFO_VAL - 1,
                                     value, &flag);
             printf("\t%s = %s\n", key, value);
+        }
     }
 }
