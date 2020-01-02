@@ -43,6 +43,7 @@
 #include "H5Pprivate.h"       /* Property lists    */
 #include "H5Sprivate.h"       /* Dataspaces        */
 #include "H5VMprivate.h"      /* Vector            */
+#include "H5V.h"
 
 #ifdef H5_HAVE_PARALLEL
 
@@ -1334,6 +1335,10 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
     size_t                             i;                                /* Local index variable */
     int                                mpi_rank, mpi_size, mpi_code;
     herr_t                             ret_value = SUCCEED;
+    double t1, t2;
+
+    MPI_Barrier(io_info->comm);
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_STATIC
 
@@ -1383,6 +1388,12 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
             if (mpi_rank == chunk_list[i].owners.new_owner)
                 if (H5D__filtered_collective_chunk_entry_io(&chunk_list[i], io_info, type_info, fm) < 0)
                     HGOTO_ERROR(H5E_DATASET, H5E_WRITEERROR, FAIL, "couldn't process chunk entry")
+
+        t2 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5Dwrite_cb, t2 - t1);
+
+        MPI_Barrier(io_info->comm);
+        t1 = MPI_Wtime();
 
         /* Gather the new chunk sizes to all processes for a collective reallocation
          * of the chunks in the file.
@@ -1462,6 +1473,9 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
             if ((index_info.storage->ops->insert)(&index_info, &udata, io_info->dset) < 0)
                 HGOTO_ERROR(H5E_DATASET, H5E_CANTINSERT, FAIL, "unable to insert chunk address into index")
         } /* end for */
+
+        t2 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5Dwrite_wr, t2 - t1);
     } /* end if */
 
 done:
@@ -1762,6 +1776,10 @@ H5D__multi_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_i
     size_t                             i, j;                    /* Local index variable */
     int                                mpi_rank, mpi_size, mpi_code;
     herr_t                             ret_value = SUCCEED;
+    double t1, t2;
+
+    MPI_Barrier(io_info->comm);
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_STATIC
 
@@ -1803,6 +1821,9 @@ H5D__multi_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_i
         for (i = 0; i < chunk_list_num_entries; i++)
             if (H5D__filtered_collective_chunk_entry_io(&chunk_list[i], io_info, type_info, fm) < 0)
                 HGOTO_ERROR(H5E_DATASET, H5E_READERROR, FAIL, "couldn't process chunk entry")
+        
+        t2 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5Dread_cb, t2 - t1);
     } /* end if */
     else { /* Filtered collective write */
         H5D_chk_idx_info_t index_info;
@@ -1963,6 +1984,8 @@ H5D__multi_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_i
                     HMPI_DONE_ERROR(FAIL, "MPI_Type_free failed", mpi_code)
         } /* end for */
     } /* end else */
+
+
 
 done:
     if (chunk_list) {
@@ -3104,6 +3127,8 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
     int               mpi_code;
     herr_t            ret_value = SUCCEED;
 
+    double t1, t2;
+
     FUNC_ENTER_STATIC
 
     HDassert(chunk_entry);
@@ -3141,6 +3166,8 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
     if(!chunk_entry->full_overwrite || io_info->op_type == H5D_IO_OP_READ) {
         H5FD_mpio_xfer_t xfer_mode; /* Parallel transfer for this request */
 
+        t1 = MPI_Wtime();
+
         chunk_entry->chunk_states.new_chunk.length = chunk_entry->chunk_states.chunk_current.length;
 
         /* Currently, these chunk reads are done independently and will likely
@@ -3163,10 +3190,34 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
         if(H5CX_set_io_xfer_mode(xfer_mode) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't set MPI-I/O transfer mode")
 
+        t2 = MPI_Wtime();
+
+        if (io_info->op_type == H5D_IO_OP_READ){
+            eval_add_time(EVAL_TIMER_H5Dread_rd, t2 - t1);
+            eval_sub_time(EVAL_TIMER_H5Dread_cb, t2 - t1);
+        }
+        else{            
+            eval_add_time(EVAL_TIMER_H5Dwrite_rd, t2 - t1);
+            eval_sub_time(EVAL_TIMER_H5Dwrite_cb, t2 - t1);
+        }
+
+        t1 = MPI_Wtime();
+
         if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, H5Z_FLAG_REVERSE,
                 &filter_mask, err_detect, filter_cb, (size_t *)&chunk_entry->chunk_states.new_chunk.length,
                 &buf_size, &chunk_entry->buf) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTFILTER, FAIL, "couldn't unfilter chunk for modifying")
+        
+        t2 = MPI_Wtime();
+
+        if (io_info->op_type == H5D_IO_OP_READ){
+            eval_add_time(EVAL_TIMER_H5Dread_decom, t2 - t1);
+            eval_sub_time(EVAL_TIMER_H5Dread_cb, t2 - t1);
+        }
+        else{            
+            eval_add_time(EVAL_TIMER_H5Dwrite_decom, t2 - t1);
+            eval_sub_time(EVAL_TIMER_H5Dwrite_cb, t2 - t1);
+        }
     } /* end if */
     else {
         chunk_entry->chunk_states.new_chunk.length = true_chunk_size;
@@ -3282,11 +3333,17 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
                 H5MM_free(chunk_entry->async_info.receive_buffer_array[i]);
             } /* end for */
 
+            t1 = MPI_Wtime();
+            
             /* Filter the chunk */
             if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, 0, &filter_mask,
                     err_detect, filter_cb, (size_t *)&chunk_entry->chunk_states.new_chunk.length,
                     &buf_size, &chunk_entry->buf) < 0)
                 HGOTO_ERROR(H5E_PLINE, H5E_CANTFILTER, FAIL, "output pipeline failed")
+
+            t2 = MPI_Wtime();
+            eval_add_time(EVAL_TIMER_H5Dwrite_com, t2 - t1);
+            eval_sub_time(EVAL_TIMER_H5Dwrite_cb, t2 - t1);
 
 #if H5_SIZEOF_SIZE_T > 4
             /* Check for the chunk expanding too much to encode in a 32-bit value */
