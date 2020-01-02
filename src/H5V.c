@@ -183,23 +183,6 @@ herr_t H5Vreset(){
     return 0;
 }
 
-int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
-    int ret;
-    double t1, t2;
-
-    t1 = MPI_Wtime();
-
-    ret = MPI_Bcast(buffer, count, datatype, root, comm);
-    
-    t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
-    
-    eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);
-
-    return ret;
-}
-
-
 void H5V_ShowHints(MPI_Info *mpiHints) {
     char key[MPI_MAX_INFO_VAL];
     char value[MPI_MAX_INFO_VAL];

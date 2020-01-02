@@ -22,5 +22,4 @@
 
 void eval_add_time(int id, double t);
 void eval_sub_time(int id, double t);
-int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm );
 void H5V_ShowHints(MPI_Info *mpiHints);
