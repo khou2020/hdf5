@@ -2773,8 +2773,11 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     size_t   u, v;                      /* Local index variable */
     unsigned dim_idx;                   /* Dimension index */
     herr_t   ret_value = SUCCEED;       /* Return value */
+    double t1, t2
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     HDassert(dset);
@@ -2935,6 +2938,9 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__set_extent, t2 - t1);
+        
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__set_extent() */
 

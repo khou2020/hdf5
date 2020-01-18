@@ -5090,8 +5090,11 @@ H5D__chunk_prune_by_extent(H5D_t *dset, const hsize_t *old_dim)
     unsigned                u;	                /* Local index variable */
     const H5O_storage_chunk_t *sc = &(layout->storage.u.chunk);
     herr_t                  ret_value = SUCCEED;       /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     HDassert(dset && H5D_CHUNKED == layout->type);
@@ -5378,6 +5381,9 @@ done:
     if(udata_init)
         if(udata.fb_info_init && H5D__fill_term(&udata.fb_info) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTFREE, FAIL, "Can't release fill buffer info")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_prune_by_extent, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_prune_by_extent() */

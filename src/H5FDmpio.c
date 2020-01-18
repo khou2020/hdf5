@@ -997,7 +997,7 @@ H5FD_mpio_open(const char *name, unsigned flags, hid_t fapl_id,
     if(MPI_SUCCESS != (mpi_code = MPI_File_open(comm_dup, name, mpi_amode, info_dup, &fh)))
         HMPI_GOTO_ERROR(NULL, "MPI_File_open failed", mpi_code)
     file_opened=1;
-
+    /*
     {
         MPI_Info info_out;
 
@@ -1009,6 +1009,7 @@ H5FD_mpio_open(const char *name, unsigned flags, hid_t fapl_id,
         MPI_Info_free(&info_out);
         printf ("=======================================================\n");
     }
+    */
 
     /* Get the MPI rank of this process and the total number of processes */
     if (MPI_SUCCESS != (mpi_code=MPI_Comm_rank (comm_dup, &mpi_rank)))
