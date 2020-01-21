@@ -2773,7 +2773,7 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     size_t   u, v;                      /* Local index variable */
     unsigned dim_idx;                   /* Dimension index */
     herr_t   ret_value = SUCCEED;       /* Return value */
-    double t1, t2
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
 

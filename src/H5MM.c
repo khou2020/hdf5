@@ -323,7 +323,6 @@ H5MM_malloc(size_t size)
             ret_value = NULL;
 #else /* H5_MEMORY_ALLOC_SANITY_CHECK */
         ret_value = HDmalloc(size);
-        eval_add_size2(EVAL_TIMER_H5MM_malloc, size);
 #endif /* H5_MEMORY_ALLOC_SANITY_CHECK */
     } /* end if */
     else
@@ -556,14 +555,12 @@ H5MM_xfree(void *mem)
             block->u.info.in_use = FALSE;
 
             /* Free the block (finally!) */
-            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
+            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(block->u.info.size));
             HDfree(block);
         }
         else
-            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
             HDfree(mem);
 #else /* H5_MEMORY_ALLOC_SANITY_CHECK */
-        eval_add_size2(EVAL_TIMER_H5MM_malloc, -(malloc_usable_size(mem)));
         HDfree(mem);
 #endif /* H5_MEMORY_ALLOC_SANITY_CHECK */
     } /* end if */
