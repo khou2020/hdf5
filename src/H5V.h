@@ -122,7 +122,7 @@
 #define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
 
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)
-#define EVAL_NMPI (EVAL_TIMER_MPI_File_set_view + 1)
+#define EVAL_NMPI (EVAL_TIMER_MPI_Waitall + 1)
 
 #define EVAL_TIMER_DUMMY 150
 #define EVAL_TIMER_H5D__chunk_lock_w EVAL_TIMER_DUMMY
