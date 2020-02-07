@@ -318,9 +318,9 @@ int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root
     ret = MPI_Bcast(buffer, count, datatype, root, comm);
     
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
+    //eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
     
-    eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);
+    //eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);
 
     return ret;
 }

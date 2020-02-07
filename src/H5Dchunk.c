@@ -901,7 +901,7 @@ H5D__chunk_construct(H5F_t H5_ATTR_UNUSED *f, H5D_t *dset)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_construct, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__chunk_construct, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_construct() */
@@ -1343,10 +1343,10 @@ done:
 
     t2 = MPI_Wtime();
     if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
     }
     else{
-        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_r, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_io_init_r, t2 - t1);
     }
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -2253,7 +2253,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
         if(H5D__chunk_lookup(io_info->dset, chunk_info->scaled, &udata) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "error looking up chunk address")
         t4 = MPI_Wtime();
-        eval_add_time(EVAL_TIMER_H5D__chunk_lookup_r, t4 - t3);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_lookup_r, t4 - t3);
 
         /* Sanity check */
         HDassert((H5F_addr_defined(udata.chunk_block.offset) && udata.chunk_block.length > 0) || 
@@ -2317,7 +2317,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_read, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__chunk_read, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* H5D__chunk_read() */
@@ -3646,10 +3646,10 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                 
                 t4 = MPI_Wtime();
                 if (io_info->op_type == H5D_IO_OP_WRITE){
-                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
+                    //eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
                 }
                 else{
-                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_r, t4 - t3);
+                    //eval_add_time(EVAL_TIMER_H5F_block_read_lock_r, t4 - t3);
                 }
 
                 if(old_pline && old_pline->nused) {
@@ -3670,10 +3670,10 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
     
                     t4 = MPI_Wtime();
                     if (io_info->op_type == H5D_IO_OP_WRITE){
-                        eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_w, t4 - t3);
+                        //eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_w, t4 - t3);
                     }
                     else{
-                        eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_r, t4 - t3);
+                        //eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_r, t4 - t3);
                     }
 
                     /* Reallocate chunk if necessary */
@@ -3826,10 +3826,10 @@ done:
 
     t2 = MPI_Wtime();
     if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__chunk_lock_w, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_lock_w, t2 - t1);
     }
     else{
-        eval_add_time(EVAL_TIMER_H5D__chunk_lock_r, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_lock_r, t2 - t1);
     }
     
     FUNC_LEAVE_NOAPI(ret_value)
@@ -3945,10 +3945,10 @@ H5D__chunk_unlock(const H5D_io_info_t *io_info, const H5D_chunk_ud_t *udata,
 done:
     t2 = MPI_Wtime();
     if (io_info->op_type == H5D_IO_OP_WRITE){
-        eval_add_time(EVAL_TIMER_H5D__chunk_unlock_w, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_unlock_w, t2 - t1);
     }
     else{
-        eval_add_time(EVAL_TIMER_H5D__chunk_unlock_r, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5D__chunk_unlock_r, t2 - t1);
     }
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -4494,7 +4494,7 @@ done:
 #endif
 
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_allocate, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__chunk_allocate, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__chunk_allocate() */
@@ -4826,7 +4826,7 @@ done:
     H5MM_xfree(block_lens);
 
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_collective_fill, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__chunk_collective_fill, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_fill() */
@@ -5383,7 +5383,7 @@ done:
             HDONE_ERROR(H5E_DATASET, H5E_CANTFREE, FAIL, "Can't release fill buffer info")
 
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_prune_by_extent, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__chunk_prune_by_extent, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_prune_by_extent() */

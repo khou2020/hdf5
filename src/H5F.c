@@ -460,7 +460,7 @@ done:
 
     t2 = MPI_Wtime();
 
-    eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fcreate() */
@@ -535,10 +535,10 @@ done:
 
     env_str = getenv("hdf5_eval_reset_time");
     if (env_str != NULL && *env_str != '0') {                        
-        H5Vreset();
+        //H5Vreset();
     }     
 
-    eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fopen() */
@@ -700,7 +700,7 @@ H5Fclose(hid_t file_id)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */

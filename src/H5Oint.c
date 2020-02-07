@@ -2465,10 +2465,10 @@ done:
     t2 = MPI_Wtime();
     switch (obj_type){
         case H5O_TYPE_DATASET:
-            eval_add_time(EVAL_TIMER_H5O_obj_create_dataset, t2 - t1);
+            //eval_add_time(EVAL_TIMER_H5O_obj_create_dataset, t2 - t1);
             break;
         default:
-            //eval_add_time(EVAL_TIMER_H5O_obj_create_other, t2 - t1);
+            ////eval_add_time(EVAL_TIMER_H5O_obj_create_other, t2 - t1);
             break;
     }
 

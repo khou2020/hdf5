@@ -215,10 +215,10 @@ done:
         H5MM_xfree(outbuf);
     t2 = MPI_Wtime();
     if (flags & H5Z_FLAG_REVERSE){
-        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_decomp, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5Z_filter_deflate_decomp, t2 - t1);
     }
     else{
-        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_comp, t2 - t1);
+        //eval_add_time(EVAL_TIMER_H5Z_filter_deflate_comp, t2 - t1);
     }
     FUNC_LEAVE_NOAPI(ret_value)
 }

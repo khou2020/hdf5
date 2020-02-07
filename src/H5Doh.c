@@ -317,7 +317,7 @@ done:
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, NULL, "unable to release dataset")
 
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5O__dset_create, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5O__dset_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5O__dset_create() */

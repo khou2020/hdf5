@@ -586,7 +586,7 @@ done:
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
     
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__layout_oh_create, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__layout_oh_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__layout_oh_create() */

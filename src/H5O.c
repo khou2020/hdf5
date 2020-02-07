@@ -813,7 +813,7 @@ H5Ovisit2(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5Ovisit2, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5Ovisit2, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit2() */
@@ -1258,7 +1258,7 @@ H5Ovisit(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5Ovisit, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5Ovisit, t2 - t1);
     
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit() */

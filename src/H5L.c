@@ -1563,10 +1563,10 @@ done:
     t2 = MPI_Wtime();
     switch (ocrt_info->obj_type){
         case H5O_TYPE_DATASET:
-            eval_add_time(EVAL_TIMER_H5L_link_object_dataset, t2 - t1);
+            //eval_add_time(EVAL_TIMER_H5L_link_object_dataset, t2 - t1);
             break;
         default:
-            //eval_add_time(EVAL_TIMER_H5L_link_object_other, t2 - t1);
+            ////eval_add_time(EVAL_TIMER_H5L_link_object_other, t2 - t1);
             break;
     }
 
@@ -1732,10 +1732,10 @@ done:
     t2 = MPI_Wtime();
     switch (udata->ocrt_info->obj_type){
         case H5O_TYPE_DATASET:
-            eval_add_time(EVAL_TIMER_H5L__link_cb_dataset, t2 - t1);
+            //eval_add_time(EVAL_TIMER_H5L__link_cb_dataset, t2 - t1);
             break;
         default:
-            //eval_add_time(EVAL_TIMER_H5L__link_cb_other, t2 - t1);
+            ////eval_add_time(EVAL_TIMER_H5L__link_cb_other, t2 - t1);
             break;
     }
 
@@ -1834,10 +1834,10 @@ done:
     t2 = MPI_Wtime();
     switch (ocrt_info->obj_type){
         case H5O_TYPE_DATASET:
-            eval_add_time(EVAL_TIMER_H5L__create_real_dataset, t2 - t1);
+            //eval_add_time(EVAL_TIMER_H5L__create_real_dataset, t2 - t1);
             break;
         default:
-            //eval_add_time(EVAL_TIMER_H5L__create_real_other, t2 - t1);
+            ////eval_add_time(EVAL_TIMER_H5L__create_real_other, t2 - t1);
             break;
     }
     FUNC_LEAVE_NOAPI(ret_value)

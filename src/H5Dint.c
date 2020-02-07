@@ -337,7 +337,7 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__create_named, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__create_named, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create_named() */
@@ -1039,7 +1039,7 @@ done:
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
     
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__update_oh_info, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__update_oh_info, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__update_oh_info() */
@@ -1209,7 +1209,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     new_dset->shared->checked_filters = TRUE;
 
     t3 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__create_metadata, t3 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__create_metadata, t3 - t1);
 
     /* Check if the dataset has a non-default DCPL & get important values, if so */
     if(new_dset->shared->dcpl_id != H5P_DATASET_CREATE_DEFAULT) {
@@ -1263,7 +1263,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
             HGOTO_ERROR(H5E_DATASET, H5E_BADVALUE, NULL, "compact dataset must have early space allocation")
 
         t4 = MPI_Wtime();
-        eval_add_time(EVAL_TIMER_H5D__create_property, t4 - t3);
+        //eval_add_time(EVAL_TIMER_H5D__create_property, t4 - t3);
     } /* end if */
 
     /* Set the version for the I/O pipeline message */
@@ -1368,7 +1368,7 @@ done:
     } /* end if */
 
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__create, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create() */
@@ -2394,7 +2394,7 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__alloc_storage, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__alloc_storage, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__alloc_storage() */
@@ -2472,7 +2472,7 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__init_storage, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__init_storage, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__init_storage() */
@@ -2939,7 +2939,7 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
 
 done:
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__set_extent, t2 - t1);
+    //eval_add_time(EVAL_TIMER_H5D__set_extent, t2 - t1);
         
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__set_extent() */

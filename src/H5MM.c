@@ -317,7 +317,7 @@ H5MM_malloc(size_t size)
             /* Set buffer to return */
             ret_value = block->b + H5MM_HEAD_GUARD_SIZE;
 
-            eval_add_size2(EVAL_TIMER_H5MM_malloc, alloc_size);
+            //eval_add_size2(EVAL_TIMER_H5MM_malloc, alloc_size);
         } /* end if */
         else
             ret_value = NULL;
@@ -555,7 +555,7 @@ H5MM_xfree(void *mem)
             block->u.info.in_use = FALSE;
 
             /* Free the block (finally!) */
-            eval_add_size2(EVAL_TIMER_H5MM_malloc, -(block->u.info.size));
+            //eval_add_size2(EVAL_TIMER_H5MM_malloc, -(block->u.info.size));
             HDfree(block);
         }
         else
