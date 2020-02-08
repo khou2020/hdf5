@@ -1033,8 +1033,8 @@ H5FD_mpio_open(const char *name, unsigned flags, hid_t fapl_id,
     } /* end if */
 
     /* Broadcast file size */
-    if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, comm_dup)))
-        HMPI_GOTO_ERROR(NULL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
+    if(MPI_SUCCESS != (mpi_code = MPI_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, comm_dup)))
+        HMPI_GOTO_ERROR(NULL, "MPI_Bcast failed", mpi_code)
 
     /* Determine if the file should be truncated */
     if(size && (flags & H5F_ACC_TRUNC)) {
@@ -1538,7 +1538,7 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
             if(H5CX_get_mpio_rank0_bcast()) {
 #ifdef H5FDmpio_DEBUG
                 if(H5FD_mpio_Debug[(int)'r'])
-                    HDfprintf(stdout, "%s: doing read-rank0-and-HDF_MPI_EVAL_Bcast\n", FUNC);
+                    HDfprintf(stdout, "%s: doing read-rank0-and-MPI_Bcast\n", FUNC);
 #endif
                 /* Indicate path we've taken */
                 rank0_bcast = TRUE;
@@ -1554,8 +1554,8 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
                         //eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
                         //eval_add_size(EVAL_TIMER_MPI_File_read_at, size_i, buf_type);
                     }
-                if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(buf, size_i, buf_type, 0, file->comm)))
-                    HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
+                if(MPI_SUCCESS != (mpi_code = MPI_Bcast(buf, size_i, buf_type, 0, file->comm)))
+                    HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
             } /* end if */
             else
                 {
@@ -1625,8 +1625,8 @@ H5FD_mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
      *          of the data.  (QAK - 2019/1/2)
      */
     if(rank0_bcast)
-        if(MPI_SUCCESS != HDF_MPI_EVAL_Bcast(&bytes_read, 1, MPI_LONG_LONG, 0, file->comm))
-            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", 0)
+        if(MPI_SUCCESS != MPI_Bcast(&bytes_read, 1, MPI_LONG_LONG, 0, file->comm))
+            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", 0)
 
     /* Get the type's size */
 #if MPI_VERSION >= 3
@@ -2103,8 +2103,8 @@ H5FD_mpio_truncate(H5FD_t *_file, hid_t H5_ATTR_UNUSED dxpl_id, hbool_t H5_ATTR_
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_get_size failed", mpi_code)
 
         /* Broadcast file size */
-        if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, file->comm)))
-            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
+        if(MPI_SUCCESS != (mpi_code = MPI_Bcast(&size, (int)sizeof(MPI_Offset), MPI_BYTE, 0, file->comm)))
+            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
 
         if(H5FD_mpi_haddr_to_MPIOff(file->eoa, &needed_eof) < 0)
             HGOTO_ERROR(H5E_INTERNAL, H5E_BADRANGE, FAIL, "cannot convert from haddr_t to MPI_Offset")

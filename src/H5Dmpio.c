@@ -358,7 +358,7 @@ H5D__mpio_opt_possible(const H5D_io_info_t *io_info, const H5S_t *file_space,
         local_cause[0] |= H5D_MPIO_PARALLEL_FILTERED_WRITES_DISABLED;
 #endif
 
-    /* Check if we are able to do a HDF_MPI_EVAL_Bcast of the data from one rank
+    /* Check if we are able to do a MPI_Bcast of the data from one rank
      * instead of having all the processes involved in the collective I/O call.
      */
 
@@ -367,7 +367,7 @@ H5D__mpio_opt_possible(const H5D_io_info_t *io_info, const H5S_t *file_space,
         local_cause[1] |= H5D_MPIO_RANK0_NOT_H5S_ALL; 
     /* Only perform this optimization for contigous datasets, currently */
     else if(H5D_CONTIGUOUS != io_info->dset->shared->layout.type)
-        /* Flag to do a HDF_MPI_EVAL_Bcast of the data from one proc instead of 
+        /* Flag to do a MPI_Bcast of the data from one proc instead of 
          * having all the processes involved in the collective I/O.
          */
         local_cause[1] |= H5D_MPIO_RANK0_NOT_CONTIGUOUS; 
@@ -393,7 +393,7 @@ H5D__mpio_opt_possible(const H5D_io_info_t *io_info, const H5S_t *file_space,
                 /* Determine dataset size */
                 dset_size = ((hsize_t)snelmts) * type_size;
 
-               /* If the size of the dataset is less than 2GB then do an HDF_MPI_EVAL_Bcast
+               /* If the size of the dataset is less than 2GB then do an MPI_Bcast
                 * of the data from one process instead of having all the processes 
                 * involved in the collective I/O.
                 */
@@ -813,7 +813,7 @@ done:
  *                      4. Set up collective IO property list
  *                      5. Do IO
  *              For option b)
- *                      1. Use MPI_gather and HDF_MPI_EVAL_Bcast to obtain information of *collective/independent/none*
+ *                      1. Use MPI_gather and MPI_Bcast to obtain information of *collective/independent/none*
  *                         IO mode for each chunk of the selection
  *                      2. Depending on whether the IO mode is collective or independent or none,
  *                         Create either MPI derived datatype for each chunk to do collective IO or
@@ -1623,7 +1623,7 @@ done:
  *
  * Purpose:     To do IO per chunk according to IO mode(collective/independent/none)
  *
- *              1. Use MPI_gather and HDF_MPI_EVAL_Bcast to obtain IO mode in each chunk(collective/independent/none)
+ *              1. Use MPI_gather and MPI_Bcast to obtain IO mode in each chunk(collective/independent/none)
  *              2. Depending on whether the IO mode is collective or independent or none,
  *                 Create either MPI derived datatype for each chunk or just do independent IO
  *              3. Use common collective IO routine to do MPI-IO
@@ -2501,8 +2501,8 @@ if(H5DEBUG(D))
         } /* end if */
 
         /* Broadcasting the MPI_IO option info. and chunk address info. */
-        if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(total_chunk_addr_array, (int)(sizeof(haddr_t) * fm->layout->u.chunk.nchunks), MPI_BYTE, (int)0, io_info->comm)))
-            HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
+        if(MPI_SUCCESS != (mpi_code = MPI_Bcast(total_chunk_addr_array, (int)(sizeof(haddr_t) * fm->layout->u.chunk.nchunks), MPI_BYTE, (int)0, io_info->comm)))
+            HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
     } /* end if */
 
     /* Start at first node in chunk skip list */
@@ -2715,8 +2715,8 @@ H5D__obtain_mpio_mode(H5D_io_info_t* io_info, H5D_chunk_map_t *fm,
     } /* end if */
 
     /* Broadcasting the MPI_IO option info. and chunk address info. */
-    if(MPI_SUCCESS != (mpi_code = HDF_MPI_EVAL_Bcast(mergebuf, ((sizeof(haddr_t) + 1) * total_chunks), MPI_BYTE, root, comm)))
-        HMPI_GOTO_ERROR(FAIL, "HDF_MPI_EVAL_Bcast failed", mpi_code)
+    if(MPI_SUCCESS != (mpi_code = MPI_Bcast(mergebuf, ((sizeof(haddr_t) + 1) * total_chunks), MPI_BYTE, root, comm)))
+        HMPI_GOTO_ERROR(FAIL, "MPI_Bcast failed", mpi_code)
 
     HDmemcpy(assign_io_mode, mergebuf, total_chunks);
     HDmemcpy(chunk_addr, tempbuf, sizeof(haddr_t) * total_chunks);

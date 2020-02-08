@@ -309,7 +309,7 @@ herr_t H5Vreset(){
     return 0;
 }
 
-int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
+int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ){
     int ret;
     double t1, t2;
 
