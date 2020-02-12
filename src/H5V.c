@@ -21,7 +21,7 @@ const char * const eval_tname[] = {
                                     "hdf5_eval_MPI_Allgather",
                                     "hdf5_eval_MPI_Allgatherv",
                                     "hdf5_eval_MPI_Allreduce",
-                                    "hdf5_eval_MPI_Bcast",
+                                    "hdf5_eval_HDF_MPI_EVAL_Bcast",
                                     "hdf5_eval_MPI_Gather",
                                     "hdf5_eval_MPI_Gatherv",
                                     "hdf5_eval_MPI_Send",
@@ -318,9 +318,9 @@ int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root
     ret = MPI_Bcast(buffer, count, datatype, root, comm);
     
     t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
+    //eval_add_time(EVAL_TIMER_HDF_MPI_EVAL_Bcast, t2 - t1);
     
-    eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);
+    //eval_add_size(EVAL_TIMER_HDF_MPI_EVAL_Bcast, count, datatype);
 
     return ret;
 }
