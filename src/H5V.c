@@ -138,7 +138,7 @@ static eval_fcnt = 0;
 static eval_enable = 0;
 
 void eval_add_time(int id, double t){
-    if ((!eval_enable) && (id > EVAL_NTIMER)){
+    if ((!eval_enable) || (id >= EVAL_NTIMER) || (id < 0)){
         return;
     }
     eval_tlocal[id] += t;
@@ -149,7 +149,7 @@ void eval_add_size(int id, int count, MPI_Datatype type){
     int esize;
     double size;
     
-    if ((!eval_enable) && (id > EVAL_NMPI)){
+    if ((!eval_enable) || (id >= EVAL_NMPI) || (id < 0)){
         return;
     }
     

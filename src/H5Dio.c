@@ -1167,7 +1167,7 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     } /* end if */
 
     t3 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Reset_w, t3 - t1);
     }
     else{
@@ -1190,7 +1190,7 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
             HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "can't retrieve MPI communicator")
 
         t3 = MPI_Wtime();
-        if (io_info->op_type == H5D_IO_OP_WRITE){
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
             eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Get_comm_w, t3 - t4);
         }
         else{
@@ -1204,7 +1204,7 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
             HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "invalid check for direct IO dataspace ")
         
         t3 = MPI_Wtime();
-        if (io_info->op_type == H5D_IO_OP_WRITE){
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
             eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Chk_coll_w, t3 - t4);
         }
         else{
@@ -1301,7 +1301,7 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
 
 done:
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_w, t2 - t1);
     }
     else{

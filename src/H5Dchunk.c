@@ -1342,7 +1342,7 @@ done:
     } /* end if */
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
     }
     else{
@@ -3645,7 +3645,7 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                     HGOTO_ERROR(H5E_IO, H5E_READERROR, NULL, "unable to read raw data chunk")
                 
                 t4 = MPI_Wtime();
-                if (io_info->op_type == H5D_IO_OP_WRITE){
+                if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
                     eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
                 }
                 else{
@@ -3669,7 +3669,7 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                         HGOTO_ERROR(H5E_DATASET, H5E_CANTFILTER, NULL, "data pipeline read failed")
     
                     t4 = MPI_Wtime();
-                    if (io_info->op_type == H5D_IO_OP_WRITE){
+                    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
                         eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_w, t4 - t3);
                     }
                     else{
@@ -3825,7 +3825,7 @@ done:
             chunk = H5D__chunk_mem_xfree(chunk, pline);
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_lock_w, t2 - t1);
     }
     else{
@@ -3944,7 +3944,7 @@ H5D__chunk_unlock(const H5D_io_info_t *io_info, const H5D_chunk_ud_t *udata,
 
 done:
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_unlock_w, t2 - t1);
     }
     else{

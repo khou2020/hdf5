@@ -957,7 +957,7 @@ H5D__chunk_collective_io(H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
 
 done:
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_collective_io_w, t2 - t1);
     }
     else{
@@ -1437,7 +1437,7 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
     H5CX_set_mpio_actual_io_mode(H5D_MPIO_CHUNK_COLLECTIVE);
 
     t3 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Init_w, t3 - t1);
     }
     else{
@@ -1605,7 +1605,7 @@ done:
         HMPI_DONE_ERROR(FAIL, "MPI_Type_free failed", mpi_code)
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_w, t2 - t1);
         eval_add_time(EVAL_TIMER_H5D__link_chunk_filtered_collective_io_Finalize_w, t2 - t3);
     }
@@ -2131,7 +2131,7 @@ done:
         H5MM_free(mem_type_is_derived_array);
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__multi_chunk_filtered_collective_io_w, t2 - t1);
     }
     else{
@@ -2239,7 +2239,7 @@ if(H5DEBUG(D))
     if(H5D__final_collective_io(io_info, type_info, (hsize_t)mpi_buf_count, mpi_file_type, mpi_buf_type) < 0)
         HGOTO_ERROR(H5E_IO, H5E_CANTGET, FAIL, "couldn't finish collective MPI-IO")
     t4 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__inter_collective_io_collective_io_w, t4 - t1);
     }
     else{
@@ -2259,7 +2259,7 @@ if(H5DEBUG(D))
 #endif
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__inter_collective_io_w, t2 - t1);
     }
     else{
@@ -2312,7 +2312,7 @@ if(H5DEBUG(D))
     HDfprintf(H5DEBUG(D),"ret_value before leaving final_collective_io=%d\n",ret_value);
 #endif
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__final_collective_io_w, t2 - t1);
     }
     else{
@@ -2863,7 +2863,7 @@ H5D__construct_filtered_io_info_list(const H5D_io_info_t *io_info, const H5D_typ
 done:
     
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__construct_filtered_io_info_list_w, t2 - t1);
     }
     else{
@@ -3413,7 +3413,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             HGOTO_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't set MPI-I/O transfer mode")
 
         t4 = MPI_Wtime();
-        if (io_info->op_type == H5D_IO_OP_WRITE){
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
             eval_add_time(EVAL_TIMER_H5F_block_read_fcoll_w, t4 - t3);
         }
         else{
@@ -3426,7 +3426,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             HGOTO_ERROR(H5E_DATASET, H5E_CANTFILTER, FAIL, "couldn't unfilter chunk for modifying")
         
         t3 = MPI_Wtime();
-        if (io_info->op_type == H5D_IO_OP_WRITE){
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
             eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Filter_Reverse_w, t3 - t4);
         }
         else{
@@ -3616,7 +3616,7 @@ done:
             HDONE_ERROR(H5E_DATASPACE, H5E_CANTFREE, FAIL, "can't close dataspace")
 
     t2 = MPI_Wtime();
-    if (io_info->op_type == H5D_IO_OP_WRITE){
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_w, t2 - t1);
     }
     else{
