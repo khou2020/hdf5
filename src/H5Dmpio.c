@@ -3575,11 +3575,7 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             t4 = MPI_Wtime();
             eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_w, t4 - t3);
 
-            if (io_info != NULL){
-                MPI_Barrier(io_info->comm);
-            }
             t4 = MPI_Wtime();
-
             /* Filter the chunk */
             if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, 0, &filter_mask,
                     err_detect, filter_cb, (size_t *)&chunk_entry->chunk_states.new_chunk.length,
