@@ -1473,7 +1473,9 @@ H5D__link_chunk_filtered_collective_io(H5D_io_info_t *io_info, const H5D_type_in
                 if (H5D__filtered_collective_chunk_entry_io(&chunk_list[i], io_info, type_info, fm) < 0)
                     HGOTO_ERROR(H5E_DATASET, H5E_WRITEERROR, FAIL, "couldn't process chunk entry")
 
-        MPI_Barrier(io_info->comm);
+        if (io_info != NULL){
+            MPI_Barrier(io_info->comm);
+        }
         t4 = MPI_Wtime();
 
         /* Gather the new chunk sizes to all processes for a collective reallocation
@@ -3573,7 +3575,9 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
             t4 = MPI_Wtime();
             eval_add_time(EVAL_TIMER_H5D__filtered_collective_chunk_entry_io_Unpack_w, t4 - t3);
 
-            MPI_Barrier(io_info->comm);
+            if (io_info != NULL){
+                MPI_Barrier(io_info->comm);
+            }
             t4 = MPI_Wtime();
 
             /* Filter the chunk */
