@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include "mpi.h"
 #include "H5V.h"
+#include <unistd.h>
+#include <time.h>
 
 static double eval_tlocal[EVAL_NTIMER];
 static double eval_clocal[EVAL_NTIMER];
@@ -14,10 +16,12 @@ static double eval_sumlocal[EVAL_NMPI];
 
 
 
-
-
 const char * const eval_tname[] = { 
                                     "hdf5_eval_H5MM_malloc",
+                                    "hdf5_eval_read",
+                                    "hdf5_eval_pread",
+                                    "hdf5_eval_write",
+                                    "hdf5_eval_pwrite",
                                     "hdf5_eval_MPI_Allgather",
                                     "hdf5_eval_MPI_Allgatherv",
                                     "hdf5_eval_MPI_Allreduce",
@@ -344,4 +348,48 @@ void H5V_ShowHints(MPI_Info *mpiHints) {
             printf("\t%s = %s\n", key, value);
         }
     }
+}
+
+ssize_t HDF_MPI_EVAL_write(int fd, const void *buf, size_t count){
+    ssize_t ret; \
+    clock_t t1, t2; \
+    t1 = clock(); \
+    ret = write(fd, buf, count); \
+    t2 = clock(); \
+    eval_add_time(EVAL_TIMER_write, (double)(t2 - t1) / CLOCKS_PER_SEC); \
+    eval_add_size(EVAL_TIMER_write, count, MPI_BYTE); \
+    return ret; \
+}
+
+ssize_t HDF_MPI_EVAL_pwrite(int fd, const void *buf, size_t count, off_t offset){
+    ssize_t ret; \
+    clock_t t1, t2; \
+    t1 = clock(); \
+    ret = pwrite(fd, buf, count, offset); \
+    t2 = clock(); \
+    eval_add_time(EVAL_TIMER_pwrite, (double)(t2 - t1) / CLOCKS_PER_SEC); \
+    eval_add_size(EVAL_TIMER_pwrite, count, MPI_BYTE); \
+    return ret; \
+}
+
+ssize_t HDF_MPI_EVAL_read(int fd, const void *buf, size_t count){
+    ssize_t ret; \
+    clock_t t1, t2; \
+    t1 = clock(); \
+    ret = read(fd, buf, count); \
+    t2 = clock(); \
+    eval_add_time(EVAL_TIMER_read, (double)(t2 - t1) / CLOCKS_PER_SEC); \
+    eval_add_size(EVAL_TIMER_read, count, MPI_BYTE); \
+    return ret; \
+}
+
+ssize_t HDF_MPI_EVAL_pread(int fd, const void *buf, size_t count, off_t offset){
+    ssize_t ret; \
+    clock_t t1, t2; \
+    t1 = clock(); \
+    ret = pread(fd, buf, count, offset); \
+    t2 = clock(); \
+    eval_add_time(EVAL_TIMER_pread, (double)(t2 - t1) / CLOCKS_PER_SEC); \
+    eval_add_size(EVAL_TIMER_pread, count, MPI_BYTE); \
+    return ret; \
 }

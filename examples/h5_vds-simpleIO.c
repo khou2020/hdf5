@@ -26,6 +26,7 @@
 #include "hdf5.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <mpi.h>
 
 #define FILE         "vds-simpleIO.h5"
 #define DATASET      "VDS"
@@ -53,6 +54,11 @@ main (void)
     ssize_t      len;                           /* Length of the string; also a return value */
     char         *filename;                  
     char         *dsetname;
+    int rank;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     /*
      * Initialize data.
      */
@@ -63,7 +69,7 @@ main (void)
       * Create the source file and the dataset. Write data to the source dataset 
       * and close all resources.
       */
-
+if (rank == 0){
      file = H5Fcreate (SRC_FILE, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
      space = H5Screate_simple (RANK, dims, NULL);
      dset = H5Dcreate2 (file, SRC_DATASET, H5T_NATIVE_INT, space, H5P_DEFAULT,
@@ -99,7 +105,7 @@ main (void)
     status = H5Sclose (src_space);
     status = H5Dclose (dset);
     status = H5Fclose (file);    
-     
+}
     /*
      * Now we begin the read section of this example.
      */
@@ -189,6 +195,8 @@ main (void)
     status = H5Pclose (dcpl);
     status = H5Dclose (dset);
     status = H5Fclose (file);
+
+    MPI_Finalize();
 
     return 0;
 }

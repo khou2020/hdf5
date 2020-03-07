@@ -25,6 +25,7 @@
 #define _H5private_H
 
 #include "H5public.h"    /* Include Public Definitions    */
+#include "H5V.h"
 
 /* include the pthread header */
 #ifdef H5_HAVE_THREADSAFE
@@ -1149,7 +1150,7 @@ typedef off_t               h5_stat_size_t;
     #define HDpowf(X,Y)   powf(X,Y)
 #endif /* HDpowf */
 #ifndef HDpread
-    #define HDpread(F,B,C,O)    pread(F,B,C,O)
+    #define HDpread(F,B,C,O)    HDF_MPI_EVAL_pread(F,B,C,O)
 #endif /* HDpread */
 #ifndef HDprintf
     #define HDprintf(...)   HDfprintf(stdout, __VA_ARGS__)
@@ -1164,7 +1165,7 @@ typedef off_t               h5_stat_size_t;
     #define HDputs(S)    puts(S)
 #endif /* HDputs */
 #ifndef HDpwrite
-    #define HDpwrite(F,B,C,O)    pwrite(F,B,C,O)
+    #define HDpwrite(F,B,C,O)    HDF_MPI_EVAL_pwrite(F,B,C,O)
 #endif /* HDpwrite */
 #ifndef HDqsort
     #define HDqsort(M,N,Z,F)  qsort(M,N,Z,F)
@@ -1195,7 +1196,7 @@ typedef off_t               h5_stat_size_t;
 #endif /* H5_HAVE_RANDOM */
 
 #ifndef HDread
-    #define HDread(F,M,Z)    read(F,M,Z)
+    #define HDread(F,M,Z)    HDF_MPI_EVAL_read(F,M,Z)
 #endif /* HDread */
 #ifndef HDreaddir
     #define HDreaddir(D)    readdir(D)
@@ -1527,7 +1528,7 @@ typedef off_t               h5_stat_size_t;
     #define HDwctomb(S,C)    wctomb(S,C)
 #endif /* HDwctomb */
 #ifndef HDwrite
-    #define HDwrite(F,M,Z)    write(F,M,Z)
+    #define HDwrite(F,M,Z)    HDF_MPI_EVAL_write(F,M,Z)
 #endif /* HDwrite */
 
 /*
