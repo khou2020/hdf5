@@ -152,4 +152,4 @@ void eval_add_size(int id, int count, MPI_Datatype type);
 void eval_add_size2(int id, size_t size);
 int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm );
 void H5V_ShowHints(MPI_Info *mpiHints);
-double HDF_EVAL_wtime();
+double HDF_EVAL_wtime(void);
