@@ -46,6 +46,7 @@
 /****************/
 
 
+#include "H5V.h"
 /******************/
 /* Local Typedefs */
 /******************/
@@ -651,6 +652,9 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
     H5VL_object_t       *vol_obj = NULL;    /* VOL object for file                      */
     hbool_t             supported;          /* Whether 'post open' operation is supported by VOL connector */
     hid_t               ret_value;          /* return value                             */
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
@@ -721,6 +725,9 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
             HGOTO_ERROR(H5E_FILE, H5E_CANTINIT, H5I_INVALID_HID, "unable to make file 'post open' callback")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fcreate() */
 
@@ -753,6 +760,9 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
     H5VL_object_t       *vol_obj = NULL;    /* VOL object for file                      */
     hbool_t             supported;          /* Whether 'post open' operation is supported by VOL connector */
     hid_t               ret_value;          /* Return value                             */
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "*sIui", filename, flags, fapl_id);
@@ -809,6 +819,9 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
             HGOTO_ERROR(H5E_FILE, H5E_CANTINIT, H5I_INVALID_HID, "unable to make file 'post open' callback")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fopen() */
 
@@ -871,6 +884,9 @@ herr_t
 H5Fclose(hid_t file_id)
 {
     herr_t      ret_value = SUCCEED;
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
@@ -886,6 +902,9 @@ H5Fclose(hid_t file_id)
         HGOTO_ERROR(H5E_ATOM, H5E_CANTCLOSEFILE, FAIL, "decrementing file ID failed")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Fclose() */
 
