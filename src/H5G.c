@@ -94,6 +94,7 @@
 /* Local Macros */
 /****************/
 
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -344,6 +345,9 @@ H5Gcreate2(hid_t loc_id, const char *name, hid_t lcpl_id, hid_t gcpl_id,
     H5VL_object_t      *vol_obj = NULL;                 /* object of loc_id */
     H5VL_loc_params_t   loc_params;
     hid_t               ret_value = H5I_INVALID_HID;    /* Return value */
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE5("i", "i*siii", loc_id, name, lcpl_id, gcpl_id, gapl_id);
@@ -395,6 +399,9 @@ done:
     if(H5I_INVALID_HID == ret_value)
         if(grp && H5VL_group_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Gcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gcreate2() */
@@ -502,6 +509,9 @@ H5Gopen2(hid_t loc_id, const char *name, hid_t gapl_id)
     H5VL_object_t      *vol_obj = NULL;             /* object of loc_id */
     H5VL_loc_params_t   loc_params;
     hid_t               ret_value = H5I_INVALID_HID;    /* Return value */
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "i*si", loc_id, name, gapl_id);
@@ -535,6 +545,9 @@ done:
     if(H5I_INVALID_HID == ret_value)
         if(grp && H5VL_group_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Gopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gopen2() */
@@ -743,6 +756,9 @@ herr_t
 H5Gclose(hid_t group_id)
 {
     herr_t  ret_value = SUCCEED;    /* Return value                     */
+    double t1, t2;
+
+    t1 = MPI_Wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", group_id);
@@ -758,6 +774,9 @@ H5Gclose(hid_t group_id)
     	HGOTO_ERROR(H5E_SYM, H5E_CANTRELEASE, FAIL, "unable to close group")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Gclose, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Gclose() */
 
