@@ -36,6 +36,7 @@
 /* Local Macros */
 /****************/
 
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -269,9 +270,12 @@ H5Dopen2(hid_t loc_id, const char *name, hid_t dapl_id)
     H5VL_object_t      *vol_obj = NULL;         /* object of loc_id */
     H5VL_loc_params_t   loc_params;
     hid_t               ret_value   = H5I_INVALID_HID;  /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "i*si", loc_id, name, dapl_id);
+    
+    t1 = MPI_Wtime();
 
     /* Check args */
     if(!name)
@@ -303,6 +307,9 @@ done:
     if(H5I_INVALID_HID == ret_value)
         if(dset && H5VL_dataset_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release dataset")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Dopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dopen2() */

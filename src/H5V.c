@@ -136,10 +136,7 @@ const char * const eval_tname[] = {
                                     "hdf5_eval_H5Z_filter_deflate_decomp",
                                     };
 
-
-static eval_need_finalize = 0;
-static eval_fcnt = 0;
-static eval_enable = 0;
+static int eval_enable = 0;
 
 // Report time
 void eval_add_time(int id, double t){
@@ -415,6 +412,6 @@ ssize_t HDF_EVAL_pread(int fd, const void *buf, size_t count, off_t offset){
 // Get wall time in sec
 // We do not use MPI_Wtime cause we must cover posix driver
 // MPI_Wtime also cause problem on sequential utilities such as h5dump
-double HDF_EVAL_wtime(){
+double HDF_EVAL_wtime(void){
     return ((double)clock()) / CLOCKS_PER_SEC;
 }
