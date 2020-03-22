@@ -33,6 +33,9 @@
 # include H5_ZLIB_HEADER /* "zlib.h" */
 #endif
 
+
+#include "H5V.h"
+
 /* Local function prototypes */
 static size_t H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
     const unsigned cd_values[], size_t nbytes, size_t *buf_size, void **buf);
@@ -76,7 +79,10 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
     void	*outbuf = NULL;         /* Pointer to new buffer */
     int		status;                 /* Status from zlib operation */
     size_t	ret_value = 0;          /* Return value */
+    double t1, t2;
 
+    t1 = MPI_Wtime();
+    
     FUNC_ENTER_NOAPI(0)
 
     /* Sanity check */
@@ -200,6 +206,13 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
 done:
     if(outbuf)
         H5MM_xfree(outbuf);
+    t2 = MPI_Wtime();
+    if (flags & H5Z_FLAG_REVERSE){
+        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_decomp, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5Z_filter_deflate_comp, t2 - t1);
+    }
     FUNC_LEAVE_NOAPI(ret_value)
 }
 #endif /* H5_HAVE_FILTER_DEFLATE */
