@@ -44,7 +44,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -1087,8 +1087,12 @@ H5Ovisit3(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5VL_object_t *vol_obj;             /* Object of loc_id */
     H5VL_loc_params_t   loc_params;
     herr_t              ret_value;      /* Return value */
-
+    double t1, t2;
+    
     FUNC_ENTER_API(FAIL)
+
+    t1 = MPI_Wtime();
+
     H5TRACE6("e", "iIiIox*xIu", obj_id, idx_type, order, op, op_data, fields);
 
     /* Check args */
@@ -1114,10 +1118,13 @@ H5Ovisit3(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object iteration failed")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Ovisit3, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit3() */
 
-
+
 /*-------------------------------------------------------------------------
  * Function:    H5Ovisit_by_name3
  *
