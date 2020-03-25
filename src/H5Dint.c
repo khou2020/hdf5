@@ -38,6 +38,7 @@
 /* Local Macros */
 /****************/
 
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -383,8 +384,11 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
     H5O_obj_create_t ocrt_info;         /* Information for object creation */
     H5D_obj_create_t dcrt_info;         /* Information for dataset creation */
     H5D_t       *ret_value = NULL;      /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+
+    t1 = MPI_Wtime();
 
     /* Check arguments */
     HDassert(loc);
@@ -415,6 +419,9 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
     ret_value = (H5D_t *)ocrt_info.new_obj;
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create_named, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create_named() */
 
@@ -946,8 +953,11 @@ H5D__update_oh_info(H5F_t *file, H5D_t *dset, hid_t dapl_id)
     hbool_t           use_at_least_v18;       /* Flag indicating to use at least v18 format versions */
     hbool_t           minimize_header = FALSE;
     herr_t            ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+    
+    t1 = MPI_Wtime();
 
     /* Sanity checking */
     HDassert(file);
@@ -1122,6 +1132,9 @@ done:
             /* Destroy the layout information for the dataset */
             if(dset->shared->layout.ops->dest && (dset->shared->layout.ops->dest)(dset) < 0)
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
+    
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__update_oh_info, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__update_oh_info() */
@@ -1238,9 +1251,12 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     hbool_t             efl_copied = FALSE;     /* Flag to indicate that external file list message was copied */
     H5G_loc_t           dset_loc;               /* Dataset location */
     H5D_t              *ret_value = NULL;       /* Return value */
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_PACKAGE
 
+    t1 = MPI_Wtime();
+    
     /* check args */
     HDassert(file);
     HDassert(H5I_DATATYPE == H5I_get_type(type_id));
@@ -1289,12 +1305,17 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     /* Set the dataset's checked_filters flag to enable writing */
     new_dset->shared->checked_filters = TRUE;
 
+    t3 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create_metadata, t3 - t1);
+
     /* Check if the dataset has a non-default DCPL & get important values, if so */
     if(new_dset->shared->dcpl_id != H5P_DATASET_CREATE_DEFAULT) {
         H5O_layout_t    *layout;        /* Dataset's layout information */
         H5O_pline_t     *pline;         /* Dataset's I/O pipeline information */
         H5O_fill_t      *fill;          /* Dataset's fill value info */
         H5O_efl_t       *efl;           /* Dataset's external file list info */
+        
+        t3 = MPI_Wtime();
 
         /* Check if the filters in the DCPL can be applied to this dataset */
         if(H5Z_can_apply(new_dset->shared->dcpl_id, new_dset->shared->type_id) < 0)
@@ -1337,6 +1358,9 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
         /* Don't allow compact datasets to allocate space later */
         if(layout->type == H5D_COMPACT && fill->alloc_time != H5D_ALLOC_TIME_EARLY)
             HGOTO_ERROR(H5E_DATASET, H5E_BADVALUE, NULL, "compact dataset must have early space allocation")
+
+        t4 = MPI_Wtime();
+        eval_add_time(EVAL_TIMER_H5D__create_property, t4 - t3);
     } /* end if */
 
     /* Set the version for the I/O pipeline message */
@@ -1441,6 +1465,9 @@ done:
         new_dset->oloc.file = NULL;
         new_dset = H5FL_FREE(H5D_t, new_dset);
     } /* end if */
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__create() */
@@ -2272,8 +2299,11 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
     hbool_t must_init_space = FALSE;     /* Flag to indicate that space should be initialized */
     hbool_t addr_set = FALSE;            /* Flag to indicate that the dataset's storage address was set */
     herr_t  ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE
+    
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dset);
@@ -2416,6 +2446,9 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__alloc_storage, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__alloc_storage() */
 
@@ -2435,8 +2468,11 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
 {
     const H5D_t *dset = io_info->dset;     /* dataset pointer */
     herr_t ret_value = SUCCEED;            /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_STATIC
+    
+    t1 = MPI_Wtime();
 
     HDassert(dset);
 
@@ -2488,6 +2524,9 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
     } /* end switch */ /*lint !e788 All appropriate cases are covered */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__init_storage, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__init_storage() */
 
@@ -3003,8 +3042,11 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     size_t  u, v;                       /* Local index variable */
     unsigned dim_idx;                   /* Dimension index */
     herr_t  ret_value = SUCCEED;        /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
+
+    t1 = MPI_Wtime();
 
     /* Check args */
     HDassert(dset);
@@ -3166,6 +3208,9 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__set_extent, t2 - t1);
+        
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__set_extent() */
 

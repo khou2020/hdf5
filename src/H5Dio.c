@@ -37,6 +37,7 @@
 /* Local Macros */
 /****************/
 
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -163,6 +164,8 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     H5VL_object_t  *vol_obj     = NULL;
     herr_t          ret_value   = SUCCEED;      /* Return value */
 
+    double t1, t2;
+
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iiiiix", dset_id, mem_type_id, mem_space_id, file_space_id,
              dxpl_id, buf);
@@ -172,6 +175,8 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid memory dataspace ID")
     if (file_space_id < 0)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid file dataspace ID")
+    
+    t1 = MPI_Wtime();
 
     /* Get dataset pointer */
     if (NULL == (vol_obj = (H5VL_object_t *)H5I_object_verify(dset_id, H5I_DATASET)))
@@ -192,6 +197,9 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
         HGOTO_ERROR(H5E_DATASET, H5E_READERROR, FAIL, "can't read data")
 
 done:
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Dread, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dread() */
 
@@ -284,6 +292,7 @@ H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
 {
     H5VL_object_t          *vol_obj = NULL;
     herr_t                  ret_value = SUCCEED;    /* Return value */
+    double t1, t2;
 
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iiiii*x", dset_id, mem_type_id, mem_space_id, file_space_id,
@@ -294,6 +303,7 @@ H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid memory dataspace ID")
     if (file_space_id < 0)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid file dataspace ID")
+    t1 = MPI_Wtime();
 
     /* Get dataset pointer */
     if (NULL == (vol_obj = (H5VL_object_t *)H5I_object_verify(dset_id, H5I_DATASET)))
@@ -312,6 +322,9 @@ H5Dwrite(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
     /* Write the data */
     if ((ret_value = H5VL_dataset_write(vol_obj, mem_type_id, mem_space_id, file_space_id, dxpl_id, buf, H5_REQUEST_NULL)) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_WRITEERROR, FAIL, "can't write data")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5Dwrite, t2 - t1);
 
 done:
     FUNC_LEAVE_API(ret_value)
@@ -414,8 +427,11 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     hbool_t     io_op_init = FALSE;     /* Whether the I/O op has been initialized */
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
+    double t1, t2, t3;
 
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
+
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dataset && dataset->oloc.file);
@@ -551,6 +567,9 @@ H5D__read(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     if(NULL == (fm = H5FL_CALLOC(H5D_chunk_map_t)))
         HGOTO_ERROR(H5E_DATASET, H5E_CANTALLOC, FAIL, "can't allocate chunk map")
 
+    t3 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__read_check_arg, t3 - t1);
+
     /* Call storage method's I/O initialization routine */
     if(io_info.layout_ops.io_init && (*io_info.layout_ops.io_init)(&io_info, &type_info, nelmts, file_space, mem_space, fm) < 0)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, FAIL, "can't initialize I/O info")
@@ -581,6 +600,10 @@ done:
     if(NULL != projected_mem_space)
         if(H5S_close(projected_mem_space) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTCLOSEOBJ, FAIL, "unable to shut down projected memory dataspace")
+
+    t2 = MPI_Wtime();
+    
+    eval_add_time(EVAL_TIMER_H5D__read, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__read() */
@@ -626,7 +649,11 @@ H5D__write(H5D_t *dataset, hid_t mem_type_id, const H5S_t *mem_space,
     char        fake_char;              /* Temporary variable for NULL buffer pointers */
     herr_t	ret_value = SUCCEED;	/* Return value	*/
 
+    double t1, t2;
+
     FUNC_ENTER_PACKAGE_TAG(dataset->oloc.addr)
+    
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dataset && dataset->oloc.file);
@@ -813,6 +840,9 @@ done:
     if(NULL != projected_mem_space)
         if(H5S_close(projected_mem_space) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTCLOSEOBJ, FAIL, "unable to shut down projected memory dataspace")
+
+    t2 = MPI_Wtime();
+    eval_add_time(EVAL_TIMER_H5D__write, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
 } /* end H5D__write() */
@@ -1074,8 +1104,11 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     const H5D_type_info_t *type_info)
 {
     herr_t	ret_value = SUCCEED;	/* Return value	*/
+    double t1, t2, t3, t4;
 
     FUNC_ENTER_STATIC
+
+    t1 = MPI_Wtime();
 
     /* check args */
     HDassert(dset);
@@ -1095,6 +1128,14 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
         H5CX_set_mpio_actual_io_mode(H5D_MPIO_NO_COLLECTIVE);
     } /* end if */
 
+    t3 = MPI_Wtime();
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Reset_w, t3 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Reset_r, t3 - t1);
+    }
+
     /* Make any parallel I/O adjustments */
     if(io_info->using_mpi_vfd) {
         H5FD_mpio_xfer_t xfer_mode; /* Parallel transfer for this request */
@@ -1104,14 +1145,34 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
         if(H5CX_get_io_xfer_mode(&xfer_mode) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "can't get MPI-I/O transfer mode")
 
+        t4 = MPI_Wtime();
+
         /* Get MPI communicator */
         if(MPI_COMM_NULL == (io_info->comm = H5F_mpi_get_comm(dset->oloc.file)))
             HGOTO_ERROR(H5E_DATASPACE, H5E_CANTGET, FAIL, "can't retrieve MPI communicator")
 
+        t3 = MPI_Wtime();
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Get_comm_w, t3 - t4);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Get_comm_r, t3 - t4);
+        }
+
+        t4 = MPI_Wtime();
+
         /* Check if we can set direct MPI-IO read/write functions */
         if((opt = H5D__mpio_opt_possible(io_info, file_space, mem_space, type_info)) < 0)
             HGOTO_ERROR(H5E_DATASPACE, H5E_BADRANGE, FAIL, "invalid check for direct IO dataspace ")
-
+        
+        t3 = MPI_Wtime();
+        if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Chk_coll_w, t3 - t4);
+        }
+        else{
+            eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_Chk_coll_r, t3 - t4);
+        }
+        
         /* Check if we can use the optimized parallel I/O routines */
         if(opt == TRUE) {
             /* Override the I/O op pointers to the MPI-specific routines */
@@ -1206,6 +1267,14 @@ H5D__ioinfo_adjust(H5D_io_info_t *io_info, const H5D_t *dset,
     } /* end if */
 
 done:
+    t2 = MPI_Wtime();
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__ioinfo_adjust_r, t2 - t1);
+    }
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__ioinfo_adjust() */
 #endif /* H5_HAVE_PARALLEL */
