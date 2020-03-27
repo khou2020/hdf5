@@ -81,7 +81,7 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
     size_t	ret_value = 0;          /* Return value */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
     
     FUNC_ENTER_NOAPI(0)
 
@@ -206,7 +206,7 @@ H5Z_filter_deflate (unsigned flags, size_t cd_nelmts,
 done:
     if(outbuf)
         H5MM_xfree(outbuf);
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     if (flags & H5Z_FLAG_REVERSE){
         eval_add_time(EVAL_TIMER_H5Z_filter_deflate_decomp, t2 - t1);
     }

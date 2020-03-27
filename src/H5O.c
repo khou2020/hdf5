@@ -1091,7 +1091,7 @@ H5Ovisit3(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     
     FUNC_ENTER_API(FAIL)
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     H5TRACE6("e", "iIiIox*xIu", obj_id, idx_type, order, op, op_data, fields);
 
@@ -1118,7 +1118,7 @@ H5Ovisit3(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object iteration failed")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Ovisit3, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)

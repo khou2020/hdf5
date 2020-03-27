@@ -1208,10 +1208,10 @@ H5FD__mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
              */
             {
                 double t1, t2;
-                t1 = MPI_Wtime();
+                t1 = HDF_EVAL_wtime();
                 if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
                     HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-                t2 = MPI_Wtime();
+                t2 = HDF_EVAL_wtime();
                 eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
             }
             /* When using types, use the address as the displacement for
@@ -1251,10 +1251,10 @@ H5FD__mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
                 if(file->mpi_rank == 0)
                     {
                         double t1, t2;
-                        t1 = MPI_Wtime();
+                        t1 = HDF_EVAL_wtime();
                         if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                             HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
-                        t2 = MPI_Wtime();
+                        t2 = HDF_EVAL_wtime();
                         eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
                         eval_add_size(EVAL_TIMER_MPI_File_read_at, size_i, buf_type);
                     }
@@ -1264,10 +1264,10 @@ H5FD__mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
             else
                 {
                     double t1, t2;
-                    t1 = MPI_Wtime();
+                    t1 = HDF_EVAL_wtime();
                     if(MPI_SUCCESS != (mpi_code = MPI_File_read_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                         HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at_all failed", mpi_code)
-                    t2 = MPI_Wtime();
+                    t2 = HDF_EVAL_wtime();
                     eval_add_time(EVAL_TIMER_MPI_File_read_at_all, t2 - t1);
                     eval_add_size(EVAL_TIMER_MPI_File_read_at_all, size_i, buf_type);
                 }
@@ -1279,10 +1279,10 @@ H5FD__mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
 #endif
             {
                 double t1, t2;
-                t1 = MPI_Wtime();
+                t1 = HDF_EVAL_wtime();
                 if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                     HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
-                t2 = MPI_Wtime();
+                t2 = HDF_EVAL_wtime();
                 eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
                 eval_add_size(EVAL_TIMER_MPI_File_read_at, size_i, buf_type);
             }
@@ -1293,20 +1293,20 @@ H5FD__mpio_read(H5FD_t *_file, H5FD_mem_t H5_ATTR_UNUSED type,
          */
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g, file->info)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
         }
     } /* end if */
     else
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_read_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_read_at failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_read_at, t2 - t1);
             eval_add_size(EVAL_TIMER_MPI_File_read_at, size_i, buf_type);
         }
@@ -1462,10 +1462,10 @@ H5FD__mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
          */
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, mpi_off, MPI_BYTE, file_type, H5FD_mpi_native_g, file->info)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
         }
         /* When using types, use the address as the displacement for
@@ -1508,10 +1508,10 @@ H5FD__mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
 #endif
             {
                 double t1, t2;
-                t1 = MPI_Wtime();
+                t1 = HDF_EVAL_wtime();
                 if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                     HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
-                t2 = MPI_Wtime();
+                t2 = HDF_EVAL_wtime();
                 eval_add_time(EVAL_TIMER_MPI_File_write_at_all, t2 - t1);
                 eval_add_size(EVAL_TIMER_MPI_File_write_at_all, size_i, buf_type);
             }
@@ -1525,10 +1525,10 @@ H5FD__mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
 #endif
             {
                 double t1, t2;
-                t1 = MPI_Wtime();
+                t1 = HDF_EVAL_wtime();
                 if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                     HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
-                t2 = MPI_Wtime();
+                t2 = HDF_EVAL_wtime();
                 eval_add_time(EVAL_TIMER_MPI_File_write_at, t2 - t1);
                 eval_add_size(EVAL_TIMER_MPI_File_write_at, size_i, buf_type);
             }
@@ -1537,20 +1537,20 @@ H5FD__mpio_write(H5FD_t *_file, H5FD_mem_t type, hid_t H5_ATTR_UNUSED dxpl_id,
         /* Reset the file view when we used MPI derived types */
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(file->f, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, H5FD_mpi_native_g,  file->info)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
         }
     } /* end if */ 
     else {
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_write_at(file->f, mpi_off, buf, size_i, buf_type, &mpi_stat)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_write_at, t2 - t1);
             eval_add_size(EVAL_TIMER_MPI_File_write_at, size_i, buf_type);
         }

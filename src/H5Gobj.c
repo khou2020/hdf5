@@ -462,7 +462,7 @@ H5G_obj_insert(const H5O_loc_t *grp_oloc, const char *name, H5O_link_t *obj_lnk,
     herr_t ret_value = SUCCEED; /* Return value */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_NOAPI_TAG(grp_oloc->addr, FAIL)
 
@@ -631,7 +631,7 @@ done:
     if(pline && H5O_msg_reset(H5O_PLINE_ID, pline) < 0)
         HDONE_ERROR(H5E_SYM, H5E_CANTFREE, FAIL, "can't release pipeline")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     switch (obj_type){
         case H5O_TYPE_DATASET:
             eval_add_time(EVAL_TIMER_H5G_obj_insert_dataset, t2 - t1);

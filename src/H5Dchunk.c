@@ -882,7 +882,7 @@ H5D__chunk_construct(H5F_t H5_ATTR_UNUSED *f, H5D_t *dset)
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();    
+    t1 = HDF_EVAL_wtime();    
 
     /* Sanity checks */
     HDassert(f);
@@ -923,7 +923,7 @@ H5D__chunk_construct(H5F_t H5_ATTR_UNUSED *f, H5D_t *dset)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, FAIL, "unable to reset chunked storage index")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__chunk_construct, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -1119,7 +1119,7 @@ H5D__chunk_io_init(const H5D_io_info_t *io_info, const H5D_type_info_t *type_inf
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Get layout for dataset */
     fm->layout = &(dataset->shared->layout);
@@ -1180,6 +1180,15 @@ done:
         if(H5S_hyper_denormalize_offset((H5S_t *)file_space, old_offset) < 0)       /* (Casting away const OK -QAK) */
             HDONE_ERROR(H5E_DATASET, H5E_CANTSET, FAIL, "can't denormalize selection")
 
+
+    t2 = HDF_EVAL_wtime();
+    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
+        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
+    }
+    else{
+        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_r, t2 - t1);
+    }
+    
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_io_init() */
 
@@ -1384,16 +1393,8 @@ done:
     if(file_type && (H5T_close_real(file_type) < 0))
         HDONE_ERROR(H5E_DATATYPE, H5E_CANTFREE, FAIL, "Can't free temporary datatype")
 
-    t2 = MPI_Wtime();
-    if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
-        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_w, t2 - t1);
-    }
-    else{
-        eval_add_time(EVAL_TIMER_H5D__chunk_io_init_r, t2 - t1);
-    }
-
     FUNC_LEAVE_NOAPI(ret_value)
-} /* end H5D__chunk_io_init() */
+} /* end H5D__chunk_io_init_selections() */
 
 
 /*-------------------------------------------------------------------------
@@ -2528,7 +2529,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
 
     FUNC_ENTER_STATIC
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity check */
     HDassert(io_info);
@@ -2584,10 +2585,10 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
         chunk_info = H5D_CHUNK_GET_NODE_INFO(fm, chunk_node);
 
         /* Get the info for the chunk in the file */
-        t3 = MPI_Wtime();
+        t3 = HDF_EVAL_wtime();
         if(H5D__chunk_lookup(io_info->dset, chunk_info->scaled, &udata) < 0)
             HGOTO_ERROR(H5E_DATASET, H5E_CANTGET, FAIL, "error looking up chunk address")
-        t4 = MPI_Wtime();
+        t4 = HDF_EVAL_wtime();
         eval_add_time(EVAL_TIMER_H5D__chunk_lookup_r, t4 - t3);
 
         /* Sanity check */
@@ -2651,7 +2652,7 @@ H5D__chunk_read(H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     } /* end while */
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__chunk_read, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -3780,7 +3781,7 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity checks */
     HDassert(io_info);
@@ -3971,12 +3972,12 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                 if(NULL == (chunk = H5D__chunk_mem_alloc(my_chunk_alloc, (udata->new_unfilt_chunk ? old_pline : pline))))
                     HGOTO_ERROR(H5E_RESOURCE, H5E_NOSPACE, NULL, "memory allocation failed for raw data chunk")
 
-                t3 = MPI_Wtime();
+                t3 = HDF_EVAL_wtime();
 
                 if(H5F_shared_block_read(H5F_SHARED(dset->oloc.file), H5FD_MEM_DRAW, chunk_addr, my_chunk_alloc, chunk) < 0)
                     HGOTO_ERROR(H5E_IO, H5E_READERROR, NULL, "unable to read raw data chunk")
                 
-                t4 = MPI_Wtime();
+                t4 = HDF_EVAL_wtime();
                 if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
                     eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
                 }
@@ -3988,7 +3989,7 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                     H5Z_EDC_t err_detect;       /* Error detection info */
                     H5Z_cb_t filter_cb;         /* I/O filter callback function */
 
-                    t3 = MPI_Wtime();
+                    t3 = HDF_EVAL_wtime();
 
                     /* Retrieve filter settings from API context */
                     if(H5CX_get_err_detect(&err_detect) < 0)
@@ -4000,7 +4001,7 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                             err_detect, filter_cb, &my_chunk_alloc, &buf_alloc, &chunk) < 0)
                         HGOTO_ERROR(H5E_DATASET, H5E_CANTFILTER, NULL, "data pipeline read failed")
     
-                    t4 = MPI_Wtime();
+                    t4 = HDF_EVAL_wtime();
                     if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
                         eval_add_time(EVAL_TIMER_H5D__chunk_lock_filter_w, t4 - t3);
                     }
@@ -4156,7 +4157,7 @@ done:
         if(chunk)
             chunk = H5D__chunk_mem_xfree(chunk, pline);
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_lock_w, t2 - t1);
     }
@@ -4201,7 +4202,7 @@ H5D__chunk_unlock(const H5D_io_info_t *io_info, const H5D_chunk_ud_t *udata,
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity check */
     HDassert(io_info);
@@ -4275,7 +4276,7 @@ H5D__chunk_unlock(const H5D_io_info_t *io_info, const H5D_chunk_ud_t *udata,
     } /* end else */
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
         eval_add_time(EVAL_TIMER_H5D__chunk_unlock_w, t2 - t1);
     }
@@ -4423,7 +4424,7 @@ H5D__chunk_allocate(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Check args */
     HDassert(dset && H5D_CHUNKED == layout->type);
@@ -4827,7 +4828,7 @@ done:
         H5MM_free(chunk_info.addr);
 #endif
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__chunk_allocate, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)
@@ -5043,7 +5044,7 @@ H5D__chunk_collective_fill(const H5D_t *dset, H5D_chunk_coll_info_t *chunk_info,
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Get the MPI communicator */
     if(MPI_COMM_NULL == (mpi_comm = H5F_mpi_get_comm(dset->oloc.file)))
@@ -5162,6 +5163,9 @@ done:
     H5MM_xfree(chunk_disp_array);
     H5MM_xfree(block_lens);
 
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5D__chunk_collective_fill, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_collective_fill() */
 
@@ -5191,8 +5195,6 @@ H5D__chunk_cmp_addr(const void *addr1, const void *addr2)
 #else
     ret_value = (_addr1 > _addr2) - (_addr1 < _addr2);
 #endif
-    t2 = MPI_Wtime();
-    eval_add_time(EVAL_TIMER_H5D__chunk_collective_fill, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__chunk_cmp_addr() */
@@ -5459,7 +5461,7 @@ H5D__chunk_prune_by_extent(H5D_t *dset, const hsize_t *old_dim)
 
     FUNC_ENTER_PACKAGE
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Check args */
     HDassert(dset && H5D_CHUNKED == layout->type);
@@ -5747,7 +5749,7 @@ done:
         if(udata.fb_info_init && H5D__fill_term(&udata.fb_info) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CANTFREE, FAIL, "Can't release fill buffer info")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__chunk_prune_by_extent, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)

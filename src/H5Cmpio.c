@@ -1047,10 +1047,10 @@ H5C__collective_write(H5F_t *f)
          */
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
         }
 
@@ -1058,10 +1058,10 @@ H5C__collective_write(H5F_t *f)
         HDmemset(&mpi_stat, 0, sizeof(MPI_Status));
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_write_at_all(mpi_fh, (MPI_Offset)0, NULL, 0, MPI_BYTE, &mpi_stat)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_write_at_all failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_write_at_all, t2 - t1);
             eval_add_size(EVAL_TIMER_MPI_File_write_at_all, 0, MPI_BYTE);
         }
@@ -1071,10 +1071,10 @@ H5C__collective_write(H5F_t *f)
          */
         {
             double t1, t2;
-            t1 = MPI_Wtime();
+            t1 = HDF_EVAL_wtime();
             if(MPI_SUCCESS != (mpi_code = MPI_File_set_view(mpi_fh, (MPI_Offset)0, MPI_BYTE, MPI_BYTE, "native", info)))
                 HMPI_GOTO_ERROR(FAIL, "MPI_File_set_view failed", mpi_code)
-            t2 = MPI_Wtime();
+            t2 = HDF_EVAL_wtime();
             eval_add_time(EVAL_TIMER_MPI_File_set_view, t2 - t1);
         }
     } /* end else */

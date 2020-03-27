@@ -104,6 +104,9 @@ H5Dcreate2(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id,
     H5VL_object_t      *vol_obj = NULL;                 /* object of loc_id */
     H5VL_loc_params_t   loc_params;
     hid_t               ret_value = H5I_INVALID_HID;    /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE7("i", "i*siiiii", loc_id, name, type_id, space_id, lcpl_id, dcpl_id,
@@ -159,6 +162,9 @@ done:
     if(H5I_INVALID_HID == ret_value)
         if(dset && H5VL_dataset_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release dataset")
+    
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5Dcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dcreate2() */
@@ -272,10 +278,10 @@ H5Dopen2(hid_t loc_id, const char *name, hid_t dapl_id)
     hid_t               ret_value   = H5I_INVALID_HID;  /* Return value */
     double t1, t2;
 
+    t1 = HDF_EVAL_wtime();
+
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "i*si", loc_id, name, dapl_id);
-    
-    t1 = MPI_Wtime();
 
     /* Check args */
     if(!name)
@@ -308,7 +314,7 @@ done:
         if(dset && H5VL_dataset_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release dataset")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Dopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -330,7 +336,10 @@ herr_t
 H5Dclose(hid_t dset_id)
 {
     herr_t  ret_value = SUCCEED;    /* Return value                     */
+    double t1, t2;
 
+    t1 = HDF_EVAL_wtime();
+    
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", dset_id);
 
@@ -345,6 +354,9 @@ H5Dclose(hid_t dset_id)
         HGOTO_ERROR(H5E_DATASET, H5E_CANTDEC, FAIL, "can't decrement count on dataset ID")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5Dclose, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Dclose() */
 

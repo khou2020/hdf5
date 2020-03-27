@@ -293,7 +293,7 @@ H5O__dset_create(H5F_t *f, void *_crt_info, H5G_loc_t *obj_loc)
 
     FUNC_ENTER_STATIC
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity checks */
     HDassert(f);
@@ -318,7 +318,7 @@ done:
         if(dset && H5D_close(dset) < 0)
             HDONE_ERROR(H5E_DATASET, H5E_CLOSEERROR, NULL, "unable to release dataset")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5O__dset_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)

@@ -277,7 +277,7 @@ H5D__select_read(const H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
     herr_t ret_value = SUCCEED; /* Return value */
     double t1, t2;
     FUNC_ENTER_PACKAGE
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Call generic selection operation */
     H5_CHECK_OVERFLOW(nelmts, hsize_t, size_t);
@@ -286,7 +286,7 @@ H5D__select_read(const H5D_io_info_t *io_info, const H5D_type_info_t *type_info,
         HGOTO_ERROR(H5E_DATASPACE, H5E_READERROR, FAIL, "read error")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__select_read, t2 - t1);
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5D__select_read() */

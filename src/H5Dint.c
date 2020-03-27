@@ -388,7 +388,7 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
 
     FUNC_ENTER_PACKAGE
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Check arguments */
     HDassert(loc);
@@ -419,7 +419,7 @@ H5D__create_named(const H5G_loc_t *loc, const char *name, hid_t type_id,
     ret_value = (H5D_t *)ocrt_info.new_obj;
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__create_named, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -957,7 +957,7 @@ H5D__update_oh_info(H5F_t *file, H5D_t *dset, hid_t dapl_id)
 
     FUNC_ENTER_STATIC
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity checking */
     HDassert(file);
@@ -1133,7 +1133,7 @@ done:
             if(dset->shared->layout.ops->dest && (dset->shared->layout.ops->dest)(dset) < 0)
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
     
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__update_oh_info, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -1255,7 +1255,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
 
     FUNC_ENTER_PACKAGE
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
     
     /* check args */
     HDassert(file);
@@ -1305,7 +1305,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
     /* Set the dataset's checked_filters flag to enable writing */
     new_dset->shared->checked_filters = TRUE;
 
-    t3 = MPI_Wtime();
+    t3 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__create_metadata, t3 - t1);
 
     /* Check if the dataset has a non-default DCPL & get important values, if so */
@@ -1315,7 +1315,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
         H5O_fill_t      *fill;          /* Dataset's fill value info */
         H5O_efl_t       *efl;           /* Dataset's external file list info */
         
-        t3 = MPI_Wtime();
+        t3 = HDF_EVAL_wtime();
 
         /* Check if the filters in the DCPL can be applied to this dataset */
         if(H5Z_can_apply(new_dset->shared->dcpl_id, new_dset->shared->type_id) < 0)
@@ -1359,7 +1359,7 @@ H5D__create(H5F_t *file, hid_t type_id, const H5S_t *space, hid_t dcpl_id,
         if(layout->type == H5D_COMPACT && fill->alloc_time != H5D_ALLOC_TIME_EARLY)
             HGOTO_ERROR(H5E_DATASET, H5E_BADVALUE, NULL, "compact dataset must have early space allocation")
 
-        t4 = MPI_Wtime();
+        t4 = HDF_EVAL_wtime();
         eval_add_time(EVAL_TIMER_H5D__create_property, t4 - t3);
     } /* end if */
 
@@ -1466,7 +1466,7 @@ done:
         new_dset = H5FL_FREE(H5D_t, new_dset);
     } /* end if */
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -2303,7 +2303,7 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
 
     FUNC_ENTER_PACKAGE
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* check args */
     HDassert(dset);
@@ -2446,7 +2446,7 @@ H5D__alloc_storage(const H5D_io_info_t *io_info, H5D_time_alloc_t time_alloc,
     } /* end if */
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__alloc_storage, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -2472,7 +2472,7 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
 
     FUNC_ENTER_STATIC
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     HDassert(dset);
 
@@ -2524,7 +2524,7 @@ H5D__init_storage(const H5D_io_info_t *io_info, hbool_t full_overwrite, hsize_t 
     } /* end switch */ /*lint !e788 All appropriate cases are covered */
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__init_storage, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
@@ -3046,7 +3046,7 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Check args */
     HDassert(dset);
@@ -3208,7 +3208,7 @@ H5D__set_extent(H5D_t *dset, const hsize_t *size)
     } /* end if */
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__set_extent, t2 - t1);
         
     FUNC_LEAVE_NOAPI_TAG(ret_value)

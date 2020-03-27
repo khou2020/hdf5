@@ -3,6 +3,7 @@
 #include "H5V.h"
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 
 static double eval_tlocal[EVAL_NTIMER];    // Time
 static double eval_clocal[EVAL_NTIMER];    // Count (number of function calls)
@@ -188,11 +189,11 @@ herr_t H5Vprint(){
     double tmax[EVAL_NTIMER], tmin[EVAL_NTIMER], tmean[EVAL_NTIMER], tvar[EVAL_NTIMER], tvar_local[EVAL_NTIMER];
 
     // In case the application hasn't initialize MPI
+#ifdef H5_HAVE_PARALLEL
     MPI_Initialized(&flag); 
     if (!flag){
         MPI_Init(NULL, NULL);
     }
-
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -204,6 +205,14 @@ herr_t H5Vprint(){
         tvar_local[i] = (eval_tlocal[i] - tmean[i]) * (eval_tlocal[i] - tmean[i]);
     }
     MPI_Reduce(tvar_local, tvar, EVAL_NTIMER, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); // Time variance across all process
+#else
+    rank = 0;
+    np = 1;
+    memcpy(tmax, eval_tlocal, sizeof(double) * EVAL_NTIMER);
+    memcpy(tmin, eval_tlocal, sizeof(double) * EVAL_NTIMER);
+    memcpy(tmean, eval_tlocal, sizeof(double) * EVAL_NTIMER);
+    memset(tvar, 0, sizeof(double) * EVAL_NTIMER);
+#endif
 
     if (rank == 0){ // Rank 0 prints the result
         for(i = 0; i < EVAL_NTIMER; i++){
@@ -214,6 +223,7 @@ herr_t H5Vprint(){
         }
     }
 
+#ifdef H5_HAVE_PARALLEL
     MPI_Reduce(eval_clocal, tmax, EVAL_NTIMER, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD); // Max count across all process
     MPI_Reduce(eval_clocal, tmin, EVAL_NTIMER, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD); // Min count across all process
     MPI_Allreduce(eval_clocal, tmean, EVAL_NTIMER, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); // Total count across all process
@@ -222,6 +232,12 @@ herr_t H5Vprint(){
         tvar_local[i] = (eval_clocal[i] - tmean[i]) * (eval_clocal[i] - tmean[i]);
     }
     MPI_Reduce(tvar_local, tvar, EVAL_NTIMER, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); // Count variance across all process
+#else
+    memcpy(tmax, eval_clocal, sizeof(double) * EVAL_NTIMER);
+    memcpy(tmin, eval_clocal, sizeof(double) * EVAL_NTIMER);
+    memcpy(tmean, eval_clocal, sizeof(double) * EVAL_NTIMER);
+    memset(tvar, 0, sizeof(double) * EVAL_NTIMER);
+#endif
 
     if (rank == 0){ // Rank 0 prints the result
         for(i = 0; i < EVAL_NTIMER; i++){
@@ -232,6 +248,7 @@ herr_t H5Vprint(){
         }
     }
 
+#ifdef H5_HAVE_PARALLEL
     MPI_Reduce(eval_sumlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD); // Max total size across all process
     MPI_Reduce(eval_sumlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD); // Min total size across all process
     MPI_Allreduce(eval_sumlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); // Total size across all process
@@ -240,6 +257,12 @@ herr_t H5Vprint(){
         tvar_local[i] = (eval_sumlocal[i] - tmean[i]) * (eval_sumlocal[i] - tmean[i]);
     }
     MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); // Total size variance across all process
+#else
+    memcpy(tmax, eval_sumlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmin, eval_sumlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmean, eval_sumlocal, sizeof(double) * EVAL_NMPI);
+    memset(tvar, 0, sizeof(double) * EVAL_NMPI);
+#endif
 
     if (rank == 0){
         for(i = 0; i < EVAL_NMPI; i++){
@@ -250,6 +273,7 @@ herr_t H5Vprint(){
         }
     }
 
+#ifdef H5_HAVE_PARALLEL
     MPI_Reduce(eval_maxlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD); // Max size ever recorded across all process
     MPI_Reduce(eval_maxlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD); // Min of the maximum size ever recorded across process
     MPI_Allreduce(eval_maxlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); // Sum of maximum size ever recorded across all process
@@ -258,6 +282,12 @@ herr_t H5Vprint(){
         tvar_local[i] = (eval_maxlocal[i] - tmean[i]) * (eval_maxlocal[i] - tmean[i]);
     }
     MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); // Variance of the maximum size evern recorded across processes
+#else
+    memcpy(tmax, eval_maxlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmin, eval_maxlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmean, eval_maxlocal, sizeof(double) * EVAL_NMPI);
+    memset(tvar, 0, sizeof(double) * EVAL_NMPI);
+#endif
 
     if (rank == 0){
         for(i = 0; i < EVAL_NMPI; i++){
@@ -268,6 +298,7 @@ herr_t H5Vprint(){
         }
     }
 
+#ifdef H5_HAVE_PARALLEL
     MPI_Reduce(eval_minlocal, tmax, EVAL_NMPI, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD); // Max of the minimum size ever recorded across process
     MPI_Reduce(eval_minlocal, tmin, EVAL_NMPI, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD); // Minimum size ever recorded across all process
     MPI_Allreduce(eval_minlocal, tmean, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); // Sum of minimum size ever recorded across all process
@@ -276,6 +307,12 @@ herr_t H5Vprint(){
         tvar_local[i] = (eval_minlocal[i] - tmean[i]) * (eval_minlocal[i] - tmean[i]);
     }
     MPI_Reduce(tvar_local, tvar, EVAL_NMPI, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); // Variance of the minimum size evern recorded across processes
+#else
+    memcpy(tmax, eval_minlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmin, eval_minlocal, sizeof(double) * EVAL_NMPI);
+    memcpy(tmean, eval_minlocal, sizeof(double) * EVAL_NMPI);
+    memset(tvar, 0, sizeof(double) * EVAL_NMPI);
+#endif
 
     if (rank == 0){
         for(i = 0; i < EVAL_NMPI; i++){
@@ -287,9 +324,11 @@ herr_t H5Vprint(){
     }
 
     // If we initialized MPI, we finalize it
+#ifdef H5_HAVE_PARALLEL
     if (!flag){
         MPI_Finalize();
     }
+#endif
 
     return 0;
 }
@@ -316,11 +355,11 @@ int HDF_MPI_EVAL_Bcast( void *buffer, int count, MPI_Datatype datatype, int root
     int ret;
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     ret = MPI_Bcast(buffer, count, datatype, root, comm);
     
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_MPI_Bcast, t2 - t1);
     
     eval_add_size(EVAL_TIMER_MPI_Bcast, count, datatype);

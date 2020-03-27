@@ -472,7 +472,7 @@ H5D__layout_oh_create(H5F_t *file, H5O_t *oh, H5D_t *dset, hid_t dapl_id)
 
     FUNC_ENTER_PACKAGE_TAG(dset->oloc.addr)
     
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity checking */
     HDassert(file);
@@ -587,7 +587,7 @@ done:
             if(dset->shared->layout.ops->dest && (dset->shared->layout.ops->dest)(dset) < 0)
                 HDONE_ERROR(H5E_DATASET, H5E_CANTRELEASE, FAIL, "unable to destroy layout info")
     
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5D__layout_oh_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI_TAG(ret_value)

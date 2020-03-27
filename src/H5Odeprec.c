@@ -44,7 +44,7 @@
 /****************/
 /* Local Macros */
 /****************/
-
+#include "H5V.h"
 
 /******************/
 /* Local Typedefs */
@@ -761,6 +761,9 @@ H5Ovisit1(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5VL_loc_params_t   loc_params;
     H5O_visit1_adapter_t shim_data;             /* Adapter for passing app callback & user data */
     herr_t              ret_value;              /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE5("e", "iIiIox*x", obj_id, idx_type, order, op, op_data);
@@ -791,6 +794,9 @@ H5Ovisit1(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object visitation failed")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5Ovisit, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit1() */
 
@@ -924,6 +930,9 @@ H5Ovisit2(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5O_visit1_adapter_t shim_data;     /* Adapter for passing app callback & user data */
     hbool_t              is_native_vol_obj;
     herr_t               ret_value;      /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iIiIox*xIu", obj_id, idx_type, order, op, op_data, fields);
@@ -963,6 +972,9 @@ H5Ovisit2(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
         HGOTO_ERROR(H5E_OHDR, H5E_BADITER, FAIL, "object iteration failed")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5Ovisit2, t2 - t1);
+
     FUNC_LEAVE_API(ret_value)
 } /* end H5Ovisit2() */
 

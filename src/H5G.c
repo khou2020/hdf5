@@ -347,7 +347,7 @@ H5Gcreate2(hid_t loc_id, const char *name, hid_t lcpl_id, hid_t gcpl_id,
     hid_t               ret_value = H5I_INVALID_HID;    /* Return value */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE5("i", "i*siii", loc_id, name, lcpl_id, gcpl_id, gapl_id);
@@ -400,7 +400,7 @@ done:
         if(grp && H5VL_group_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Gcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -511,7 +511,7 @@ H5Gopen2(hid_t loc_id, const char *name, hid_t gapl_id)
     hid_t               ret_value = H5I_INVALID_HID;    /* Return value */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "i*si", loc_id, name, gapl_id);
@@ -546,7 +546,7 @@ done:
         if(grp && H5VL_group_close(vol_obj, H5P_DATASET_XFER_DEFAULT, H5_REQUEST_NULL) < 0)
             HDONE_ERROR(H5E_SYM, H5E_CLOSEERROR, H5I_INVALID_HID, "unable to release group")
 
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Gopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -758,7 +758,7 @@ H5Gclose(hid_t group_id)
     herr_t  ret_value = SUCCEED;    /* Return value                     */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", group_id);
@@ -774,7 +774,7 @@ H5Gclose(hid_t group_id)
     	HGOTO_ERROR(H5E_SYM, H5E_CANTRELEASE, FAIL, "unable to close group")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Gclose, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)

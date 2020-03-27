@@ -654,7 +654,7 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
     hid_t               ret_value;          /* return value                             */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE4("i", "*sIuii", filename, flags, fcpl_id, fapl_id);
@@ -725,7 +725,7 @@ H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
             HGOTO_ERROR(H5E_FILE, H5E_CANTINIT, H5I_INVALID_HID, "unable to make file 'post open' callback")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Fcreate, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -762,7 +762,7 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
     hid_t               ret_value;          /* Return value                             */
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(H5I_INVALID_HID)
     H5TRACE3("i", "*sIui", filename, flags, fapl_id);
@@ -819,7 +819,7 @@ H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
             HGOTO_ERROR(H5E_FILE, H5E_CANTINIT, H5I_INVALID_HID, "unable to make file 'post open' callback")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Fopen, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)
@@ -886,7 +886,7 @@ H5Fclose(hid_t file_id)
     herr_t      ret_value = SUCCEED;
     double t1, t2;
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE1("e", "i", file_id);
@@ -902,7 +902,7 @@ H5Fclose(hid_t file_id)
         HGOTO_ERROR(H5E_ATOM, H5E_CANTCLOSEFILE, FAIL, "decrementing file ID failed")
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     eval_add_time(EVAL_TIMER_H5Fclose, t2 - t1);
 
     FUNC_LEAVE_API(ret_value)

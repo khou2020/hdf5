@@ -122,7 +122,8 @@
 #define EVAL_TIMER_H5D__chunk_prune_by_extent (EVAL_TIMER_H5D__set_extent + 1)
 #define EVAL_TIMER_H5Ovisit (EVAL_TIMER_H5D__chunk_prune_by_extent + 1)
 #define EVAL_TIMER_H5Ovisit2 (EVAL_TIMER_H5Ovisit + 1)
-#define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5Ovisit2 + 1)
+#define EVAL_TIMER_H5Ovisit3 (EVAL_TIMER_H5Ovisit2 + 1)
+#define EVAL_TIMER_H5Z_filter_deflate_comp (EVAL_TIMER_H5Ovisit3 + 1)
 #define EVAL_TIMER_H5Z_filter_deflate_decomp (EVAL_TIMER_H5Z_filter_deflate_comp + 1)
 
 #define EVAL_NTIMER (EVAL_TIMER_H5Z_filter_deflate_decomp + 1)

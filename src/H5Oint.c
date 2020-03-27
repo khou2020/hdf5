@@ -2507,7 +2507,7 @@ H5O_obj_create(H5F_t *f, H5O_type_t obj_type, void *crt_info, H5G_loc_t *obj_loc
 
     FUNC_ENTER_NOAPI(NULL)
 
-    t1 = MPI_Wtime();
+    t1 = HDF_EVAL_wtime();
 
     /* Sanity checks */
     HDassert(f);
@@ -2531,7 +2531,7 @@ H5O_obj_create(H5F_t *f, H5O_type_t obj_type, void *crt_info, H5G_loc_t *obj_loc
     HDassert(ret_value);
 
 done:
-    t2 = MPI_Wtime();
+    t2 = HDF_EVAL_wtime();
     switch (obj_type){
         case H5O_TYPE_DATASET:
             eval_add_time(EVAL_TIMER_H5O_obj_create_dataset, t2 - t1);
