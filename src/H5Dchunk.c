@@ -3979,10 +3979,10 @@ H5D__chunk_lock(const H5D_io_info_t *io_info, H5D_chunk_ud_t *udata,
                 
                 t4 = HDF_EVAL_wtime();
                 if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
-                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_w, t4 - t3);
+                    eval_add_time(EVAL_TIMER_H5F_shared_block_read_lock_w, t4 - t3);
                 }
                 else{
-                    eval_add_time(EVAL_TIMER_H5F_block_read_lock_r, t4 - t3);
+                    eval_add_time(EVAL_TIMER_H5F_shared_block_read_lock_r, t4 - t3);
                 }
 
                 if(old_pline && old_pline->nused) {

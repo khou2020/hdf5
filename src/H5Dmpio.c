@@ -3415,10 +3415,10 @@ H5D__filtered_collective_chunk_entry_io(H5D_filtered_collective_io_info_t *chunk
 
         t4 = HDF_EVAL_wtime();
         if ((io_info != NULL) && (io_info->op_type == H5D_IO_OP_WRITE)){
-            eval_add_time(EVAL_TIMER_H5F_block_read_fcoll_w, t4 - t3);
+            eval_add_time(EVAL_TIMER_H5F_shared_block_read_fcoll_w, t4 - t3);
         }
         else{
-            eval_add_time(EVAL_TIMER_H5F_block_read_fcoll_r, t4 - t3);
+            eval_add_time(EVAL_TIMER_H5F_shared_block_read_fcoll_r, t4 - t3);
         }
 
         if(H5Z_pipeline(&io_info->dset->shared->dcpl_cache.pline, H5Z_FLAG_REVERSE,

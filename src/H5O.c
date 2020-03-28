@@ -1088,10 +1088,10 @@ H5Ovisit3(hid_t obj_id, H5_index_t idx_type, H5_iter_order_t order,
     H5VL_loc_params_t   loc_params;
     herr_t              ret_value;      /* Return value */
     double t1, t2;
-    
-    FUNC_ENTER_API(FAIL)
 
     t1 = HDF_EVAL_wtime();
+
+    FUNC_ENTER_API(FAIL)
 
     H5TRACE6("e", "iIiIox*xIu", obj_id, idx_type, order, op, op_data, fields);
 

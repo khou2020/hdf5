@@ -163,8 +163,9 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
 {
     H5VL_object_t  *vol_obj     = NULL;
     herr_t          ret_value   = SUCCEED;      /* Return value */
-
     double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_API(FAIL)
     H5TRACE6("e", "iiiiix", dset_id, mem_type_id, mem_space_id, file_space_id,
@@ -175,8 +176,6 @@ H5Dread(hid_t dset_id, hid_t mem_type_id, hid_t mem_space_id,
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid memory dataspace ID")
     if (file_space_id < 0)
         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "invalid file dataspace ID")
-    
-    t1 = HDF_EVAL_wtime();
 
     /* Get dataset pointer */
     if (NULL == (vol_obj = (H5VL_object_t *)H5I_object_verify(dset_id, H5I_DATASET)))

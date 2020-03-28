@@ -36,7 +36,7 @@
 #include "H5MMprivate.h"        /* Memory management                                */
 #include "H5Pprivate.h"         /* Property lists                                   */
 #include "H5VLpkg.h"            /* Virtual Object Layer                             */
-
+#include "H5V.h"
 
 /****************/
 /* Local Macros */
@@ -1823,6 +1823,9 @@ H5VL__dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const H5VL_
     hid_t dcpl_id, hid_t dapl_id, hid_t dxpl_id, void **req)
 {
     void *ret_value = NULL;     /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_STATIC
 
@@ -1835,6 +1838,9 @@ H5VL__dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const H5VL_
         HGOTO_ERROR(H5E_VOL, H5E_CANTCREATE, NULL, "dataset create failed")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL__dataset_create, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL__dataset_create() */
 
@@ -1856,6 +1862,9 @@ H5VL_dataset_create(const H5VL_object_t *vol_obj, const H5VL_loc_params_t *loc_p
 {
     hbool_t vol_wrapper_set = FALSE;    /* Whether the VOL object wrapping context was set up */
     void *ret_value = NULL;             /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_NOAPI(NULL)
 
@@ -1872,6 +1881,9 @@ done:
     /* Reset object wrapping info in API context */
     if(vol_wrapper_set && H5VL_reset_vol_wrapper() < 0)
         HDONE_ERROR(H5E_VOL, H5E_CANTRESET, NULL, "can't reset VOL wrapper info")
+
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL_dataset_create, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL_dataset_create() */
@@ -2034,7 +2046,10 @@ H5VL__dataset_read(void *obj, const H5VL_class_t *cls, hid_t mem_type_id,
     void **req)
 {
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
 
+    t1 = HDF_EVAL_wtime();
+    
     FUNC_ENTER_STATIC
 
     /* Check if the corresponding VOL callback exists */
@@ -2046,6 +2061,9 @@ H5VL__dataset_read(void *obj, const H5VL_class_t *cls, hid_t mem_type_id,
         HGOTO_ERROR(H5E_VOL, H5E_READERROR, FAIL, "dataset read failed")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL__dataset_read, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL__dataset_read() */
 
@@ -2067,6 +2085,9 @@ H5VL_dataset_read(const H5VL_object_t *vol_obj, hid_t mem_type_id,
 {
     hbool_t vol_wrapper_set = FALSE;    /* Whether the VOL object wrapping context was set up */
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
+
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_NOAPI(FAIL)
 
@@ -2083,6 +2104,9 @@ done:
     /* Reset object wrapping info in API context */
     if(vol_wrapper_set && H5VL_reset_vol_wrapper() < 0)
         HDONE_ERROR(H5E_VOL, H5E_CANTRESET, FAIL, "can't reset VOL wrapper info")
+
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL_dataset_read, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL_dataset_read() */
@@ -2140,6 +2164,9 @@ H5VL__dataset_write(void *obj, const H5VL_class_t *cls, hid_t mem_type_id,
     void **req)
 {
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
+    
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_STATIC
 
@@ -2152,6 +2179,9 @@ H5VL__dataset_write(void *obj, const H5VL_class_t *cls, hid_t mem_type_id,
         HGOTO_ERROR(H5E_VOL, H5E_WRITEERROR, FAIL, "dataset write failed")
 
 done:
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL__dataset_write, t2 - t1);
+
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL__dataset_write() */
 
@@ -2173,6 +2203,9 @@ H5VL_dataset_write(const H5VL_object_t *vol_obj, hid_t mem_type_id,
 {
     hbool_t vol_wrapper_set = FALSE;    /* Whether the VOL object wrapping context was set up */
     herr_t ret_value = SUCCEED;         /* Return value */
+    double t1, t2;
+    
+    t1 = HDF_EVAL_wtime();
 
     FUNC_ENTER_NOAPI(FAIL)
 
@@ -2189,6 +2222,9 @@ done:
     /* Reset object wrapping info in API context */
     if(vol_wrapper_set && H5VL_reset_vol_wrapper() < 0)
         HDONE_ERROR(H5E_VOL, H5E_CANTRESET, FAIL, "can't reset VOL wrapper info")
+
+    t2 = HDF_EVAL_wtime();
+    eval_add_time(EVAL_TIMER_H5VL_dataset_write, t2 - t1);
 
     FUNC_LEAVE_NOAPI(ret_value)
 } /* end H5VL_dataset_write() */
