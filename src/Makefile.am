@@ -113,7 +113,8 @@ libhdf5_la_SOURCES= H5.c H5checksum.c H5dbg.c H5lib_settings.c H5system.c \
         H5VLpassthru.c \
         H5VM.c H5WB.c H5Z.c  \
         H5Zdeflate.c H5Zfletcher32.c H5Znbit.c H5Zshuffle.c H5Zscaleoffset.c \
-        H5Zszip.c H5Ztrans.c
+        H5Zszip.c H5Ztrans.c \
+        H5V.c
 
 # Only compile parallel sources if necessary
 if BUILD_PARALLEL_CONDITIONAL
@@ -144,7 +145,8 @@ include_HEADERS = hdf5.h H5api_adpt.h H5overflow.h H5pubconf.h H5public.h H5vers
         H5Rpublic.h H5Spublic.h H5Tpublic.h \
         H5VLconnector.h H5VLconnector_passthru.h \
         H5VLnative.h H5VLpassthru.h H5VLpublic.h \
-        H5Zpublic.h
+        H5Zpublic.h \
+        H5Vpublic.h
 
 # install libhdf5.settings in lib directory
 settingsdir=$(libdir)
